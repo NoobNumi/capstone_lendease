@@ -23,19 +23,26 @@ router.post(
   async (req, res) => {
     const data = req.body;
 
-    const { proposed_loan_amount, loan_type, loan_type_specific } = data;
+    const {
+      proposed_loan_amount,
+      loan_type,
+      loan_type_specific,
+      calculatorLoanAmmount,
+      calculatorInterestRate,
+      calculatorMonthsToPay
+    } = data;
 
     let { user_id } = req.user;
-    console.log({ data });
+    // console.log({ data });
 
     let borrower_id = user_id;
 
     // map to db
     let loan_application_id = uuidv4();
-    let loan_amount = proposed_loan_amount;
-
+    let loan_amount = calculatorLoanAmmount || proposed_loan_amount;
+    let repayment_schedule_id = calculatorMonthsToPay;
     let loan_type_value = loan_type || loan_type_specific;
-    let interest_rate = 5;
+    let interest_rate = calculatorInterestRate;
     let loan_status = 'Pending';
     let purpose = loan_type_specific;
     let remarks = '';
@@ -59,8 +66,11 @@ router.post(
        interest_rate, 
        loan_status, 
        purpose, 
-       remarks) 
-       VALUES ( ?, ?, ?, ?, ? ,?, ?,?)`,
+       remarks,
+       repayment_schedule_id
+       
+       ) 
+       VALUES ( ?, ?, ?, ?, ? ,?, ?,?,?)`,
         [
           loan_application_id,
           borrower_id,
@@ -69,7 +79,8 @@ router.post(
           interest_rate,
           loan_status,
           purpose,
-          remarks
+          remarks,
+          repayment_schedule_id
         ]
       );
 
@@ -140,5 +151,38 @@ router.post(
     }
   }
 );
+
+router.post('/list', authenticateUserMiddleware, async (req, res) => {
+  let { user_id } = req.user;
+
+  try {
+    const [rows] = await db.query(
+      `
+
+
+      SELECT la.*, ba.* FROM loan la INNER 
+      JOIN borrower_account ba ON la.borrower_id = 
+      ba.borrower_id WHERE la.borrower_id  = ? 
+
+      ORDER BY la.application_date DESC
+
+         
+         
+         
+         `,
+      [user_id]
+    );
+
+    if (rows.length > 0) {
+      res.status(200).json({ success: true, data: rows });
+    } else {
+      res.status(404).json({ message: 'No loans found for this user.' });
+    }
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: 'Error fetching loan list with borrower details' });
+  }
+});
 
 export default router;

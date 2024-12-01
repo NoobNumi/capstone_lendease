@@ -13,6 +13,7 @@ const MyTextInput = ({
   itemClass,
   required, // Add required prop
   isRequired = false,
+  isReadOnly,
   ...props
 
 }) => {
@@ -34,6 +35,7 @@ const MyTextInput = ({
     props.hasTextareaHeight ? 'h-24' : 'h-12',
     props.isBorderless ? 'border-0' : 'border',
     props.isTransparent ? 'bg-transparent' : 'bg-white dark:bg-slate-800',
+    props.isReadOnly ? '' : '',
 
     'rounded-lg',
     '',

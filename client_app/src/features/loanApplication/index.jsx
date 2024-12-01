@@ -12,7 +12,7 @@ import axios from 'axios';
 import ViewColumnsIcon from '@heroicons/react/24/outline/EyeIcon';
 import PlusCircleIcon from '@heroicons/react/24/outline/PlusCircleIcon';
 import TrashIcon from '@heroicons/react/24/outline/TrashIcon';
-import { format, formatDistance, formatRelative, subDays } from 'date-fns';
+
 import PlayCircleIcon from '@heroicons/react/24/outline/PlusCircleIcon';
 import {
   mdiAccount,
@@ -77,23 +77,9 @@ import { FaCheckCircle } from "react-icons/fa"; // Font Awesome icon
 
 
 import LoanCalculator from "./loanCalculator";
-function SolarUserLinear(props) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      className="w-6 h-6">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-      />
-    </svg>
-  );
-}
+import { format, formatDistance, formatRelative, subDays } from 'date-fns';
+
+import { formatAmount } from './../../features/dashboard/helpers/currencyFormat';
 const TopSideButtons = ({ removeFilter, applyFilter, applySearch, faqList }) => {
   const [filterParam, setFilterParam] = useState('');
   const [searchText, setSearchText] = useState('');
@@ -136,7 +122,7 @@ const TopSideButtons = ({ removeFilter, applyFilter, applySearch, faqList }) => 
       )} */}
       <div className="badge badge-neutral mr-2 px-2 p-4">Total : {faqList.length}</div>
 
-      <button className="btn btn-outline btn-sm" onClick={() => document.getElementById('addFaq').showModal()}>
+      <button className="btn btn-outline btn-sm" onClick={() => document.getElementById('addLoan').showModal()}>
         Add
         <PlusCircleIcon className="h-6 w-6 text-white-500" />
       </button>
@@ -206,7 +192,7 @@ function LoanApplication() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeChildID, setactiveChildID] = useState('');
-  const [selectedFaq, setselectedFaq] = useState({});
+  const [selectedLoan, setselectedLoan] = useState({});
   const [isEditModalOpen, setisEditModalOpen] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -217,6 +203,9 @@ function LoanApplication() {
   const [addressProvince, setProvince] = useState([]);
   const [addressCity, setCity] = useState([]);
   const [addressBarangay, setBarangay] = useState([]);
+
+  const [myLoanList, setLoanList] = useState([]);
+
   const prepareAddress = async () => {
     await regions().then(region => {
 
@@ -239,10 +228,28 @@ function LoanApplication() {
     await cities().then(city => console.log(city));
     await barangays().then(barangays => console.log(barangays));
   };
+
+  const loanList = async () => {
+
+    let res = await axios({
+      method: 'POST',
+      url: 'loan/list',
+      data: {
+
+      }
+    });
+    let list = res.data.data;
+
+    setLoanList(list)
+
+
+  };
+
   useEffect(() => {
 
-    console.log('dex')
+
     prepareAddress();
+    loanList()
     setIsLoaded(true);
   }, []);
 
@@ -301,10 +308,60 @@ function LoanApplication() {
         }
       },
       {
-        Header: 'Loan #',
-        accessor: 'question',
+        Header: 'Type',
+        accessor: 'loan_type_value',
         Cell: ({ row, value }) => {
           return <span className="">{value}</span>;
+        }
+      },
+      {
+        Header: 'Loan Amount',
+        accessor: 'loan_amount',
+        Cell: ({ row, value }) => {
+          return <span className="">{formatAmount(value)}</span>;
+        }
+      },
+      {
+        Header: 'Interest Rate',
+        accessor: 'interest_rate',
+        Cell: ({ row, value }) => {
+          return <span className="">{value}</span>;
+        }
+      },
+      {
+        Header: 'Months To Pay',
+        accessor: 'repayment_schedule_id',
+        Cell: ({ row, value }) => {
+          return <span className="">{value} Months</span>;
+        }
+      },
+      {
+        Header: 'Date Created',
+        accessor: 'application_date',
+        Cell: ({ row, value }) => {
+          return <span className="">
+
+            {value &&
+              format(value, 'MMM dd, yyyy hh:mm a')}
+
+          </span>;
+        }
+      },
+      {
+        Header: 'Date Approved',
+        accessor: 'approval_date',
+        Cell: ({ row, value }) => {
+          return <span className="">{value}</span>;
+        }
+      },
+      {
+        Header: 'Status',
+        accessor: 'loan_status',
+        Cell: ({ row, value }) => {
+          return <StatusPill value={value} />
+
+
+
         }
       },
 
@@ -313,7 +370,7 @@ function LoanApplication() {
         Header: 'Action',
         accessor: '',
         Cell: ({ row }) => {
-          let l = row.original;
+          let loan = row.original;
 
 
 
@@ -323,25 +380,25 @@ function LoanApplication() {
 
                 <button className="btn btn-outline btn-sm" onClick={() => {
 
-                  setisEditModalOpen(true)
-                  setselectedFaq(l);
+                  // setisEditModalOpen(true)
+                  setselectedLoan(loan);
 
-                  document.getElementById('editFaq').showModal();
+                  document.getElementById('viewLoan').showModal();
                   // setFieldValue('Admin_Fname', 'dex');
                 }}>
-                  <i class="fa-solid fa-pen-to-square"></i>
+                  <i class="fa-solid fa-eye"></i>
                 </button>
 
-                <button
+                {/* <button
                   className="btn btn-outline btn-sm ml-2"
                   onClick={() => {
 
 
                     setactiveChildID(l.id);
-                    document.getElementById('deleteModal').showModal();
+
                   }}>
                   <i class="fa-solid fa-archive"></i>
-                </button>
+                </button> */}
               </div>
             )
           );
@@ -435,7 +492,7 @@ function LoanApplication() {
     }
     else if (currentStep === 1) {
 
-      console.log("DEx")
+
       PersonalInfoTabValidation = {
         work_type: Yup.string().required('Work type is required'),
         position: Yup.string().required('Position is required'),
@@ -462,6 +519,14 @@ function LoanApplication() {
         numberField: Yup.number().required('Number is required'),
         //   .required('Installment duration is required'),
         loan_security: Yup.string().required('Loan security (ATM/Passbook) is required')
+      }
+    }
+
+    else if (currentStep === 3) {
+      PersonalInfoTabValidation = {
+        calculatorLoanAmmount: Yup.number().required('Required'),
+        calculatorInterestRate: Yup.number().required('Required'),
+        calculatorMonthsToPay: Yup.number().required('Required'),
       }
     }
 
@@ -513,7 +578,12 @@ function LoanApplication() {
         "coMakersValidID": {
           "path": "./OLD Poblacion Entrance.jpg",
           "relativePath": "./OLD Poblacion Entrance.jpg"
-        }
+        },
+        calculatorLoanAmmount: 20000,
+        calculatorInterestRate: 36,
+        calculatorMonthsToPay: 6,
+        calculatorTotalAmountToPay: 0,
+
       },
       validationSchema: Yup.object({
         ...PersonalInfoTabValidation
@@ -524,11 +594,11 @@ function LoanApplication() {
       onSubmit: async (values, { setFieldError, setSubmitting, resetForm }) => {
         setSubmitting(true);
 
-        console.log({ values })
+        // console.log({ values })
 
 
 
-        console.log("dex submit")
+        // console.log("dex submit")
 
         let res = await axios({
           method: 'post',
@@ -554,6 +624,25 @@ function LoanApplication() {
         });
 
         setSubmitting(false);
+
+        resetForm();
+        loanList();
+        document.getElementById('addLoan').close();
+
+        toast.success('Successfully created!', {
+          onClose: () => {
+
+          },
+          position: 'top-right',
+          autoClose: 500,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: 'light'
+        });
+
         return true
 
         if (currentStep === 2) {
@@ -561,10 +650,10 @@ function LoanApplication() {
         }
         try {
 
-          if (selectedFaq.question) {
+          if (selectedLoan.question) {
             let res = await axios({
               method: 'put',
-              url: `faq/${selectedFaq.id}`,
+              url: `faq/${selectedLoan.id}`,
               data: values
             })
             document.getElementById('editFaq').close();
@@ -590,7 +679,7 @@ function LoanApplication() {
               url: 'faq/create',
               data: values
             })
-            document.getElementById('addFaq').close();
+            document.getElementById('addLoan').close();
             await fetchFaqList();
             resetForm();
             toast.success('Successfully added!', {
@@ -679,7 +768,7 @@ function LoanApplication() {
       }>
       <div className="">
 
-        <dialog id="addFaq" className="modal">
+        <dialog id="addLoan" className="modal">
           <div className="modal-box w-11/12 max-w-5xl">
             <form method="dialog">
               {/* if there is a button in form, it will close the modal */}
@@ -887,14 +976,9 @@ function LoanApplication() {
                   const AccountDetails = useMemo(() => (
                     <div>
 
-                      {
-                        console.log(values.loan_type)
-                      }
+
                       <Form className="">
-
                         {values.loan_type === 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN' && <div>
-
-
                           <div class="flex justify-center items-center">
                             <h1 class="text-center">{values.loan_type}</h1>
                           </div>
@@ -1215,10 +1299,26 @@ function LoanApplication() {
                   };
 
 
-                  const Calculator = () => {
 
-                    return <div><LoanCalculator /></div>
-                  }
+                  console.log(LoanCalculator);
+
+
+                  const Calculator = useMemo(() => (
+                    <div>
+                      <Form className="">
+                        <LoanCalculator
+                          values={values}
+                          setFieldValue={setFieldValue}
+                          handleBlur={handleBlur}
+                          calculatorLoanAmmount={values.calculatorLoanAmmount}
+                          calculatorInterestRate={values.calculatorInterestRate}
+                          calculatorMonthsToPay={values.calculatorMonthsToPay}
+                          calculatorTotalAmountToPay={values.calculatorTotalAmountToPay}
+                        />
+                      </Form>
+                    </div>
+                  ), [currentStep, errors, values]);
+
 
                   const Confirmation = () => {
                     const [isVisible, setIsVisible] = useState(true);
@@ -1277,10 +1377,8 @@ function LoanApplication() {
                       }
                     },
                     {
-                      label: 'Calculator', content: () => {
-                        return <Calculator />
-                      }
-                    },
+                      label: 'Calculator', content: () => { return Calculator }
+                    }
                   ];
 
                   const nextStep = async () => {
@@ -1416,19 +1514,76 @@ function LoanApplication() {
           </div>
         </dialog >
 
+
+        <dialog id="viewLoan" className="modal">
+          <div className="modal-box w-11/12 max-w-5xl">
+
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+              onClick={() => {
+                setselectedLoan({})
+                document.getElementById("viewLoan").close()
+              }}
+
+
+            >✕</button>
+
+            <h1 className="font-bold text-lg">Loan Details</h1>
+            <p className="text-sm text-gray-500 mt-1 font-bold"></p>
+            <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
+
+              {selectedLoan.loan_application_id && <Formik
+                initialValues={{
+                  calculatorLoanAmmount: parseFloat(selectedLoan.loan_amount),
+                  calculatorInterestRate: parseFloat(selectedLoan.interest_rate),
+                  calculatorMonthsToPay: parseFloat(selectedLoan.repayment_schedule_id),
+
+                }}
+              >
+                {({
+                  validateForm,
+                  handleSubmit,
+                  handleChange,
+                  handleBlur, // handler for onBlur event of form elements
+                  values,
+                  touched,
+                  errors,
+                  submitForm,
+                  setFieldTouched,
+                  setFieldValue,
+                  setFieldError,
+                  setErrors,
+                  isSubmitting
+                }) => {
+
+                  console.log({ values })
+
+
+                  return <LoanCalculator
+                    isReadOnly={true}
+                    values={values}
+                    setFieldValue={setFieldValue}
+                    handleBlur={handleBlur}
+                    calculatorLoanAmmount={values.calculatorLoanAmmount}
+                    calculatorInterestRate={values.calculatorInterestRate}
+                    calculatorMonthsToPay={values.calculatorMonthsToPay}
+                    calculatorTotalAmountToPay={values.calculatorTotalAmountToPay}
+                  />
+
+
+                }}</Formik>
+              }
+
+            </div>
+          </div>
+        </dialog >
         <Table
           style={{ overflow: 'wrap' }}
           className="table-sm"
           columns={columns}
-          data={(faqList || []).map(data => {
+          data={(myLoanList || []).map(data => {
             return {
               ...data
-              // fullName,
-              // address: fullAddress,
-              // packageDisplayName: aP && aP.displayName,
-              // date_created:
-              //   data.date_created &&
-              //   format(data.date_created, 'MMM dd, yyyy hh:mm:ss a')
+
             };
           })}
           searchField="lastName"

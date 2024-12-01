@@ -1,10 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 
-const LoanCalculator = () => {
-  const [loanAmount, setLoanAmount] = useState(5000);
-  const [interestRate, setInterestRate] = useState(36); // Editable interest rate
+import InputText from '../../components/Input/InputText';
+
+
+const LoanCalculator = memo(({
+  setFieldValue,
+  handleBlur,
+  values,
+  calculatorLoanAmmount = 5000,
+  calculatorInterestRate = 36,
+  calculatorMonthsToPay = 6,
+  calculatorTotalAmountToPay = 0,
+  isReadOnly = false
+}) => {
+
+  console.log({ isReadOnly })
+
+
+  const [loanAmount, setLoanAmount] = useState(calculatorLoanAmmount);
+  const [interestRate, setInterestRate] = useState(calculatorInterestRate); // Editable interest rate
   const [totalPayment, setTotalPayment] = useState(0); // Will be calculated automatically
-  const [loanDuration, setLoanDuration] = useState(1);
+  const [loanDuration, setLoanDuration] = useState(calculatorMonthsToPay);
   const [payments, setPayments] = useState([]);
   const [balance, setBalance] = useState(loanAmount);
 
@@ -69,34 +85,77 @@ const LoanCalculator = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
         <div>
           <label htmlFor="loanAmount" className="block text-sm font-semibold text-gray-700 mb-2">Loan Amount</label>
-          <input
-            id="loanAmount"
+
+          <InputText
+            isRequired
+            placeholder=""
+            disabled={isReadOnly}
+            name="calculatorLoanAmmount"
             type="number"
-            value={loanAmount}
-            onChange={(e) => setLoanAmount(Number(e.target.value))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            value={values?.calculatorLoanAmmount} // Bind value to Formik state
+            onBlur={handleBlur}
+            onChange={(e) => {
+              setLoanAmount(Number(e.target.value))
+              setFieldValue('calculatorLoanAmmount', e.target.value)
+            }}
+            isReadOnly
+
+
+
           />
+
         </div>
         <div>
           <label htmlFor="interestRate" className="block text-sm font-semibold text-gray-700 mb-2">Interest Rate (%)</label>
-          <input
+          {/* <input
             id="interestRate"
             type="number"
             value={interestRate}
             onChange={(e) => setInterestRate(Number(e.target.value))}
             className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          /> */}
+          <InputText
+            isRequired
+            placeholder=""
+            disabled={isReadOnly}
+            name="calculatorInterestRate"
+            type="number"
+            value={values?.calculatorInterestRate} // Bind value to Formik state
+            onBlur={handleBlur}
+            onChange={(e) => {
+              setInterestRate(Number(e.target.value))
+              setFieldValue('calculatorInterestRate', e.target.value)
+            }}
+            isReadOnly
           />
+
         </div>
         <div>
           <label htmlFor="loanDuration" className="block text-sm font-semibold text-gray-700 mb-2">Loan Duration (Months)</label>
-          <input
+          {/* <input
             id="loanDuration"
             type="number"
             value={loanDuration}
 
             onChange={(e) => setLoanDuration(Number(e.target.value))}
             className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          /> */}
+
+          <InputText
+            isRequired
+            disabled={isReadOnly}
+            placeholder=""
+            name="calculatorMonthsToPay"
+            type="number"
+            value={values?.calculatorMonthsToPay} // Bind value to Formik state
+            onBlur={handleBlur}
+            onChange={(e) => {
+              setLoanDuration(Number(e.target.value))
+              setFieldValue('calculatorMonthsToPay', e.target.value)
+            }}
+            isReadOnly
           />
+
         </div>
         <div>
           <label htmlFor="totalPayment" className="block text-sm font-semibold text-gray-700 mb-2">Total Payment (₱)</label>
@@ -149,6 +208,6 @@ const LoanCalculator = () => {
       </table>
     </div>
   );
-};
+});
 
 export default LoanCalculator;
