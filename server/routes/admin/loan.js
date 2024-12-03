@@ -1,11 +1,11 @@
 import express from 'express';
 
-import config from '../config.js';
+import config from '../../config.js';
 
 import {
   authenticateUserMiddleware,
   auditTrailMiddleware
-} from '../middleware/authMiddleware.js';
+} from '../../middleware/authMiddleware.js';
 
 let db = config.mySqlDriver;
 import { v4 as uuidv4 } from 'uuid';
@@ -122,8 +122,11 @@ router.post(
 
       const loan_application_id = req.body.loan_application_id;
 
+      console.log({ loan_application_id });
+
       // Upload each file to Firebase Storage
       for (const [key, fileArray] of Object.entries(files)) {
+        console.log('dex');
         const file = fileArray[0];
 
         const storageRef = ref(
@@ -136,23 +139,7 @@ router.post(
         await uploadBytes(storageRef, file.buffer, metadata);
 
         // // Get the file's download URL
-        const downloadURL = await getDownloadURL(storageRef);
-
-        let mappedKey = {
-          bankStatement: 'bank_statement',
-          borrowerValidID: 'borrowers_valid_id',
-          coMakersValidID: 'co_makers_valid_id'
-        };
-
-        await db.query(
-          `
-          UPDATE loan SET ${mappedKey[key]} = ?
-          where loan_application_id = ?
-          
-          `,
-          [downloadURL, loan_application_id]
-        );
-
+        // const downloadURL = await getDownloadURL(storageRef);
         // console.log({ downloadURL });
         console.log(`${key} uploaded successfully.`);
       }
@@ -166,8 +153,6 @@ router.post(
 );
 
 router.post('/list', authenticateUserMiddleware, async (req, res) => {
-  let { user_id } = req.user;
-
   try {
     const [rows] = await db.query(
       `
@@ -175,7 +160,8 @@ router.post('/list', authenticateUserMiddleware, async (req, res) => {
 
       SELECT la.*, ba.* FROM loan la INNER 
       JOIN borrower_account ba ON la.borrower_id = 
-      ba.borrower_id WHERE la.borrower_id  = ? 
+      ba.borrower_id 
+ 
 
       ORDER BY la.application_date DESC
 
@@ -183,7 +169,7 @@ router.post('/list', authenticateUserMiddleware, async (req, res) => {
          
          
          `,
-      [user_id]
+      []
     );
 
     if (rows.length > 0) {
@@ -198,37 +184,53 @@ router.post('/list', authenticateUserMiddleware, async (req, res) => {
   }
 });
 
-router.get('/:loanId/details', authenticateUserMiddleware, async (req, res) => {
-  try {
-    let loanId = req.params.loanId;
-    const [rows] = await db.query(
-      `
+router.post(
+  '/:loanId/updateStatus/confirmation',
+  authenticateUserMiddleware,
+  async (req, res) => {
+    try {
+      let { user_id } = req.user;
+      let data = req.body;
+      let loanId = req.params.loanId;
 
+      let { loan_status, approval_date, remarks } = data;
+      let loan_officer_id = user_id;
 
-      SELECT la.*, ba.* FROM loan la INNER 
-      JOIN borrower_account ba ON la.borrower_id = 
-      ba.borrower_id 
- 
-     where la.loan_application_id = ?
-       
+      console.log({ loan_officer_id });
+      const [rows] = await db.query(
+        `
+        UPDATE loan 
+        SET 
+          loan_status = ?, 
+          remarks = ?,
+          loan_officer_id = ? 
+        WHERE loan_application_id = ?;
+        `,
+        [loan_status, remarks, loan_officer_id, loanId]
+      );
 
-         
-         
-         
-         `,
-      [loanId]
-    );
+      await db.query(
+        `
+        UPDATE loan_application 
+        SET 
+          status = ?
+        WHERE application_id  = ?;
+        `,
+        [loan_status, loanId]
+      );
 
-    if (rows.length > 0) {
-      res.status(200).json({ success: true, data: rows[0] });
-    } else {
-      res.status(404).json({ message: 'No loans found for this user.' });
+      res.status(200).json({ success: true });
+
+      // if (rows.length > 0) {
+      //   res.status(200).json({ success: true, data: rows });
+      // } else {
+      //   res.status(404).json({ message: 'No loans found for this user.' });
+      // }
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ error: error });
     }
-  } catch (error) {
-    res
-      .status(500)
-      .json({ error: 'Error fetching loan list with borrower details' });
   }
-});
+);
 
 export default router;

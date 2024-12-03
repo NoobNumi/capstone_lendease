@@ -83,7 +83,9 @@ function Header() {
   return isLoaded && (
     // navbar fixed  flex-none justify-between bg-base-300  z-10 shadow-md
 
-    <div className="navbar sticky top-0 bg-white-100  z-10 text-slate-900 rounded-lg border bg-white">
+    <div className="navbar sticky top-0 
+    p-4 bg-gradient-to-r from-gray-200 to-gray-300
+      z-10 text-blue-950 border bg-white shadow-1xl">
       {/* Menu toogle for mobile view or small screen */}
       <div className="flex-1 p-4 p-4 ">
         <label

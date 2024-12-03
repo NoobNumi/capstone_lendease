@@ -110,12 +110,16 @@ function Login() {
       <div className="w-1/2 flex items-center justify-center relative ">
 
         {/* <TriangleGridBackground /> */}
-        <div className="w-full max-w-md p-8 space-y-6 shadow-lg bg-customBlue shadow-lg  rounded-lg shadow-lg p-6">
+        <div className="w-full max-w-md p-8 space-y-6 shadow-lg
+         bg-gradient-to-r from-gray-200 to-gray-300
+          shadow-lg 
+         
+         rounded-lg shadow-lg p-6">
 
           <h1
             className="text-xl font-bold leading-tight tracking-tight
-             text-gray-900 md:text-2xl dark:text-white text-center text-white">
-            Borrower Log In
+             text-gray-900 md:text-2xl dark:text-white text-center text-blue-950">
+            Login
           </h1>
           <div>
             <Formik {...formikConfig}>
@@ -132,7 +136,7 @@ function Login() {
                     <InputText
                       icons={mdiAccount}
                       label="Username"
-                      labelColor="text-white"
+                      labelColor="text-blue-950"
                       name="email"
                       type="text"
                       placeholder=""
@@ -143,7 +147,7 @@ function Login() {
                     <div className="relative">
                       <InputText
                         icons={mdiLockOutline}
-                        labelColor="text-white"
+                        labelColor="text-blue-950"
                         label="Password"
                         name="password"
                         type={showPassword ? "text" : "password"} // Change type based on visibility
@@ -166,12 +170,13 @@ function Login() {
                         )}
                       </button>
                     </div>
-                    <div class="text-right text-primary"><a href="/forgot-password"><span class="text-sm  text-white inline-block  hover:text-buttonPrimary  hover:underline hover:cursor-pointer transition duration-200">Forgot Password?</span></a></div>
+                    <div class="text-right text-blue-950">
+                      <a href="/forgot-password"><span class="text-sm  text-blue-950 inline-block  hover:text-buttonPrimary  hover:underline hover:cursor-pointer transition duration-200">Forgot Password?</span></a></div>
 
                     <button
                       type="submit"
                       className={
-                        'btn mt-2 w-full bg-buttonPrimary font-bold text-white' +
+                        'btn mt-2 w-full bg-blue-950 font-bold text-white' +
                         (loading ? ' loading' : '')
                       }>
                       Sign in
@@ -192,11 +197,28 @@ function Login() {
           </div>
         </div>
       </div>
-      <div
-        className="md:w-1/2 bg-cover bg-center h-64 md:h-auto"
-        style={{
-          backgroundImage: "url('/Secure login-pana.png')"
-        }}></div>
+      <div className="hidden md:block w-1/2  bg-gradient-to-r from-gray-100 to-blue-900
+      z-10 text-blue-950 border bg-white  relative flex items-center justify-center">
+        {/* Triangle Decorations */}
+
+        {/* Centered Circle with Text */}
+        <div className="relative w-full h-screen ">
+          <div className="absolute top-10 left-10 w-0 h-0 border-l-[50px] border-l-transparent border-b-[100px] border-b-red-500 border-r-[50px] border-r-transparent"></div>
+          <div className="absolute top-1/4 right-20 w-0 h-0 border-l-[60px] border-l-transparent border-b-[120px] border-b-blue-500 border-r-[60px] border-r-transparent"></div>
+          <div className="absolute bottom-16 left-1/3 w-0 h-0 border-l-[70px] border-l-transparent border-b-[140px] border-b-green-500 border-r-[70px] border-r-transparent"></div>
+          <div className="absolute bottom-10 right-10 w-0 h-0 border-l-[40px] border-l-transparent border-b-[80px] border-b-yellow-500 border-r-[40px] border-r-transparent"></div>
+
+          {/* Centered Circle */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-950 text-white w-72 h-72 flex flex-col items-center justify-center text-center clip-hexagon p-10">
+            <h2 className="text-xl font-bold">APPLY FOR A LOAN</h2>
+            <p className="text-sm mt-2">Get started with your loan application in just a few minutes.</p>
+            <button className="mt-4 bg-white text-blue-950 py-2 px-6 rounded-full font-bold">
+              Apply Now
+            </button>
+          </div>
+        </div>
+
+      </div>
       <ToastContainer />
     </div>
   );

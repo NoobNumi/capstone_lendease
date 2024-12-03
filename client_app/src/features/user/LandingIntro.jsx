@@ -11,14 +11,14 @@ function LandingIntro() {
               className="w-12 inline-block mr-2 mask mask-circle"
               alt=""
             /> */}
-            De Asis Jewelry
+
           </h1>
 
           <div className="text-center mt-12" >
-            <img
+            {/* <img
               src="./../Log In Page.png"
               alt=""
-              className="w-48 inline-block rounded-lg"></img>
+              className="w-48 inline-block rounded-lg"></img> */}
           </div>
 
           {/* Importing pointers component */}

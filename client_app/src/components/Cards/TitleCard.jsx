@@ -1,6 +1,11 @@
 import Subtitle from '../Typography/Subtitle';
 
-function TitleCard({ title, children, topMargin, TopSideButtons }) {
+import Table, {
+
+  StatusPill,
+
+} from '../../pages/protected/DataTables/Table';
+function TitleCard({ title, children, topMargin, TopSideButtons, titleBadge = false }) {
   return (
     <div
       className={
@@ -8,7 +13,10 @@ function TitleCard({ title, children, topMargin, TopSideButtons }) {
       }>
       {/* Title for Card */}
       <Subtitle styleClass={TopSideButtons ? 'inline-block' : ''}>
-        {title}
+        {
+
+          !!titleBadge ? <StatusPill value={title} /> :
+            title}
 
         {/* Top side button, show only if present */}
         {TopSideButtons && (

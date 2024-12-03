@@ -42,12 +42,12 @@ function LeftSidebar() {
 
   return isLoaded && (
 
-    <div className="drawer-side text-white bg-customBlue h-screen w-60">
+    <div className="drawer-side text-white bg-blue-950 h-screen w-60">
       <label htmlFor="left-sidebar-drawer" className="drawer-overlay"></label>
       {/* <div className=" mx-auto flex items-center justify-center mb-8 mt-4">
         <img src="/A.V. Logo.png" alt="Logo" className="w-30 h-24" />
       </div> */}
-      <hr class="border-t-2 border-white mx-auto w-1/2 my-2"></hr>
+      {/* <hr class="border-t-2 border-white mx-auto w-1/2 my-2"></hr> */}
       <div className=" mx-auto flex items-center justify-center mb-3 mt-6">
         <img
           src={selectedUser?.profilePic || 'https://img.freepik.com/premium-vector/young-smiling-man-avatar-man-with-brown-beard-mustache-hair-wearing-yellow-sweater-sweatshirt-3d-vector-people-character-illustration-cartoon-minimal-style_365941-860.jpg?w=740'}
@@ -56,7 +56,7 @@ function LeftSidebar() {
         />
       </div>
 
-      <ul className="menu bg-customBlue text-white items-center justify-between mx-auto ">
+      <ul className="menu bg-blue-950 text-white items-center justify-between mx-auto ">
         <button
           className="btn btn-ghost bg-base-300 btn-circle z-50 top-0 right-0 mt-4 mr-2 absolute lg:hidden"
           onClick={() => close()}>

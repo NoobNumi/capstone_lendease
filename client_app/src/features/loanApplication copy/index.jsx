@@ -79,8 +79,8 @@ import { FaCheckCircle } from "react-icons/fa"; // Font Awesome icon
 import LoanCalculator from "./loanCalculator";
 import { format, formatDistance, formatRelative, subDays } from 'date-fns';
 
-import { formatAmount } from './../../features/dashboard/helpers/currencyFormat';
-const TopSideButtons = ({ removeFilter, applyFilter, applySearch, myLoanList }) => {
+import { formatAmount } from '../dashboard/helpers/currencyFormat';
+const TopSideButtons = ({ removeFilter, applyFilter, applySearch, faqList }) => {
   const [filterParam, setFilterParam] = useState('');
   const [searchText, setSearchText] = useState('');
 
@@ -120,9 +120,9 @@ const TopSideButtons = ({ removeFilter, applyFilter, applySearch, myLoanList }) 
           <XMarkIcon className="w-4 ml-2" />
         </button>
       )} */}
-      <div className="badge badge-neutral mr-2 px-4 p-4 bg-white text-blue-950">Total : {myLoanList.length}</div>
+      <div className="badge badge-neutral mr-2 px-2 p-4">Total : {faqList.length}</div>
 
-      <button className="btn btn-outline bg-blue-950 text-white" onClick={() => document.getElementById('addLoan').showModal()}>
+      <button className="btn btn-outline btn-sm" onClick={() => document.getElementById('addLoan').showModal()}>
         Add
         <PlusCircleIcon className="h-6 w-6 text-white-500" />
       </button>
@@ -545,34 +545,40 @@ function LoanApplication() {
 
     return {
       initialValues: {
-
-        "loan_type": "",
-        "first_name": "",
-        "middle_name": "",
-        "last_name": "",
+        "loan_type": "GOVERNMENT AND PRIVATE EMPLOYEES LOAN",
+        "first_name": "Dexter",
+        "middle_name": "Bequillo",
+        "last_name": "Miranda",
         "work": "",
-        "address_region": "",
-        "address_province": "",
-        "address_city": "",
-        "address_barangay": "",
-        "residence_type": "",
-        "work_type": "",
-        "position": "",
-        "status": "",
-        "agency_name": "",
+        "address_region": "05",
+        "address_province": "0505",
+        "address_city": "050506",
+        "address_barangay": "050506062",
+        "residence_type": "OWN",
+        "work_type": "Private Employee",
+        "position": "Programmer",
+        "status": "Working",
+        "agency_name": "None",
         "school_name": "",
-        "pensioner": "",
+        "pensioner": "NO",
         "monthly_pension": "",
-        "loan_type_specific": "",
-        "proposed_loan_amount": "",
-        "installment_duration": "",
-        "loan_security": "",
-        "numberField": "",
-        "borrowerValidID": null,
-        "bankStatement": null,
-        "coMakersValidID": null,
-
-
+        "loan_type_specific": "OTHERS",
+        "proposed_loan_amount": 20000,
+        "installment_duration": "1",
+        "loan_security": "BDO-123",
+        "numberField": 1,
+        "borrowerValidID": {
+          "path": "./BANBAN ENTRANCE.jpg",
+          "relativePath": "./BANBAN ENTRANCE.jpg"
+        },
+        "bankStatement": {
+          "path": "./EAST-VALENCIA Entrance.jpg",
+          "relativePath": "./EAST-VALENCIA Entrance.jpg"
+        },
+        "coMakersValidID": {
+          "path": "./OLD Poblacion Entrance.jpg",
+          "relativePath": "./OLD Poblacion Entrance.jpg"
+        },
         calculatorLoanAmmount: 20000,
         calculatorInterestRate: 36,
         calculatorMonthsToPay: 6,
@@ -761,7 +767,7 @@ function LoanApplication() {
           applySearch={applySearch}
           applyFilter={applyFilter}
           removeFilter={removeFilter}
-          myLoanList={myLoanList}
+          faqList={faqList}
         />
       }>
       <div className="">
@@ -772,10 +778,8 @@ function LoanApplication() {
               {/* if there is a button in form, it will close the modal */}
               <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
             </form>
-            <h1 className="font-bold text-lg  p-4 
- bg-gradient-to-r from-gray-200 to-gray-300
-      z-10 text-blue-950 border bg-white
-             rounded">New Loan Application</h1>
+            <h1 className="font-bold text-lg  p-4 bg-gradient-to-r from-gray-200 to-gray-300
+      z-10 text-blue-950">New Loan Application</h1>
             <p className="text-sm text-gray-500 mt-1 font-bold"></p>
             <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
               <Formik {...formikConfig()}>
@@ -1308,7 +1312,6 @@ function LoanApplication() {
                     <div>
                       <Form className="">
                         <LoanCalculator
-                          isReadOnly={false}
                           values={values}
                           setFieldValue={setFieldValue}
                           handleBlur={handleBlur}
@@ -1316,6 +1319,7 @@ function LoanApplication() {
                           calculatorInterestRate={values.calculatorInterestRate}
                           calculatorMonthsToPay={values.calculatorMonthsToPay}
                           calculatorTotalAmountToPay={values.calculatorTotalAmountToPay}
+                          isReadOnly={false}
                         />
                       </Form>
                     </div>
@@ -1479,8 +1483,7 @@ function LoanApplication() {
                           {steps[currentStep].content()}
                           <div className="flex justify-between mt-4">
                             {currentStep > 0 && (
-                              <button onClick={prevStep}
-                                className="btn  bg-gray-200 text-black">
+                              <button onClick={prevStep} className="btn  bg-gray-200 text-black">
                                 Previous
                               </button>
                             )}
@@ -1531,14 +1534,14 @@ function LoanApplication() {
             >✕</button>
 
             <div className="modal-header flex items-center justify-between p-4 bg-gradient-to-r from-gray-200 to-gray-300
-      z-10 text-blue-950 border bg-white text-blue-950  rounded-t-lg">
-              <h1 className="text-xl font-bold">Loan Details</h1>
+      z-10 text-blue-950 text-white rounded-t-lg">
+              <h1 className="text-xl font-semibold">Loan Details</h1>
 
             </div>
 
             <p className="text-sm text-gray-500 mt-1 font-bold"></p>
             <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
-              <StatusPill value={selectedLoan.loan_status} />
+
               {selectedLoan.loan_application_id && <Formik
                 initialValues={{
                   calculatorLoanAmmount: parseFloat(selectedLoan.loan_amount),

@@ -13,7 +13,7 @@ const MyTextInput = ({
   itemClass,
   required, // Add required prop
   isRequired = false,
-  isReadOnly,
+  isReadOnly = false,
   ...props
 
 }) => {
@@ -25,6 +25,8 @@ const MyTextInput = ({
   const [field, meta] = useField(props);
 
 
+  console.log({ isReadOnly })
+
 
   let controlClassName = [
     'px-3 py-2 max-w-full border-gray-700 rounded w-full dark:placeholder-gray-400',
@@ -35,7 +37,9 @@ const MyTextInput = ({
     props.hasTextareaHeight ? 'h-24' : 'h-12',
     props.isBorderless ? 'border-0' : 'border',
     props.isTransparent ? 'bg-transparent' : 'bg-white dark:bg-slate-800',
-    props.isReadOnly ? '' : '',
+    isReadOnly ? `
+  px-3 py-2 max-w-full border-0 border-red-600 rounded-md w-full text-gray-800 bg-white dark:bg-gray-900 dark:text-gray-300 dark:placeholder-red-600 read-only:bg-gray-100 read-only:border-gray-400 read-only:text-gray-500
+  ` : '',
 
     'rounded-lg',
     '',

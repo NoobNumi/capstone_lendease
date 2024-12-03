@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 
 import config from './config.js';
-
+import loanAdminRoute from './routes/admin/loan.js';
 import loanRoute from './routes/loan.js';
 import userRoute from './routes/userRoute.js';
 import adminRoute from './routes/admin/admin.js';
@@ -47,6 +47,8 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/loan', loanRoute);
+app.use('/api/admin/loan', loanAdminRoute);
+
 app.use('/api/user', userRoute);
 app.use('/api/admin', adminRoute);
 app.use('/api/auth', authRoute);

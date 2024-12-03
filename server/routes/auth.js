@@ -24,7 +24,13 @@ router.post('/login', async (req, res, next) => {
 
     // Query the user by email
     const [rows] = await mySqlDriver.execute(
-      'SELECT * FROM user_account WHERE username = ?',
+      `
+  SELECT ua.*, ur.role_name as role
+  FROM user_account ua
+  INNER JOIN user_role ur
+    ON ua.role_id = ur.role_id
+  WHERE ua.username = ?
+  `,
       [email]
     );
 
@@ -44,21 +50,42 @@ router.post('/login', async (req, res, next) => {
     // Generate JWT token
     const accessToken = generateAccessToken(user);
 
+    console.log({ accessToken });
+
     // Send response with token
 
     res.json({
       success: true,
       token: accessToken,
       data: {
-        role: 'borrower',
-        userId: user.user_id,
-        email: user.username
+        // role: 'borrower',
+        // userId: user.user_id,
+        // email: user.username
       }
     });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
+});
+
+router.post('/logout', async (req, res) => {
+  // Assuming the client stores the token in local storage or cookies
+  // You can respond with a message instructing the client to delete the token
+
+  let loggedInUser = req.user;
+
+  console.log({ loggedInUser });
+
+  // await auditTrailMiddleware({
+  //   employeeId: loggedInUser.EmployeeID,
+  //   action: 'Logout'
+  // });
+  res.json({
+    success: true,
+    message:
+      'Logged out successfully. Please remove your access token from storage.'
+  });
 });
 
 router.post('/forgetPassword', async (req, res, next) => {

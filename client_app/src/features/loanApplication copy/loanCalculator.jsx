@@ -98,7 +98,7 @@ const LoanCalculator = memo(({
               setLoanAmount(Number(e.target.value))
               setFieldValue('calculatorLoanAmmount', e.target.value)
             }}
-            isReadOnly={isReadOnly}
+            isReadOnly
 
 
 
@@ -126,8 +126,7 @@ const LoanCalculator = memo(({
               setInterestRate(Number(e.target.value))
               setFieldValue('calculatorInterestRate', e.target.value)
             }}
-            isReadOnly={isReadOnly}
-
+            isReadOnly
           />
 
         </div>
@@ -154,7 +153,7 @@ const LoanCalculator = memo(({
               setLoanDuration(Number(e.target.value))
               setFieldValue('calculatorMonthsToPay', e.target.value)
             }}
-            isReadOnly={isReadOnly}
+            isReadOnly
           />
 
         </div>

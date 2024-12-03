@@ -28,6 +28,8 @@ const AppRoutes = () => {
       const decoded = jwtDecode(token);
       let role = decoded.role;
 
+      // console.log({ decoded })
+
 
 
 
@@ -43,20 +45,98 @@ const AppRoutes = () => {
 
 
 
+      if (role === 'borrower') {
+        newRoutes.push({
+          path: '/app/dashboard',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'Dashboard',
+        });
 
-      newRoutes.push({
-        path: '/app/dashboard',
-        icon: <Squares2X2Icon className={iconClasses} />,
-        name: 'Dashboard',
-      });
+      }
 
 
 
-      newRoutes.push({
-        path: '/app/loan_application',
-        icon: <Squares2X2Icon className={iconClasses} />,
-        name: 'Loan Application',
-      });
+      if (role === 'Borrower') {
+        newRoutes.push({
+          path: '/app/dashboard',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'Dashboard',
+        });
+        newRoutes.push({
+          path: '/app/profile',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'Profile',
+        });
+
+
+        newRoutes.push({
+          path: '/app/loan_application',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'My Loans',
+        });
+        newRoutes.push({
+          path: '/app/payments',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'Payments',
+        });
+
+        newRoutes.push({
+          path: '/app/docs',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'Documents and Resources',
+        });
+      }
+
+      if (role === 'Loan Officer') {
+
+
+        newRoutes.push({
+          path: '/app/dashboard',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'Dashboard',
+        });
+
+        newRoutes.push({
+          path: '/app/loan_management',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'Loan Management',
+        });
+
+        newRoutes.push({
+          path: '/app/payments',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'Payments',
+        });
+
+        newRoutes.push({
+          path: '/app/borrowers',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'Borrowers',
+        });
+
+        newRoutes.push({
+          path: '/app/sms_logs',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'SMS Logs',
+        });
+
+
+        newRoutes.push({
+          path: '/app/online_forms',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'Online Forms',
+        });
+
+        // newRoutes.push({
+        //   path: '/app/loan_details/:loanId',
+        //   icon: <Squares2X2Icon className={iconClasses} />,
+        //   name: 'Loan Details',
+        // });
+
+
+      }
+
+
 
 
       if (result.includes('Employees Page')) {
@@ -103,11 +183,11 @@ const AppRoutes = () => {
       }
 
 
-      newRoutes.push({
-        path: '/app/faq',
-        icon: <QuestionMarkCircleIcon className={iconClasses} />,
-        name: 'FAQ',
-      });
+      // newRoutes.push({
+      //   path: '/app/faq',
+      //   icon: <QuestionMarkCircleIcon className={iconClasses} />,
+      //   name: 'FAQ',
+      // });
 
       if (result.includes('Settings') && role === 'super_admin') {
         newRoutes.push({
@@ -146,7 +226,7 @@ const AppRoutes = () => {
                 end
                 to={route.path}
                 className={({ isActive }) =>
-                  `${isActive ? 'font-bold text-white ' : ''}`
+                  `${isActive ? 'font-bold text-white bg-blue-900 shadow-2xl' : ''}`
                 }>
                 {route.icon} {route.name}
                 {location.pathname === route.path ? (
