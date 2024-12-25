@@ -778,8 +778,7 @@ function LoanApplication() {
               {/* if there is a button in form, it will close the modal */}
               <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
             </form>
-            <h1 className="font-bold text-lg  p-4 bg-gradient-to-r from-gray-200 to-gray-300
-      z-10 text-blue-950">New Loan Application</h1>
+            <h1 className="font-bold text-lg  p-4 bg-gradient-to-r from-blue-500 to-blue-700">New Loan Application</h1>
             <p className="text-sm text-gray-500 mt-1 font-bold"></p>
             <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
               <Formik {...formikConfig()}>
@@ -1533,8 +1532,7 @@ function LoanApplication() {
 
             >✕</button>
 
-            <div className="modal-header flex items-center justify-between p-4 bg-gradient-to-r from-gray-200 to-gray-300
-      z-10 text-blue-950 text-white rounded-t-lg">
+            <div className="modal-header flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg">
               <h1 className="text-xl font-semibold">Loan Details</h1>
 
             </div>

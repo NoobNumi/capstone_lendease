@@ -25,7 +25,6 @@ const MyTextInput = ({
   const [field, meta] = useField(props);
 
 
-  console.log({ isReadOnly })
 
 
   let controlClassName = [

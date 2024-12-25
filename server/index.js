@@ -7,6 +7,7 @@ import loanRoute from './routes/loan.js';
 import userRoute from './routes/userRoute.js';
 import adminRoute from './routes/admin/admin.js';
 import authRoute from './routes/auth.js';
+import smsRoute from './routes/sms.js';
 import bodyParser from 'body-parser';
 
 import path from 'path';
@@ -52,6 +53,7 @@ app.use('/api/admin/loan', loanAdminRoute);
 app.use('/api/user', userRoute);
 app.use('/api/admin', adminRoute);
 app.use('/api/auth', authRoute);
+app.use('/api/sms', smsRoute);
 
 app.use(express.static('public'));
 app.use(express.static('files'));

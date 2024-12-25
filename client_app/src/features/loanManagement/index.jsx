@@ -351,7 +351,12 @@ function LoanApplication() {
         Header: 'Date Approved',
         accessor: 'approval_date',
         Cell: ({ row, value }) => {
-          return <span className="">{value}</span>;
+          return <span className="">
+
+            {value &&
+              format(value, 'MMM dd, yyyy hh:mm a')}
+
+          </span>;
         }
       },
       {

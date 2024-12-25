@@ -28,6 +28,10 @@ const ProfileSettings = lazy(() =>
 
 const UserProfile = lazy(() => import('../pages/UserProfile'));
 
+const SMSLogs = lazy(() => import('../pages/SMSLogs'));
+
+
+
 const GettingStarted = lazy(() => import('../pages/GettingStarted'));
 const DocFeatures = lazy(() => import('../pages/DocFeatures'));
 const DocComponents = lazy(() => import('../pages/DocComponents'));
@@ -140,6 +144,10 @@ routes = [
   {
     path: '/loan_details/:loanId',
     component: LoanDetails
+  },
+  {
+    path: '/sms_logs',
+    component: SMSLogs
   },
 
 

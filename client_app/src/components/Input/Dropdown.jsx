@@ -40,6 +40,8 @@ const MyTextInput = ({
     ''
   ].join(' ');
 
+  console.log({hasTextareaHeight})
+
   return (
     <>
       <div className="mb-6 last:mb-0">

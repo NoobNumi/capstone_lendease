@@ -321,11 +321,13 @@ function ImageModal({ isOpen, onClose, imageSrc }) {
 
 
 const TopSideButtons = ({ removeFilter, applyFilter, applySearch,
-  faqList, formikProps }) => {
+  faqList, formikProps, loanDetails }) => {
   const [filterParam, setFilterParam] = useState('');
   const [searchText, setSearchText] = useState('');
 
   const locationFilters = [''];
+
+  console.log({ loanDetails })
 
   const showFiltersAndApply = params => {
     applyFilter(params);
@@ -373,81 +375,83 @@ const TopSideButtons = ({ removeFilter, applyFilter, applySearch,
   return (
     <div className="inline-block float-right">
 
+      {
 
-      <div className="flex space-x-4">
-        {/* Approve Button */}
-        <button
-          className="btn flex items-center font-bold text-white bg-customBlue rounded-md 
-      "
-          onClick={() => {
-            // handleButtonClick("approve")
-            formikProps.setFieldValue('status', 'Approved')
-            document.getElementById('confirmationModal').showModal()
-          }}
-        >
-          <CheckCircle className="w-5 h-5 mr-2" />
-          Approve
-        </button>
+        loanDetails.loan_status !== 'Approved' && <div className="flex space-x-4">
+          {/* Approve Button */}
+          <button
+            className="btn flex items-center font-bold text-white bg-customBlue rounded-md 
+"
+            onClick={() => {
+              // handleButtonClick("approve")
+              formikProps.setFieldValue('status', 'Approved')
+              document.getElementById('confirmationModal').showModal()
+            }}
+          >
+            <CheckCircle className="w-5 h-5 mr-2" />
+            Approve
+          </button>
 
-        {/* Decline Button */}
-        <button
-          className="btn items-center px-4 py-2 font-bold text-white bg-red-500 rounded-md 
-          "
-          onClick={() => {
-            // handleButtonClick("decline") 
-            formikProps.setFieldValue('status', 'Rejected')
-            document.getElementById('confirmationModal').showModal()
-          }}
-        >
-          <XCircle className="w-5 h-5 mr-2" />
-          Reject
-        </button>
+          {/* Decline Button */}
+          <button
+            className="btn items-center px-4 py-2 font-bold text-white bg-red-500 rounded-md 
+  "
+            onClick={() => {
+              // handleButtonClick("decline") 
+              formikProps.setFieldValue('status', 'Rejected')
+              document.getElementById('confirmationModal').showModal()
+            }}
+          >
+            <XCircle className="w-5 h-5 mr-2" />
+            Reject
+          </button>
 
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
-            <div className="p-3 bg-white rounded-md shadow-md">
+          {isModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
+              <div className="p-3 bg-white rounded-md shadow-md">
 
-              <div className="modal-header flex items-center justify-between p-4 
-              bg-gradient-to-r from-gray-200 to-gray-300
-      z-10 text-blue-950 text-white rounded-t-lg">
-                <h1 className="text-xl font-semibold">{modalMessage}</h1>
+                <div className="modal-header flex items-center justify-between p-4 
+      bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg">
+                  <h1 className="text-xl font-semibold">{modalMessage}</h1>
 
-              </div>
-              <TextAreaInput
-                isRequired
-                label="Remarks"
-                name="remarks"
-                type="text"
-                // hasTextareaHeight={true}
-                placeholder=""
-                value={formikProps.values.remarks}
+                </div>
+                <TextAreaInput
+                  isRequired
+                  label="Remarks"
+                  name="remarks"
+                  type="text"
+                  // hasTextareaHeight={true}
+                  placeholder=""
+                  value={formikProps.values.remarks}
 
-              />
-              <div className="flex justify-end mt-4 space-x-4">
-                <button
-                  className="btn rounded-md hover:bg-gray-600 
-                  focus:outline-none"
-                  onClick={closeModal}
-                >
-                  Cancel
-                </button>
-                <button
-                  type='submit'
-                  className="btn text-white bg-customBlue rounded-md "
-                  onClick={() => {
-                    formikProps.handleSubmit()
-                    // alert("Action Confirmed!");
-                    // closeModal();
-                  }}
-                >
-                  Confirm
-                </button>
+                />
+                <div className="flex justify-end mt-4 space-x-4">
+                  <button
+                    className="btn rounded-md hover:bg-gray-600 
+          focus:outline-none"
+                    onClick={closeModal}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type='submit'
+                    className="btn text-white bg-customBlue rounded-md "
+                    onClick={() => {
+                      formikProps.handleSubmit()
+                      // alert("Action Confirmed!");
+                      // closeModal();
+                    }}
+                  >
+                    Confirm
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-      </div>
+        </div>
+      }
+
 
       {/* 
       <button
@@ -812,7 +816,7 @@ function LoanApplication() {
 
 
 
-  return (
+  return isLoaded && (
     <Formik {...formikConfig()}>
       {(formikProps) => {
         return <TitleCard
@@ -826,6 +830,7 @@ function LoanApplication() {
               removeFilter={removeFilter}
               faqList={faqList}
               formikProps={formikProps}
+              loanDetails={loanDetails}
             />
           }
         >
@@ -859,8 +864,7 @@ function LoanApplication() {
 
               >✕</button>
 
-              {/* <div className="modal-header flex items-center justify-between p-4 bg-gradient-to-r from-gray-200 to-gray-300
-      z-10 text-blue-950 text-white rounded-t-lg">
+              {/* <div className="modal-header flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg">
                 <h1 className="text-xl font-semibold">Confirmation</h1>
 
               </div> */}

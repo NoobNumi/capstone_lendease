@@ -24,7 +24,6 @@ function Header() {
   const [selectedUser, setSelectedUser] = useState({});
   const [isLoaded, setIsLoaded] = useState(false);
 
-  console.log({ loggedInUser })
 
   const getUser = async () => {
     let res = await axios({

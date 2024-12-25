@@ -5,7 +5,8 @@ import SidebarSubmenu from './SidebarSubmenu';
 import XMarkIcon from '@heroicons/react/24/outline/XMarkIcon';
 import { useDispatch } from 'react-redux';
 import axios from 'axios';
-
+import { jwtDecode } from 'jwt-decode';
+import checkAuth from '../app/auth';
 function LeftSidebar() {
   const location = useLocation();
 
@@ -16,10 +17,17 @@ function LeftSidebar() {
 
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // console.log({ loggedInUser })
+
   const getUser = async () => {
+
+    const token = checkAuth();
+    const decoded = jwtDecode(token);
+    let user_id = decoded.user_id;
+
     let res = await axios({
       method: 'GET',
-      url: `user/${1}`
+      url: `user/${user_id}`
     });
     let user = res.data.data;
 
@@ -28,6 +36,9 @@ function LeftSidebar() {
     setSelectedUser(user);
     setIsLoaded(true);
   };
+
+
+
 
   useEffect(() => {
     getUser();
@@ -38,7 +49,7 @@ function LeftSidebar() {
     document.getElementById('left-sidebar-drawer').click();
   };
 
-  console.log({ selectedUser })
+  // console.log({ selectedUser })
 
   return isLoaded && (
 
@@ -50,7 +61,7 @@ function LeftSidebar() {
       {/* <hr class="border-t-2 border-white mx-auto w-1/2 my-2"></hr> */}
       <div className=" mx-auto flex items-center justify-center mb-3 mt-6">
         <img
-          src={selectedUser?.profilePic || 'https://img.freepik.com/premium-vector/young-smiling-man-avatar-man-with-brown-beard-mustache-hair-wearing-yellow-sweater-sweatshirt-3d-vector-people-character-illustration-cartoon-minimal-style_365941-860.jpg?w=740'}
+          src={selectedUser?.profile_pic || 'https://img.freepik.com/premium-vector/young-smiling-man-avatar-man-with-brown-beard-mustache-hair-wearing-yellow-sweater-sweatshirt-3d-vector-people-character-illustration-cartoon-minimal-style_365941-860.jpg?w=740'}
           alt="Logo"
           className="w-24 h-24 rounded-full"
         />

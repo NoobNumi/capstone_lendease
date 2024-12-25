@@ -76,6 +76,10 @@ import {
 import { FaCheckCircle } from "react-icons/fa"; // Font Awesome icon
 
 
+
+
+import { jwtDecode } from 'jwt-decode';
+import checkAuth from '../../app/auth';
 import LoanCalculator from "./loanCalculator";
 import { format, formatDistance, formatRelative, subDays } from 'date-fns';
 
@@ -199,35 +203,13 @@ function LoanApplication() {
 
 
 
+
   const [addressRegions, setRegions] = useState([]);
   const [addressProvince, setProvince] = useState([]);
   const [addressCity, setCity] = useState([]);
   const [addressBarangay, setBarangay] = useState([]);
 
   const [myLoanList, setLoanList] = useState([]);
-
-  const prepareAddress = async () => {
-    await regions().then(region => {
-
-      console.log({ region })
-      setRegions(
-        region.map(r => {
-          return {
-            value: r.region_code,
-            label: r.region_name
-          };
-        })
-      );
-    });
-    // await regionByCode('01').then(region => console.log(region.region_name));
-    await provinces().then(province => console.log(province));
-    // await provincesByCode('01').then(province => console.log(province));
-    // await provinceByName('Rizal').then(province =>
-    //   console.log(province.province_code)
-    // );
-    await cities().then(city => console.log(city));
-    await barangays().then(barangays => console.log(barangays));
-  };
 
   const loanList = async () => {
 
@@ -248,9 +230,9 @@ function LoanApplication() {
   useEffect(() => {
 
 
-    prepareAddress();
+
     loanList()
-    setIsLoaded(true);
+
   }, []);
 
 
@@ -460,11 +442,114 @@ function LoanApplication() {
 
 
   const [currentStep, setCurrentStep] = useState(0);
-  const formikConfig = () => {
 
 
 
-    console.log({ currentStep })
+  const [selectedUser, setSelectedUser] = useState({});
+
+
+
+  const getUser = async () => {
+
+    const token = checkAuth();
+    const decoded = jwtDecode(token);
+    let user_id = decoded.user_id;
+
+    let res = await axios({
+      method: 'GET',
+      url: `user/${user_id}`
+    });
+    let user = res.data.data;
+
+
+
+
+    await regions().then(region => {
+      setRegions(
+        region.map(r => {
+          return {
+            value: r.region_code,
+            label: r.region_name
+          };
+        })
+      );
+    });
+
+    await provincesByCode(user.address_region).then(province => {
+
+
+
+
+      setProvince(
+        province.map(r => {
+          return {
+            value: r.province_code,
+            label: r.province_name
+          };
+        })
+      );
+    });
+
+
+    await cities(user.address_province).then(cities => {
+
+      setCity(
+        cities.map(r => {
+          return {
+            value: r.city_code,
+            label: r.city_name
+          };
+        })
+      );
+    });
+    await barangays(user.address_city).then(barangays => {
+      setBarangay(
+        barangays.map(r => {
+          return {
+            value: r.brgy_code,
+            label: r.brgy_name
+          };
+        })
+      );
+    });
+
+
+
+    setSelectedUser(user);
+    setIsLoaded(true)
+
+  };
+
+
+
+
+  useEffect(() => {
+    getUser();
+
+
+
+
+    console.log({ selectedUser })
+    // prepareAddress(selectedUser)
+
+
+
+    // setIsLoaded(true);
+    //console.log({ selectedUser: selectedUser });
+  }, []);
+
+
+
+
+
+
+
+  const formikConfig = (selectedUser) => {
+
+    console.log({ selectedUser })
+
+
+
 
     let PersonalInfoTabValidation = {};
 
@@ -547,14 +632,14 @@ function LoanApplication() {
       initialValues: {
 
         "loan_type": "",
-        "first_name": "",
-        "middle_name": "",
-        "last_name": "",
+        first_name: selectedUser.first_name,
+        middle_name: selectedUser.middle_name,
+        last_name: selectedUser.last_name,
         "work": "",
-        "address_region": "",
-        "address_province": "",
-        "address_city": "",
-        "address_barangay": "",
+        "address_region": selectedUser.address_region,
+        "address_province": selectedUser.address_province,
+        "address_city": selectedUser.address_city,
+        "address_barangay": selectedUser.address_barangay,
         "residence_type": "",
         "work_type": "",
         "position": "",
@@ -752,7 +837,7 @@ function LoanApplication() {
 
 
   return (
-
+    isLoaded &&
     <TitleCard
       title="List"
       topMargin="mt-2"
@@ -778,511 +863,512 @@ function LoanApplication() {
              rounded">New Loan Application</h1>
             <p className="text-sm text-gray-500 mt-1 font-bold"></p>
             <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
-              <Formik {...formikConfig()}>
-                {({
-                  validateForm,
-                  handleSubmit,
-                  handleChange,
-                  handleBlur, // handler for onBlur event of form elements
-                  values,
-                  touched,
-                  errors,
-                  submitForm,
-                  setFieldTouched,
-                  setFieldValue,
-                  setFieldError,
-                  setErrors,
-                  isSubmitting
-                }) => {
+              {selectedUser.role &&
+                <Formik {...formikConfig(selectedUser)}>
+                  {({
+                    validateForm,
+                    handleSubmit,
+                    handleChange,
+                    handleBlur, // handler for onBlur event of form elements
+                    values,
+                    touched,
+                    errors,
+                    submitForm,
+                    setFieldTouched,
+                    setFieldValue,
+                    setFieldError,
+                    setErrors,
+                    isSubmitting
+                  }) => {
 
-                  const PersonalInfo = useMemo(() => (
-                    <div>
-                      <Form className="">
+                    const PersonalInfo = useMemo(() => (
+                      <div>
+                        <Form className="">
 
-                        <Radio
-                          isRequired
-                          label="Loan Type"
-                          name="loan_type" // This should be "loan_type"
-                          value={values.loan_type}
-                          setFieldValue={setFieldValue}
-                          onBlur={handleBlur}
-                          options={[
-                            { value: 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN', label: 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN' },
-                            { value: 'NON-EMPLOYEE LOAN', label: 'NON-EMPLOYEE LOAN' }
-                          ]}
-                        />
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-3 ">
-                          <InputText
+                          <Radio
                             isRequired
-                            placeholder=""
-                            label="Given Name"
-                            name="first_name"
-                            type="text"
-                            value={values.first_name} // Bind value to Formik state
-                            onBlur={handleBlur}
-                            onChange={(e) => {
-
-                              console.log(e.target.value)
-                              setFieldValue('first_name', e.target.value); // Use the input value
-                            }}
-                          />
-                          <InputText
-                            isRequired
-                            placeholder=""
-                            label="Middle Name"
-                            name="middle_name"
-                            type="middle_name"
-
-                            value={values.middle_name}
-                            onBlur={handleBlur} // This apparently updates `touched`?
-                          />
-                          <InputText
-                            isRequired
-                            placeholder=""
-                            label="Last Name"
-                            name="last_name"
-                            type="last_name"
-
-                            value={values.last_name}
-                            onBlur={handleBlur} // This apparently updates `touched`?
-                          />
-
-                        </div>
-
-                        <div className="z-50 grid grid-cols-1 gap-3 md:grid-cols-4 ">
-                          <Dropdown
-                            className="z-50"
-
-                            label="Region"
-                            name="address_region"
-                            value={values.address_region}
-
-                            onBlur={handleBlur}
-                            options={addressRegions}
-                            affectedInput="address_province"
-                            allValues={values}
-                            setFieldValue={setFieldValue}
-                            functionToCalled={async regionCode => {
-                              if (regionCode) {
-                                setFieldValue('address_province', '');
-                                await provincesByCode(regionCode).then(
-                                  province => {
-                                    setProvince(
-                                      province.map(p => {
-                                        return {
-                                          value: p.province_code,
-                                          label: p.province_name
-                                        };
-                                      })
-                                    );
-                                  }
-                                );
-                              }
-                            }}
-                          />
-
-                          <Dropdown
-                            className="z-50"
-
-                            label="Province"
-                            name="address_province"
-                            value={values.address_province}
-                            d
+                            label="Loan Type"
+                            name="loan_type" // This should be "loan_type"
+                            value={values.loan_type}
                             setFieldValue={setFieldValue}
                             onBlur={handleBlur}
-                            options={addressProvince}
-                            affectedInput="address_city"
-                            functionToCalled={async code => {
-                              if (code) {
-                                await cities(code).then(cities => {
-                                  setCity(
-                                    cities.map(p => {
-                                      return {
-                                        value: p.city_code,
-                                        label: p.city_name
-                                      };
-                                    })
-                                  );
-                                });
-                              }
-                            }}
+                            options={[
+                              { value: 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN', label: 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN' },
+                              { value: 'NON-EMPLOYEE LOAN', label: 'NON-EMPLOYEE LOAN' }
+                            ]}
                           />
-                          <Dropdown
-                            className="z-50"
-
-                            label="City"
-                            name="address_city"
-                            // value={values.civilStatus}
-                            setFieldValue={setFieldValue}
-                            onBlur={handleBlur}
-                            options={addressCity}
-                            affectedInput="address_barangay"
-                            functionToCalled={async code => {
-                              if (code) {
-                                await barangays(code).then(cities => {
-                                  setBarangay(
-                                    cities.map(p => {
-                                      console.log({ p });
-                                      return {
-                                        value: p.brgy_code,
-                                        label: p.brgy_name
-                                      };
-                                    })
-                                  );
-                                });
-                              }
-                            }}
-                          />
-                          <Dropdown
-                            className="z-50"
-
-                            label="Barangay"
-                            name="address_barangay"
-                            value={values.address_barangay}
-
-                            onBlur={handleBlur}
-                            options={addressBarangay}
-                            affectedInput=""
-                            functionToCalled={async code => { }}
-                            setFieldValue={setFieldValue}
-                          />
-                        </div>
-                        <Radio
-                          setFieldValue={setFieldValue}
-                          label="Residence Type"
-                          name="residence_type"
-                          placeholder=""
-                          value={values.residence_type}
-
-                          onBlur={handleBlur}
-                          options={[
-                            {
-                              name: 'OWN',
-                              displayName: 'Own'
-                            }, {
-                              name: 'RENT',
-                              displayName: 'Rent'
-                            }].map(val => {
-                              return {
-                                value: val.name,
-                                label: val.displayName
-                              };
-                            })}
-                        />
-                      </Form>
-                    </div>
-                  ), [currentStep, errors, values, addressRegions, addressProvince, addressCity, addressBarangay]);
-
-
-                  const AccountDetails = useMemo(() => (
-                    <div>
-
-
-                      <Form className="">
-                        {values.loan_type === 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN' && <div>
-                          <div class="flex justify-center items-center">
-                            <h1 class="text-center">{values.loan_type}</h1>
-                          </div>
-                          <div className="z-50 grid grid-cols-1 gap-3 md:grid-cols-2 ">
-
-                            <Dropdown
-                              // icons={mdiAccount}
-                              label="Work Type"
-                              name="work_type"
-                              placeholder=""
-                              value={values.work_type}
-                              setFieldValue={setFieldValue}
-                              onBlur={handleBlur}
-                              options={[
-                                {
-                                  name: 'Private Employee',
-                                  displayName: 'Private Employee'
-                                }, {
-                                  name: 'Public Employee',
-                                  displayName: 'Public Employee'
-                                }].map(val => {
-                                  return {
-                                    value: val.name,
-                                    label: val.displayName
-                                  };
-                                })}
-
-                            />
-
-
-                          </div>
                           <div className="grid grid-cols-1 gap-3 md:grid-cols-3 ">
                             <InputText
                               isRequired
                               placeholder=""
-                              label="Position"
-                              name="position"
-                              type="position"
-
-                              value={values.position}
-                              onBlur={handleBlur} // This apparently updates `touched`?
-                            />
-                            <InputText
-                              isRequired
-                              placeholder=""
-                              label="Status"
-                              name="status"
-                              type="status"
-
-                              value={values.status}
-                              onBlur={handleBlur} // This apparently updates `touched`?
-                            />
-                            <InputText
-                              isRequired
-                              placeholder=""
-                              label="Agency Name"
-                              name="agency_name"
-                              type="agency_name"
-
-                              value={values.agency_name}
-                              onBlur={handleBlur} // This apparently updates `touched`?
-                            />
-
-                          </div>
-                          <div className="grid grid-cols-1 gap-3 md:grid-cols-1 ">
-                            <InputText
-                              isRequired
-                              placeholder=""
-                              label="If a teacher, name of school presently assigned"
-                              name="name_of_school"
-                              type="name_of_school"
-
-                              value={values.name_of_school}
-                              onBlur={handleBlur} // This apparently updates `touched`?
-                            />
-
-                          </div>
-
-                          <div className="mt-4 z-50 grid grid-cols-1 gap-3 md:grid-cols-2 ">
-                            <div className='mt-2'>
-                              <Dropdown
-                                // icons={mdiAccount}
-                                label="Pensioner"
-                                name="pensioner"
-                                placeholder=""
-                                value={values.pensioner}
-                                setFieldValue={setFieldValue}
-                                onBlur={handleBlur}
-                                options={[
-                                  {
-                                    name: 'YES',
-                                    displayName: 'YES'
-                                  }, {
-                                    name: 'NO',
-                                    displayName: 'NO'
-                                  }].map(val => {
-                                    return {
-                                      value: val.name,
-                                      label: val.displayName
-                                    };
-                                  })}
-
-                              />
-
-                            </div>
-
-
-                            <InputText
-
-                              isRequired
-                              placeholder=""
-                              label="Amount of Monthly Pension"
-                              name="monthly_pension_amount"
-                              type="number"
-
-                              value={values.monthly_pension_amount}
-                              onBlur={handleBlur} // This apparently updates `touched`?
-                            />
-
-                          </div>
-                          <div className="mt-4 z-50 grid grid-cols-1 gap-3 md:grid-cols-2 ">
-                            <div className='mt-2'>
-                              <Dropdown
-                                // icons={mdiAccount}
-                                label="Type of Loan"
-                                name="loan_type_specific"
-                                placeholder=""
-                                value={values.loan_type_specific}
-
-                                onBlur={handleBlur}
-                                setFieldValue={setFieldValue}
-                                options={[
-                                  {
-                                    name: 'HOUSING LOAN',
-                                    displayName: 'HOUSING LOAN'
-                                  },
-                                  {
-                                    name: 'OTHERS',
-                                    displayName: 'OTHERS'
-                                  }].map(val => {
-                                    return {
-                                      value: val.name,
-                                      label: val.displayName
-                                    };
-                                  })}
-
-                              />
-
-                            </div>
-
-
-                            <InputText
-
-                              isRequired
-                              placeholder=""
-                              label="Proposed loan amount"
-                              name="proposed_loan_amount"
-                              type="number"
-
-                              value={values.proposed_loan_amount}
-                              onBlur={handleBlur} // This apparently updates `touched`?
-                            />
-
-                          </div>
-                          <div className="mt-4 z-50 grid grid-cols-1 gap-3 md:grid-cols-2 ">
-                            <div className='mt-2'>
-                              <Dropdown
-                                // icons={mdiAccount}
-                                label="Installment Duration (Months)"
-                                name="installment_duration"
-                                placeholder=""
-                                value={values.installment_duration}
-                                setFieldValue={setFieldValue}
-                                onBlur={handleBlur}
-                                options={[
-                                  {
-                                    name: '1',
-                                    displayName: '1'
-                                  },
-                                ].map(val => {
-                                  return {
-                                    value: val.name,
-                                    label: val.displayName
-                                  };
-                                })}
-
-                              />
-
-                            </div>
-
-
-                            <InputText
-
-                              isRequired
-                              placeholder=""
-                              label="No"
-                              name="numberField"
-                              type="number"
-
-                              value={values.numberField}
-                              onBlur={handleBlur} // This apparently updates `touched`?
-                            />
-
-                          </div>
-                          <div className="grid grid-cols-1 gap-3 md:grid-cols-1 mt-2">
-                            <InputText
-                              isRequired
-                              placeholder="ATM/Passbook number"
-                              label="Loan Security"
-                              name="loan_security"
+                              label="Given Name"
+                              name="first_name"
                               type="text"
+                              value={values.first_name} // Bind value to Formik state
+                              onBlur={handleBlur}
+                              onChange={(e) => {
 
-                              value={values.loan_security}
+                                console.log(e.target.value)
+                                setFieldValue('first_name', e.target.value); // Use the input value
+                              }}
+                            />
+                            <InputText
+                              isRequired
+                              placeholder=""
+                              label="Middle Name"
+                              name="middle_name"
+                              type="middle_name"
+
+                              value={values.middle_name}
+                              onBlur={handleBlur} // This apparently updates `touched`?
+                            />
+                            <InputText
+                              isRequired
+                              placeholder=""
+                              label="Last Name"
+                              name="last_name"
+                              type="last_name"
+
+                              value={values.last_name}
                               onBlur={handleBlur} // This apparently updates `touched`?
                             />
 
                           </div>
-                        </div>
-                        }
 
-                        {values.loan_type !== 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN' && <div>
+                          <div className="z-50 grid grid-cols-1 gap-3 md:grid-cols-4 ">
+                            <Dropdown
+                              className="z-50"
+
+                              label="Region"
+                              name="address_region"
+                              value={values.address_region}
+
+                              onBlur={handleBlur}
+                              options={addressRegions}
+                              affectedInput="address_province"
+                              allValues={values}
+                              setFieldValue={setFieldValue}
+                              functionToCalled={async regionCode => {
+                                if (regionCode) {
+                                  setFieldValue('address_province', '');
+                                  await provincesByCode(regionCode).then(
+                                    province => {
+                                      setProvince(
+                                        province.map(p => {
+                                          return {
+                                            value: p.province_code,
+                                            label: p.province_name
+                                          };
+                                        })
+                                      );
+                                    }
+                                  );
+                                }
+                              }}
+                            />
+
+                            <Dropdown
+                              className="z-50"
+
+                              label="Province"
+                              name="address_province"
+                              value={values.address_province}
+                              d
+                              setFieldValue={setFieldValue}
+                              onBlur={handleBlur}
+                              options={addressProvince}
+                              affectedInput="address_city"
+                              functionToCalled={async code => {
+                                if (code) {
+                                  await cities(code).then(cities => {
+                                    setCity(
+                                      cities.map(p => {
+                                        return {
+                                          value: p.city_code,
+                                          label: p.city_name
+                                        };
+                                      })
+                                    );
+                                  });
+                                }
+                              }}
+                            />
+                            <Dropdown
+                              className="z-50"
+
+                              label="City"
+                              name="address_city"
+                              // value={values.civilStatus}
+                              setFieldValue={setFieldValue}
+                              onBlur={handleBlur}
+                              options={addressCity}
+                              affectedInput="address_barangay"
+                              functionToCalled={async code => {
+                                if (code) {
+                                  await barangays(code).then(cities => {
+                                    setBarangay(
+                                      cities.map(p => {
+                                        console.log({ p });
+                                        return {
+                                          value: p.brgy_code,
+                                          label: p.brgy_name
+                                        };
+                                      })
+                                    );
+                                  });
+                                }
+                              }}
+                            />
+                            <Dropdown
+                              className="z-50"
+
+                              label="Barangay"
+                              name="address_barangay"
+                              value={values.address_barangay}
+
+                              onBlur={handleBlur}
+                              options={addressBarangay}
+                              affectedInput=""
+                              functionToCalled={async code => { }}
+                              setFieldValue={setFieldValue}
+                            />
+                          </div>
+                          <Radio
+                            setFieldValue={setFieldValue}
+                            label="Residence Type"
+                            name="residence_type"
+                            placeholder=""
+                            value={values.residence_type}
+
+                            onBlur={handleBlur}
+                            options={[
+                              {
+                                name: 'OWN',
+                                displayName: 'Own'
+                              }, {
+                                name: 'RENT',
+                                displayName: 'Rent'
+                              }].map(val => {
+                                return {
+                                  value: val.name,
+                                  label: val.displayName
+                                };
+                              })}
+                          />
+                        </Form>
+                      </div>
+                    ), [currentStep, errors, values, addressRegions, addressProvince, addressCity, addressBarangay]);
 
 
-                          <div class="flex justify-center items-center">
-                            <h1 class="text-center">{values.loan_type}</h1>
+                    const AccountDetails = useMemo(() => (
+                      <div>
+
+
+                        <Form className="">
+                          {values.loan_type === 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN' && <div>
+                            <div class="flex justify-center items-center">
+                              <h1 class="text-center">{values.loan_type}</h1>
+                            </div>
+                            <div className="z-50 grid grid-cols-1 gap-3 md:grid-cols-2 ">
+
+                              <Dropdown
+                                // icons={mdiAccount}
+                                label="Work Type"
+                                name="work_type"
+                                placeholder=""
+                                value={values.work_type}
+                                setFieldValue={setFieldValue}
+                                onBlur={handleBlur}
+                                options={[
+                                  {
+                                    name: 'Private Employee',
+                                    displayName: 'Private Employee'
+                                  }, {
+                                    name: 'Public Employee',
+                                    displayName: 'Public Employee'
+                                  }].map(val => {
+                                    return {
+                                      value: val.name,
+                                      label: val.displayName
+                                    };
+                                  })}
+
+                              />
+
+
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-3 ">
+                              <InputText
+                                isRequired
+                                placeholder=""
+                                label="Position"
+                                name="position"
+                                type="position"
+
+                                value={values.position}
+                                onBlur={handleBlur} // This apparently updates `touched`?
+                              />
+                              <InputText
+                                isRequired
+                                placeholder=""
+                                label="Status"
+                                name="status"
+                                type="status"
+
+                                value={values.status}
+                                onBlur={handleBlur} // This apparently updates `touched`?
+                              />
+                              <InputText
+                                isRequired
+                                placeholder=""
+                                label="Agency Name"
+                                name="agency_name"
+                                type="agency_name"
+
+                                value={values.agency_name}
+                                onBlur={handleBlur} // This apparently updates `touched`?
+                              />
+
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-1 ">
+                              <InputText
+                                isRequired
+                                placeholder=""
+                                label="If a teacher, name of school presently assigned"
+                                name="name_of_school"
+                                type="name_of_school"
+
+                                value={values.name_of_school}
+                                onBlur={handleBlur} // This apparently updates `touched`?
+                              />
+
+                            </div>
+
+                            <div className="mt-4 z-50 grid grid-cols-1 gap-3 md:grid-cols-2 ">
+                              <div className='mt-2'>
+                                <Dropdown
+                                  // icons={mdiAccount}
+                                  label="Pensioner"
+                                  name="pensioner"
+                                  placeholder=""
+                                  value={values.pensioner}
+                                  setFieldValue={setFieldValue}
+                                  onBlur={handleBlur}
+                                  options={[
+                                    {
+                                      name: 'YES',
+                                      displayName: 'YES'
+                                    }, {
+                                      name: 'NO',
+                                      displayName: 'NO'
+                                    }].map(val => {
+                                      return {
+                                        value: val.name,
+                                        label: val.displayName
+                                      };
+                                    })}
+
+                                />
+
+                              </div>
+
+
+                              <InputText
+
+                                isRequired
+                                placeholder=""
+                                label="Amount of Monthly Pension"
+                                name="monthly_pension_amount"
+                                type="number"
+
+                                value={values.monthly_pension_amount}
+                                onBlur={handleBlur} // This apparently updates `touched`?
+                              />
+
+                            </div>
+                            <div className="mt-4 z-50 grid grid-cols-1 gap-3 md:grid-cols-2 ">
+                              <div className='mt-2'>
+                                <Dropdown
+                                  // icons={mdiAccount}
+                                  label="Type of Loan"
+                                  name="loan_type_specific"
+                                  placeholder=""
+                                  value={values.loan_type_specific}
+
+                                  onBlur={handleBlur}
+                                  setFieldValue={setFieldValue}
+                                  options={[
+                                    {
+                                      name: 'HOUSING LOAN',
+                                      displayName: 'HOUSING LOAN'
+                                    },
+                                    {
+                                      name: 'OTHERS',
+                                      displayName: 'OTHERS'
+                                    }].map(val => {
+                                      return {
+                                        value: val.name,
+                                        label: val.displayName
+                                      };
+                                    })}
+
+                                />
+
+                              </div>
+
+
+                              <InputText
+
+                                isRequired
+                                placeholder=""
+                                label="Proposed loan amount"
+                                name="proposed_loan_amount"
+                                type="number"
+
+                                value={values.proposed_loan_amount}
+                                onBlur={handleBlur} // This apparently updates `touched`?
+                              />
+
+                            </div>
+                            <div className="mt-4 z-50 grid grid-cols-1 gap-3 md:grid-cols-2 ">
+                              <div className='mt-2'>
+                                <Dropdown
+                                  // icons={mdiAccount}
+                                  label="Installment Duration (Months)"
+                                  name="installment_duration"
+                                  placeholder=""
+                                  value={values.installment_duration}
+                                  setFieldValue={setFieldValue}
+                                  onBlur={handleBlur}
+                                  options={[
+                                    {
+                                      name: '1',
+                                      displayName: '1'
+                                    },
+                                  ].map(val => {
+                                    return {
+                                      value: val.name,
+                                      label: val.displayName
+                                    };
+                                  })}
+
+                                />
+
+                              </div>
+
+
+                              <InputText
+
+                                isRequired
+                                placeholder=""
+                                label="No"
+                                name="numberField"
+                                type="number"
+
+                                value={values.numberField}
+                                onBlur={handleBlur} // This apparently updates `touched`?
+                              />
+
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-1 mt-2">
+                              <InputText
+                                isRequired
+                                placeholder="ATM/Passbook number"
+                                label="Loan Security"
+                                name="loan_security"
+                                type="text"
+
+                                value={values.loan_security}
+                                onBlur={handleBlur} // This apparently updates `touched`?
+                              />
+
+                            </div>
+                          </div>
+                          }
+
+                          {values.loan_type !== 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN' && <div>
+
+
+                            <div class="flex justify-center items-center">
+                              <h1 class="text-center">{values.loan_type}</h1>
+                            </div>
+
+                          </div>
+                          }
+
+                        </Form>
+                      </div>
+                    ), [currentStep, errors, values]);
+
+
+
+                    const SupportingDocuments = () => {
+
+                      let hasError1 = errors['borrowerValidID'];
+                      let hasError2 = errors['bankStatement'];
+                      let hasError3 = errors['coMakersValidID'];
+                      return (
+                        <div className="space-y-4">
+                          {/* Borrower's Valid ID */}
+                          <h1 className="font-bold text-lg text-center">Upload Supporting Documents</h1>
+                          <div
+
+                            className={`${hasError1 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
+                              }`}>
+
+
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Borrower's Valid ID
+                            </label>
+                            <DropzoneArea
+                              fieldName="borrowerValidID"
+                              files={files}
+                              dropzoneProps={dropzoneProps("borrowerValidID")}
+                              setFieldValue={setFieldValue}
+                              errors={errors}
+                            />
+                            {errors.borrowerValidID && <p className="text-red-500 text-sm mt-2">{errors.borrowerValidID}</p>}
                           </div>
 
-                        </div>
-                        }
+                          {/* Bank Statement */}
+                          <div
 
-                      </Form>
-                    </div>
-                  ), [currentStep, errors, values]);
+                            className={`${hasError2 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
+                              }`}>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Bank Statement
+                            </label>
+                            <DropzoneArea
+                              fieldName="bankStatement"
+                              files={files}
+                              dropzoneProps={dropzoneProps("bankStatement")}
+                              setFieldValue={setFieldValue}
+                              errors={errors}
+                            />
+                            {errors.bankStatement && <p className="text-red-500 text-sm mt-2">{errors.bankStatement}</p>}
+                          </div>
 
+                          {/* Co-maker's Valid ID */}
+                          <div
 
+                            className={`${hasError2 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
+                              }`}>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Co-maker's Valid ID
+                            </label>
+                            <DropzoneArea
+                              fieldName="coMakersValidID"
+                              files={files}
+                              dropzoneProps={dropzoneProps("coMakersValidID")}
+                              setFieldValue={setFieldValue}
+                              errors={errors}
+                            />
 
-                  const SupportingDocuments = () => {
+                            {errors.coMakersValidID && <p className="text-red-500 text-sm mt-2">{errors.coMakersValidID}</p>}
+                          </div>
 
-                    let hasError1 = errors['borrowerValidID'];
-                    let hasError2 = errors['bankStatement'];
-                    let hasError3 = errors['coMakersValidID'];
-                    return (
-                      <div className="space-y-4">
-                        {/* Borrower's Valid ID */}
-                        <h1 className="font-bold text-lg text-center">Upload Supporting Documents</h1>
-                        <div
-
-                          className={`${hasError1 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
-                            }`}>
-
-
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Borrower's Valid ID
-                          </label>
-                          <DropzoneArea
-                            fieldName="borrowerValidID"
-                            files={files}
-                            dropzoneProps={dropzoneProps("borrowerValidID")}
-                            setFieldValue={setFieldValue}
-                            errors={errors}
-                          />
-                          {errors.borrowerValidID && <p className="text-red-500 text-sm mt-2">{errors.borrowerValidID}</p>}
-                        </div>
-
-                        {/* Bank Statement */}
-                        <div
-
-                          className={`${hasError2 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
-                            }`}>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Bank Statement
-                          </label>
-                          <DropzoneArea
-                            fieldName="bankStatement"
-                            files={files}
-                            dropzoneProps={dropzoneProps("bankStatement")}
-                            setFieldValue={setFieldValue}
-                            errors={errors}
-                          />
-                          {errors.bankStatement && <p className="text-red-500 text-sm mt-2">{errors.bankStatement}</p>}
-                        </div>
-
-                        {/* Co-maker's Valid ID */}
-                        <div
-
-                          className={`${hasError2 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
-                            }`}>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Co-maker's Valid ID
-                          </label>
-                          <DropzoneArea
-                            fieldName="coMakersValidID"
-                            files={files}
-                            dropzoneProps={dropzoneProps("coMakersValidID")}
-                            setFieldValue={setFieldValue}
-                            errors={errors}
-                          />
-
-                          {errors.coMakersValidID && <p className="text-red-500 text-sm mt-2">{errors.coMakersValidID}</p>}
-                        </div>
-
-                        {/* Submit */}
-                        {/* <button
+                          {/* Submit */}
+                          {/* <button
                           type="button"
                           className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                           onClick={() => {
@@ -1294,226 +1380,227 @@ function LoanApplication() {
                         >
                           Submit
                         </button> */}
-                      </div>
-                    );
-
-                  };
-
-
-
-
-
-
-                  const Calculator = useMemo(() => (
-                    <div>
-                      <Form className="">
-                        <LoanCalculator
-                          isReadOnly={false}
-                          values={values}
-                          setFieldValue={setFieldValue}
-                          handleBlur={handleBlur}
-                          calculatorLoanAmmount={values.calculatorLoanAmmount}
-                          calculatorInterestRate={values.calculatorInterestRate}
-                          calculatorMonthsToPay={values.calculatorMonthsToPay}
-                          calculatorTotalAmountToPay={values.calculatorTotalAmountToPay}
-                        />
-                      </Form>
-                    </div>
-                  ), [currentStep, errors, values]);
-
-
-                  const Confirmation = () => {
-                    const [isVisible, setIsVisible] = useState(true);
-                    const [isChecked, setIsChecked] = useState(false);
-
-                    const closeAlert = () => {
-                      if (isChecked) {
-                        setIsVisible(false);
-                      } else {
-                        alert("You must agree to the terms and conditions before proceeding.");
-                      }
-                    };
-                    return <div className="mt-8 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow-md w-full">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-lg font-semibold">Note</h3>
-                          <p className="mt-2">Collateral is required for bigger loan amount (such as land title, house and lot, and the likes)</p>
                         </div>
-                        <button
+                      );
 
-                          className="text-yellow-700 hover:text-yellow-900 font-semibold"
-                        >
+                    };
 
-                        </button>
+
+
+
+
+
+                    const Calculator = useMemo(() => (
+                      <div>
+                        <Form className="">
+                          <LoanCalculator
+                            isReadOnly={false}
+                            values={values}
+                            setFieldValue={setFieldValue}
+                            handleBlur={handleBlur}
+                            calculatorLoanAmmount={values.calculatorLoanAmmount}
+                            calculatorInterestRate={values.calculatorInterestRate}
+                            calculatorMonthsToPay={values.calculatorMonthsToPay}
+                            calculatorTotalAmountToPay={values.calculatorTotalAmountToPay}
+                          />
+                        </Form>
                       </div>
-                      <div className="flex items-center mt-4">
-                        <input
-                          type="checkbox"
-                          id="terms"
-                          checked={isChecked}
-                          onChange={() => setIsChecked(!isChecked)}
-                          className="h-5 w-5 text-blue-500"
-                        />
-                        <label htmlFor="terms" className="ml-2 text-smf text-gray-700">
-                          I further certify that the cited information’s are the best of my knowledge tru, correct, and voluntary
-                        </label>
+                    ), [currentStep, errors, values]);
+
+
+                    const Confirmation = () => {
+                      const [isVisible, setIsVisible] = useState(true);
+                      const [isChecked, setIsChecked] = useState(false);
+
+                      const closeAlert = () => {
+                        if (isChecked) {
+                          setIsVisible(false);
+                        } else {
+                          alert("You must agree to the terms and conditions before proceeding.");
+                        }
+                      };
+                      return <div className="mt-8 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow-md w-full">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-lg font-semibold">Note</h3>
+                            <p className="mt-2">Collateral is required for bigger loan amount (such as land title, house and lot, and the likes)</p>
+                          </div>
+                          <button
+
+                            className="text-yellow-700 hover:text-yellow-900 font-semibold"
+                          >
+
+                          </button>
+                        </div>
+                        <div className="flex items-center mt-4">
+                          <input
+                            type="checkbox"
+                            id="terms"
+                            checked={isChecked}
+                            onChange={() => setIsChecked(!isChecked)}
+                            className="h-5 w-5 text-blue-500"
+                          />
+                          <label htmlFor="terms" className="ml-2 text-smf text-gray-700">
+                            I further certify that the cited information’s are the best of my knowledge tru, correct, and voluntary
+                          </label>
+                        </div>
                       </div>
-                    </div>
-                  }
-
-                  const steps = [
-
-                    {
-                      label: 'Personal Information', content: () => {
-                        return PersonalInfo
-                      }
-                    },
-                    {
-                      label: 'Work Details', content: () => {
-                        return AccountDetails
-                      }
-                    },
-                    {
-                      label: 'Supporting Documents', content: () => {
-                        return <SupportingDocuments />
-                      }
-                    },
-                    {
-                      label: 'Calculator', content: () => { return Calculator }
                     }
-                  ];
 
-                  const nextStep = async () => {
+                    const steps = [
 
-                    // setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
-                    // return true;
-                    const formErrors = await validateForm();
+                      {
+                        label: 'Personal Information', content: () => {
+                          return PersonalInfo
+                        }
+                      },
+                      {
+                        label: 'Work Details', content: () => {
+                          return AccountDetails
+                        }
+                      },
+                      {
+                        label: 'Supporting Documents', content: () => {
+                          return <SupportingDocuments />
+                        }
+                      },
+                      {
+                        label: 'Calculator', content: () => { return Calculator }
+                      }
+                    ];
+
+                    const nextStep = async () => {
+
+                      // setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+                      // return true;
+                      const formErrors = await validateForm();
 
 
 
-                    console.log({ currentStep })
+                      console.log({ currentStep })
 
-                    if (currentStep === 2) {
-                      const validateFields = (fields, setFieldError) => {
-                        const fieldErrors = {
-                          borrowerValidID: "Borrower's Valid ID is required",
-                          bankStatement: "Bank Statement is required",
-                          coMakersValidID: "Co-maker's Valid ID is required",
+                      if (currentStep === 2) {
+                        const validateFields = (fields, setFieldError) => {
+                          const fieldErrors = {
+                            borrowerValidID: "Borrower's Valid ID is required",
+                            bankStatement: "Bank Statement is required",
+                            coMakersValidID: "Co-maker's Valid ID is required",
+                          };
+
+                          // Loop through fields to check and set errors
+                          Object.keys(fieldErrors).forEach((field) => {
+                            if (!fields[field]) {
+                              setFieldError(field, fieldErrors[field]);
+                            }
+                          });
                         };
 
-                        // Loop through fields to check and set errors
-                        Object.keys(fieldErrors).forEach((field) => {
-                          if (!fields[field]) {
-                            setFieldError(field, fieldErrors[field]);
-                          }
-                        });
-                      };
+
+                        let { borrowerValidID, bankStatement, coMakersValidID } = values;
+                        if (!borrowerValidID || !bankStatement || !coMakersValidID) {
+
+                          validateFields({ borrowerValidID, bankStatement, coMakersValidID }, setFieldError);
 
 
-                      let { borrowerValidID, bankStatement, coMakersValidID } = values;
-                      if (!borrowerValidID || !bankStatement || !coMakersValidID) {
-
-                        validateFields({ borrowerValidID, bankStatement, coMakersValidID }, setFieldError);
+                          return true
 
 
-                        return true
+                        }
+                        else {
+                          setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+                        }
+                      } else {
+                        // Dynamically set errors using setFieldError
+                        for (const [field, error] of Object.entries(formErrors)) {
 
+                          setFieldTouched(field, true); // Mark field as touched
+                          setFieldError(field, error); // Set error for each field dynamically
+                        }
 
-                      }
-                      else {
-                        setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
-                      }
-                    } else {
-                      // Dynamically set errors using setFieldError
-                      for (const [field, error] of Object.entries(formErrors)) {
-
-                        setFieldTouched(field, true); // Mark field as touched
-                        setFieldError(field, error); // Set error for each field dynamically
+                        if (Object.keys(formErrors).length === 0) {
+                          //  handleSubmit(); // Only proceed to next step if there are no errors
+                          setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+                        }
                       }
 
-                      if (Object.keys(formErrors).length === 0) {
-                        //  handleSubmit(); // Only proceed to next step if there are no errors
-                        setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
-                      }
-                    }
 
 
 
 
+                    };
 
-                  };
+                    const prevStep = () => {
+                      setCurrentStep((prev) => Math.max(prev - 1, 0));
+                    };
 
-                  const prevStep = () => {
-                    setCurrentStep((prev) => Math.max(prev - 1, 0));
-                  };
-
-                  // const stepContent = useMemo(() => steps[currentStep].content(), [currentStep]);
-
+                    // const stepContent = useMemo(() => steps[currentStep].content(), [currentStep]);
 
 
-                  return (
-                    <div>
-                      <div className="mt-4">
-                        <div className="">
-                          {/* Step Navigation Menu */}
-                          <div className="flex justify-between mb-4">
-                            {steps.map((step, index) => (
-                              <div
-                                key={index}
-                                className={`cursor-pointer text-center flex-1 ${currentStep === index ? 'text-customBlue  font-bold' : 'text-gray-400'
-                                  }`}
-                                onClick={() => index <= currentStep && setCurrentStep(index)}
-                              >
-                                <span>{step.label}</span>
+
+                    return (
+                      <div>
+                        <div className="mt-4">
+                          <div className="">
+                            {/* Step Navigation Menu */}
+                            <div className="flex justify-between mb-4">
+                              {steps.map((step, index) => (
                                 <div
-                                  className={`mt-2 h-1 rounded ${currentStep === index ? 'bg-customBlue' : 'bg-transparent'
+                                  key={index}
+                                  className={`cursor-pointer text-center flex-1 ${currentStep === index ? 'text-customBlue  font-bold' : 'text-gray-400'
                                     }`}
-                                />
-                              </div>
-                            ))}
-                          </div>
+                                  onClick={() => index <= currentStep && setCurrentStep(index)}
+                                >
+                                  <span>{step.label}</span>
+                                  <div
+                                    className={`mt-2 h-1 rounded ${currentStep === index ? 'bg-customBlue' : 'bg-transparent'
+                                      }`}
+                                  />
+                                </div>
+                              ))}
+                            </div>
 
-                          {/* <h2 className="text-xl font-bold mb-4">{steps[currentStep].label}</h2> */}
+                            {/* <h2 className="text-xl font-bold mb-4">{steps[currentStep].label}</h2> */}
 
 
-                          {steps[currentStep].content()}
-                          <div className="flex justify-between mt-4">
-                            {currentStep > 0 && (
-                              <button onClick={prevStep}
-                                className="btn  bg-gray-200 text-black">
-                                Previous
-                              </button>
-                            )}
-                            {currentStep < steps.length - 1 ? (
-                              <button onClick={nextStep} className="btn btn-primary bg-buttonPrimary">
-                                Next
-                              </button>
-                            ) : (
-                              <button
+                            {steps[currentStep].content()}
+                            <div className="flex justify-between mt-4">
+                              {currentStep > 0 && (
+                                <button onClick={prevStep}
+                                  className="btn  bg-gray-200 text-black">
+                                  Previous
+                                </button>
+                              )}
+                              {currentStep < steps.length - 1 ? (
+                                <button onClick={nextStep} className="btn btn-primary bg-buttonPrimary">
+                                  Next
+                                </button>
+                              ) : (
+                                <button
 
-                                onClick={handleSubmit}
+                                  onClick={handleSubmit}
 
-                                disabled={isSubmitting}
+                                  disabled={isSubmitting}
 
-                                className="btn btn-success bg-buttonPrimary text-white">
+                                  className="btn btn-success bg-buttonPrimary text-white">
 
-                                {isSubmitting ? (
-                                  <span className="w-4 h-4 border-4 border-t-transparent border-blue-500 rounded-full animate-spin mr-2"></span>
+                                  {isSubmitting ? (
+                                    <span className="w-4 h-4 border-4 border-t-transparent border-blue-500 rounded-full animate-spin mr-2"></span>
 
-                                ) : (
-                                  "" // Default text
-                                )}
-                                Submit
-                              </button>
-                            )}
+                                  ) : (
+                                    "" // Default text
+                                  )}
+                                  Submit
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                    </div>
-                  );
-                }}
-              </Formik> </div>
+                      </div>
+                    );
+                  }}
+                </Formik>
+              } </div>
           </div>
         </dialog >
 

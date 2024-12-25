@@ -21,6 +21,8 @@ const AppRoutes = () => {
   const [routes, setRoutes] = useState([]);
   const [isLoaded, setIsLoaded] = useState([]);
 
+  const [selectedUserId, setSelectedUserId] = useState('');
+
   const fetchAccountSettings = async () => {
     try {
 
@@ -28,12 +30,11 @@ const AppRoutes = () => {
       const decoded = jwtDecode(token);
       let role = decoded.role;
 
+
+
       // console.log({ decoded })
 
-
-
-
-
+      setSelectedUserId(decoded.user_id)
 
       setIsLoaded(true)
 
@@ -57,13 +58,15 @@ const AppRoutes = () => {
 
 
       if (role === 'Borrower') {
+
+        //  console.log({ selectedUserId })
         newRoutes.push({
           path: '/app/dashboard',
           icon: <Squares2X2Icon className={iconClasses} />,
           name: 'Dashboard',
         });
         newRoutes.push({
-          path: '/app/profile',
+          path: `/app/userProfile/${selectedUserId}`,
           icon: <Squares2X2Icon className={iconClasses} />,
           name: 'Profile',
         });
@@ -207,7 +210,7 @@ const AppRoutes = () => {
 
   useEffect(() => {
     fetchAccountSettings();
-  }, []);
+  }, [selectedUserId]);
 
 
 
