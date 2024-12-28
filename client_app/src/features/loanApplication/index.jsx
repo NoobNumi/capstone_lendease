@@ -1631,7 +1631,7 @@ function LoanApplication() {
                   calculatorLoanAmmount: parseFloat(selectedLoan.loan_amount),
                   calculatorInterestRate: parseFloat(selectedLoan.interest_rate),
                   calculatorMonthsToPay: parseFloat(selectedLoan.repayment_schedule_id),
-
+                  loan_status: selectedLoan.loan_status
                 }}
               >
                 {({

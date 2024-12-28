@@ -30,9 +30,15 @@ const upload = multer({ storage: multer.memoryStorage() });
 // Get user by ID
 router.get('/:id', async (req, res) => {
   try {
+    const [resul1] = await db.query(
+      'SELECT * FROM user_account WHERE user_id  = ?',
+      [req.params.id]
+    );
+
+    let { borrower_id } = resul1[0];
     const [result] = await db.query(
       'SELECT * FROM borrower_account WHERE borrower_id  = ?',
-      [req.params.id]
+      [borrower_id]
     );
 
     let data = {
@@ -143,10 +149,19 @@ router.post(
       // Get the file's download URL
       const downloadURL = await getDownloadURL(storageRef);
 
+      console.log({ downloadURL, role, id });
+
+      const [resul1] = await db.query(
+        'SELECT * FROM user_account WHERE user_id  = ?',
+        [id]
+      );
+
+      let { borrower_id } = resul1[0];
+
       if (role === 'Borrower') {
         const query = `UPDATE borrower_account SET profile_pic = ?
         WHERE borrower_id  = ?`;
-        await db.execute(query, [downloadURL, id]);
+        await db.execute(query, [downloadURL, borrower_id]);
 
         res.json({ success: true });
       }

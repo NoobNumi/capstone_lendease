@@ -16,6 +16,19 @@ const upload = multer({ storage: multer.memoryStorage() });
 let firebaseStorage = config.firebaseStorage;
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+const getBorrowerAccountByUserAccountId = async userId => {
+  const [rows] = await db.query(
+    `
+
+SELECT borrower_id  FROM user_account WHERE user_id = ? 
+      
+       
+       `,
+    [userId]
+  );
+
+  return rows[0].borrower_id;
+};
 router.post(
   '/create',
   authenticateUserMiddleware,
@@ -35,8 +48,7 @@ router.post(
     let { user_id } = req.user;
     // console.log({ data });
 
-    let borrower_id = user_id;
-
+    let borrower_id = await getBorrowerAccountByUserAccountId(user_id);
     // map to db
     let loan_application_id = uuidv4();
     let loan_amount = calculatorLoanAmmount || proposed_loan_amount;
@@ -169,6 +181,9 @@ router.post('/list', authenticateUserMiddleware, async (req, res) => {
   let { user_id } = req.user;
 
   try {
+    let borrower_id = await getBorrowerAccountByUserAccountId(user_id);
+
+    console.log({ borrower_id });
     const [rows] = await db.query(
       `
 
@@ -183,14 +198,14 @@ router.post('/list', authenticateUserMiddleware, async (req, res) => {
          
          
          `,
-      [user_id]
+      [borrower_id]
     );
-
-    if (rows.length > 0) {
-      res.status(200).json({ success: true, data: rows });
-    } else {
-      res.status(404).json({ message: 'No loans found for this user.' });
-    }
+    res.status(200).json({ success: true, data: rows });
+    // if (rows.length > 0) {
+    //   res.status(200).json({ success: true, data: rows });
+    // } else {
+    //   res.status(404).json({ message: 'No loans found for this user.' });
+    // }
   } catch (error) {
     res
       .status(500)

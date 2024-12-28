@@ -14,10 +14,6 @@ const LoanCalculator = memo(({
   isReadOnly = false
 }) => {
 
-  console.log({ values })
-
-  let loan_status = values.loan_status;
-
   console.log({ isReadOnly })
 
 
@@ -102,7 +98,7 @@ const LoanCalculator = memo(({
               setLoanAmount(Number(e.target.value))
               setFieldValue('calculatorLoanAmmount', e.target.value)
             }}
-            isReadOnly={isReadOnly}
+            isReadOnly
 
 
 
@@ -130,8 +126,7 @@ const LoanCalculator = memo(({
               setInterestRate(Number(e.target.value))
               setFieldValue('calculatorInterestRate', e.target.value)
             }}
-            isReadOnly={isReadOnly}
-
+            isReadOnly
           />
 
         </div>
@@ -158,7 +153,7 @@ const LoanCalculator = memo(({
               setLoanDuration(Number(e.target.value))
               setFieldValue('calculatorMonthsToPay', e.target.value)
             }}
-            isReadOnly={isReadOnly}
+            isReadOnly
           />
 
         </div>
@@ -185,8 +180,6 @@ const LoanCalculator = memo(({
             <th className="px-4 py-3 text-left text-sm text-gray-700">Due Amount</th>
             <th className="px-4 py-3 text-left text-sm text-gray-700">Date Paid</th>
             <th className="px-4 py-3 text-left text-sm text-gray-700">Balance</th>
-            <th className="px-4 py-3 text-left text-sm text-gray-700">Action</th>
-
           </tr>
         </thead>
         <tbody>
@@ -200,20 +193,6 @@ const LoanCalculator = memo(({
               <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(payment.dueAmount)}</td>
               <td className="px-4 py-3 text-sm text-gray-700"></td>
               <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(payment.remainingBalance)}</td>
-              <td className="px-4 py-3 text-sm text-gray-700">
-                {
-
-                  loan_status === "Approved" && <div className="flex">
-                    <button className="btn btn-outline btn-sm" onClick={() => {
-
-
-                    }}>
-                      {/* <i class="fa-solid fa-eye"></i> */}
-                      Pay now
-                    </button>
-                  </div>
-                }
-              </td>
             </tr>
           ))}
           {/* Total Row */}
@@ -222,7 +201,6 @@ const LoanCalculator = memo(({
             <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(totalAmount)}</td>
             <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(totalInterestAmount)}</td>
             <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(totalDueAmount)}</td>
-            <td className="px-4 py-3 text-sm text-gray-700"></td>
             <td className="px-4 py-3 text-sm text-gray-700"></td>
             <td className="px-4 py-3 text-sm text-gray-700"></td>
           </tr>

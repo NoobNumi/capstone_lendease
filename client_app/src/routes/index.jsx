@@ -45,7 +45,7 @@ const Inventory = lazy(() => import('../pages/protected/Inventory'));
 const FAQ = lazy(() => import('../pages/protected/Faq'));
 const LoanApplication = lazy(() => import('../pages/protected/LoanApplication'));
 const LoanManagement = lazy(() => import('../pages/protected/LoanManagement'));
-
+const BorrowersManagement = lazy(() => import('../pages/protected/BorrowersManagement'));
 const LoanDetails = lazy(() => import('../pages/protected/LoanDetails'));
 const token = checkAuth();
 
@@ -149,7 +149,10 @@ routes = [
     path: '/sms_logs',
     component: SMSLogs
   },
-
+  {
+    path: '/borrowers',
+    component: BorrowersManagement
+  },
 
 ];
 

@@ -40,7 +40,6 @@ const MyTextInput = ({
     ''
   ].join(' ');
 
-  console.log({hasTextareaHeight})
 
   return (
     <>
