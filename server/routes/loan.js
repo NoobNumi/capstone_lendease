@@ -224,7 +224,7 @@ router.get('/:loanId/details', authenticateUserMiddleware, async (req, res) => {
       JOIN borrower_account ba ON la.borrower_id = 
       ba.borrower_id 
  
-     where la.loan_application_id = ?
+     where la.loan_id = ?
        
 
          
@@ -245,5 +245,116 @@ router.get('/:loanId/details', authenticateUserMiddleware, async (req, res) => {
       .json({ error: 'Error fetching loan list with borrower details' });
   }
 });
+
+// Create a new payment
+router.post('/:loanId/payment', async (req, res) => {
+  try {
+    let loanId = req.params.loanId;
+
+    const {
+      loan_id,
+      payment_amount,
+      payment_date,
+      payment_status,
+      payment_method,
+      reference_number,
+      selectedTableRowIndex
+    } = req.body;
+
+    const [result] = await db.query(
+      `INSERT INTO payment (loan_id, payment_amount, payment_status, payment_method, reference_number,selectedTableRowIndex) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        loan_id,
+        payment_amount,
+        payment_status,
+        payment_method,
+        reference_number,
+        selectedTableRowIndex
+      ]
+    );
+
+    res.status(201).json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error creating payment' });
+  }
+});
+
+router.get('/:loanId/paymentList', async (req, res) => {
+  try {
+    const { loanId } = req.params;
+
+    const [rows] = await db.query(
+      `SELECT * FROM payment WHERE loan_id  = ?
+      
+      ORDER BY selectedTableRowIndex ASC
+      `,
+      [loanId]
+    );
+
+    res.status(200).json({ success: true, data: rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error fetching payment' });
+  }
+});
+
+router.post(
+  '/payment/upload-files',
+  upload.fields([{ name: 'proofOfPayment', maxCount: 1 }]),
+  async (req, res) => {
+    try {
+      const files = req.files;
+
+      const loan_application_id = req.body.loan_id;
+      const selectedTableRowIndex = req.body.selectedTableRowIndex;
+
+      console.log({ loan_application_id, selectedTableRowIndex });
+
+      // // Upload each file to Firebase Storage
+      for (const [key, fileArray] of Object.entries(files)) {
+        const file = fileArray[0];
+
+        const storageRef = ref(
+          firebaseStorage,
+          `lendease/loans/${loan_application_id}/proof_of_payment/${file.originalname}`
+        );
+        const metadata = { contentType: file.mimetype };
+
+        // // Upload the file to Firebase Storage
+        await uploadBytes(storageRef, file.buffer, metadata);
+
+        // // Get the file's download URL
+        const downloadURL = await getDownloadURL(storageRef);
+        console.log({ downloadURL });
+        // let mappedKey = {
+        //   bankStatement: 'bank_statement',
+        //   borrowerValidID: 'borrowers_valid_id',
+        //   coMakersValidID: 'co_makers_valid_id'
+        // };
+
+        await db.query(
+          `
+          UPDATE payment SET proof_of_payment = ?
+          where loan_id  = ? 
+          AND 
+          selectedTableRowIndex = ? 
+
+          `,
+          [downloadURL, loan_application_id, selectedTableRowIndex]
+        );
+
+        // console.log({ downloadURL });
+        console.log(`${key} uploaded successfully.`);
+      }
+
+      res.status(200).json({ message: 'Files uploaded successfully!' });
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      res.status(500).json({ error: 'Failed to upload files.' });
+    }
+  }
+);
 
 export default router;

@@ -336,6 +336,17 @@ function LoanApplication() {
           return <span className="">{value}</span>;
         }
       },
+
+      {
+        Header: 'Is Disbursed?',
+        accessor: 'disbursement_id',
+        Cell: ({ value }) => {
+          return <h2 className='font-bold'>{value ? "Yes" : "No"}</h2>;
+        }
+      },
+
+
+
       {
         Header: 'Status',
         accessor: 'loan_status',
@@ -361,7 +372,7 @@ function LoanApplication() {
               <div className="flex">
 
                 <button className="btn btn-outline btn-sm" onClick={() => {
-
+                  //  console.log({ loan })
                   // setisEditModalOpen(true)
                   setselectedLoan(loan);
 
@@ -1650,10 +1661,10 @@ function LoanApplication() {
                   isSubmitting
                 }) => {
 
-                  console.log({ values })
 
 
                   return <LoanCalculator
+                    selectedLoan={selectedLoan}
                     isReadOnly={true}
                     values={values}
                     setFieldValue={setFieldValue}

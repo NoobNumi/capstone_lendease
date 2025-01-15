@@ -47,7 +47,7 @@ import {
 import { FaCheckCircle } from "react-icons/fa"; // Font Awesome icon
 
 
-import LoanCalculator from "./loanCalculator";
+import LoanCalculator from "./../loanApplication/loanCalculator";
 import { format, formatDistance, formatRelative, subDays } from 'date-fns';
 
 import { formatAmount } from '../dashboard/helpers/currencyFormat';
@@ -116,18 +116,17 @@ const Alert = ({ type = "info", title, description, onClose }) => {
 
 
 
-function LoanManagementTabs({ loanDetails, formikProps }) {
+function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
 
 
+
+  console.log({ rowIndex })
 
 
   const [activeTab, setActiveTab] = useState("user-details");
   const [selectedImage, setSelectedImage] = useState('');
 
   const userDetails = loanDetails;
-
-
-
   const documents = [
     { src: loanDetails.borrowers_valid_id, label: 'Borrowers Valid ID' },
     {
@@ -136,13 +135,14 @@ function LoanManagementTabs({ loanDetails, formikProps }) {
     { src: loanDetails.bank_statement, label: 'Bank Statement' },
   ];
 
-  // const loanDetails = {
-  //   amount: '$50,000',
-  //   term: '5 years',
-  //   interestRate: '3.5%',
-  //   monthlyPayment: '$909.66',
-  //   totalInterest: '$4,579.60',
-  // };
+
+
+  useEffect(() => {
+    if (rowIndex) {
+      setActiveTab('loan-details'); // Switch to "loan-details" if rowIndex has a value
+    }
+  }, [rowIndex]); // Dependency array ensures this runs when rowIndex changes
+
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4">
@@ -251,6 +251,8 @@ function LoanManagementTabs({ loanDetails, formikProps }) {
                 calculatorLoanAmmount={formikProps.values.calculatorLoanAmmount}
                 calculatorInterestRate={formikProps.values.calculatorInterestRate}
                 calculatorMonthsToPay={formikProps.values.calculatorMonthsToPay}
+                selectedLoan={loanDetails}
+
               />
               {/* <div className="space-y-3">
                 {Object.entries(loanDetails).map(([key, value]) => (
@@ -511,7 +513,10 @@ function LoanApplication() {
     },
     multiple: false,
   });
-  const { loanId } = useParams();
+  const { loanId, rowIndex } = useParams();
+
+
+  console.log({ loanId, rowIndex })
   const [file, setFile] = useState(null);
   const [faqList, setList] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -841,7 +846,8 @@ function LoanApplication() {
 
             <LoanManagementTabs
               loanDetails={loanDetails}
-              formikProps={formikProps} />
+              formikProps={formikProps}
+              rowIndex={rowIndex} />
 
           </div>
           <ToastContainer />

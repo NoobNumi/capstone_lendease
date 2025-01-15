@@ -390,7 +390,7 @@ function LoanApplication() {
 
                   // document.getElementById('viewLoan').showModal();
 
-                  navigate(`/app/loan_details/${loan.loan_application_id}`);
+                  navigate(`/app/loan_details/${loan.loan_id}`);
 
                   // setFieldValue('Admin_Fname', 'dex');
                 }}>
@@ -1542,7 +1542,7 @@ function LoanApplication() {
             >✕</button>
 
             <div className="modal-header flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg">
-              <h1 className="text-xl font-semibold">Loan Details</h1>
+              <h1 className="text-xl font-semibold">Loan Detailssss</h1>
 
             </div>
 

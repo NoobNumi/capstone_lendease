@@ -20,6 +20,7 @@ const MyTextInput = ({
   allValues,
   defaultValue,
   defaultInputValue,
+  isDisabled,
   ...props
 }) => {
   // useField() returns [formik.getFieldProps(), formik.getFieldMeta()]
@@ -54,6 +55,7 @@ const MyTextInput = ({
 
         <div className="relative">
           <CreatableSelect
+            isDisabled={isDisabled}
             defaultInputValue={defaultInputValue}
             defaultValue={defaultValue}
             placeholder="Select"

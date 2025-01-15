@@ -146,6 +146,10 @@ routes = [
     component: LoanDetails
   },
   {
+    path: '/loan_details/:loanId/selectedTableRowIndex/:rowIndex',
+    component: LoanDetails
+  },
+  {
     path: '/sms_logs',
     component: SMSLogs
   },
