@@ -53,6 +53,8 @@ const AppRoutes = () => {
           name: 'Dashboard',
         });
 
+
+
       }
 
 
@@ -142,64 +144,12 @@ const AppRoutes = () => {
 
 
 
-      if (result.includes('Employees Page')) {
-        newRoutes.push({
-          path: '/app/employees',
-          icon: <IdentificationIcon className={iconClasses} />,
-          name: 'Employees',
-        });
-      }
-      if (result.includes('Inventory')) {
-        newRoutes.push({
-          path: '/app/inventory',
-          icon: <DocumentChartBarIcon className={iconClasses} />,
-          name: 'Inventory',
-        });
-      }
-      if (result.includes("Customer's Record")) {
-        newRoutes.push({
-          path: '/app/users',
-          icon: <UsersIcon className={iconClasses} />,
-          name: 'Customer Record',
-        });
-      }
-      if (result.includes('Transaction History')) {
-        newRoutes.push({
-          path: '/app/transactions',
-          icon: <PresentationChartLineIcon className={iconClasses} />,
-          name: 'Transactions',
-        });
-      }
-      if (result.includes('Layaway')) {
-        newRoutes.push({
-          path: '/app/layaway',
-          icon: <BanknotesIcon className={iconClasses} />,
-          name: 'Lay-away',
-        });
-      }
-      if (result.includes('Supplier Details')) {
-        newRoutes.push({
-          path: '/app/suppliers',
-          icon: <UsersIcon className={iconClasses} />,
-          name: 'Suppliers',
-        });
-      }
 
-
-      // newRoutes.push({
-      //   path: '/app/faq',
-      //   icon: <QuestionMarkCircleIcon className={iconClasses} />,
-      //   name: 'FAQ',
-      // });
-
-      if (result.includes('Settings') && role === 'super_admin') {
-        newRoutes.push({
-          path: '/app/settings',
-          icon: <CogIcon className={iconClasses} />,
-          name: 'Settings',
-        });
-
-      }
+      newRoutes.push({
+        path: '/app/settings',
+        icon: <CogIcon className={iconClasses} />,
+        name: 'Settings',
+      });
 
 
       setRoutes(newRoutes);

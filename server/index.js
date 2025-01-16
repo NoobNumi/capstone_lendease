@@ -9,6 +9,7 @@ import adminRoute from './routes/admin/admin.js';
 import borrowerRoute from './routes/admin/borrower.js';
 import authRoute from './routes/auth.js';
 import smsRoute from './routes/sms.js';
+import settingsRoute from './routes/settings.js';
 import bodyParser from 'body-parser';
 
 import path from 'path';
@@ -57,6 +58,8 @@ app.use('/api/admin/borrower', borrowerRoute);
 
 app.use('/api/auth', authRoute);
 app.use('/api/sms', smsRoute);
+
+app.use('/api/settings', settingsRoute);
 
 app.use(express.static('public'));
 app.use(express.static('files'));

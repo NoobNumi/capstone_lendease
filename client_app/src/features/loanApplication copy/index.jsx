@@ -580,7 +580,7 @@ function LoanApplication() {
           "relativePath": "./OLD Poblacion Entrance.jpg"
         },
         calculatorLoanAmmount: 20000,
-        calculatorInterestRate: 36,
+        calculatorInterestRate: 7,
         calculatorMonthsToPay: 6,
         calculatorTotalAmountToPay: 0,
 

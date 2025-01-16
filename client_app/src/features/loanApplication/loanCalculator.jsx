@@ -24,7 +24,7 @@ const LoanCalculator = memo(({
   handleBlur,
   values,
   calculatorLoanAmmount = 5000,
-  calculatorInterestRate = 36,
+  calculatorInterestRate = 7,
   calculatorMonthsToPay = 6,
   calculatorTotalAmountToPay = 0,
   isReadOnly = false,
@@ -34,7 +34,7 @@ const LoanCalculator = memo(({
   const navigate = useNavigate();
 
   const { loanId, rowIndex } = useParams();
-  let loan_status = values.loan_status || selectedLoan.loan_status;
+  let loan_status = values.loan_status || selectedLoan?.loan_status;
 
 
 
@@ -63,7 +63,7 @@ const LoanCalculator = memo(({
     })
     let res = await axios({
       method: 'get',
-      url: `loan/${selectedLoan.loan_id || loanId}/paymentList`,
+      url: `loan/${selectedLoan?.loan_id || loanId}/paymentList`,
       data: {
 
       }
@@ -76,7 +76,11 @@ const LoanCalculator = memo(({
   };
 
   useEffect(() => {
-    fetchloanPaymentList()
+
+    if (selectedLoan?.loan_id || loanId) {
+      fetchloanPaymentList()
+    }
+
 
   }, []);
 
@@ -271,7 +275,7 @@ const LoanCalculator = memo(({
           <InputText
             isRequired
             placeholder=""
-            disabled={isReadOnly}
+            disabled={true}
             name="calculatorInterestRate"
             type="number"
             value={values?.calculatorInterestRate} // Bind value to Formik state
@@ -280,7 +284,7 @@ const LoanCalculator = memo(({
               setInterestRate(Number(e.target.value))
               setFieldValue('calculatorInterestRate', e.target.value)
             }}
-            isReadOnly={isReadOnly}
+            isReadOnly={true}
 
           />
 
@@ -307,6 +311,10 @@ const LoanCalculator = memo(({
             onChange={(e) => {
               setLoanDuration(Number(e.target.value))
               setFieldValue('calculatorMonthsToPay', e.target.value)
+              setFieldValue('calculatorInterestRate', (e.target.value * 3).toFixed(2))
+              setInterestRate(Number(e.target.value * 3).toFixed(2))
+
+
             }}
             isReadOnly={isReadOnly}
           />
@@ -371,7 +379,7 @@ const LoanCalculator = memo(({
 
 
 
-              console.log({ urlLink: `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan.loan_id}/selectedTableRowIndex/${index + 1}` })
+              console.log({ urlLink: `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${index + 1}` })
 
 
               let highlight = parseInt(rowIndex) === index + 1;
@@ -388,7 +396,7 @@ const LoanCalculator = memo(({
 
                     value={
 
-                      `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan.loan_id}/selectedTableRowIndex/${index + 1}`
+                      `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${index + 1}`
 
                     }
 
@@ -464,15 +472,19 @@ const LoanCalculator = memo(({
             })}
             {/* Total Row */}
             <tr className="bg-gray-200 font-semibold">
-              <td colSpan="3" className="px-4 py-3 text-sm text-gray-700">Total</td>
-              <td colSpan="3" className="px-4 py-3 text-sm text-gray-700"></td>
-              <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(totalAmount)}</td>
+              <td colSpan="1" className="px-4 py-3 text-sm text-gray-700">Total</td>
+              <td colSpan="1" className="px-4 py-3 text-sm text-gray-700"></td>
+              <td colSpan="1" className="px-4 py-3 text-sm text-gray-700"></td>
+              <td colSpan="1" className="px-4 py-3 text-sm text-gray-700"></td>
+              <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(totalAmount - totalInterestAmount)}</td>
               <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(totalInterestAmount)}</td>
               <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(totalDueAmount)}</td>
               <td className="px-4 py-3 text-sm text-gray-700"></td>
               <td className="px-4 py-3 text-sm text-gray-700"></td>
               <td className="px-4 py-3 text-sm text-gray-700"></td>
               <td className="px-4 py-3 text-sm text-gray-700"></td>
+              <td className="px-4 py-3 text-sm text-gray-700"></td>
+
             </tr>
           </tbody>
         </table>
@@ -559,7 +571,7 @@ const LoanCalculator = memo(({
 
 
                   const formattedData = {
-                    loan_id: selectedLoan.loan_id, // Assuming you have this value available
+                    loan_id: selectedLoan?.loan_id, // Assuming you have this value available
                     payment_amount: parseFloat(values.paid_amount).toFixed(2), // Ensure correct decimal format
                     payment_date: new Date().toISOString().split('T')[0], // Get the current date in 'YYYY-MM-DD' format
                     payment_status: 'Pending', // Assuming default status or you could map it based on a form field
@@ -857,7 +869,7 @@ const LoanCalculator = memo(({
 
                   const formattedData = {
                     action: values.action,
-                    loan_id: selectedLoan.loan_id, // Assuming you have this value available
+                    loan_id: selectedLoan?.loan_id, // Assuming you have this value available
                     // payment_amount: parseFloat(values.paid_amount).toFixed(2), // Ensure correct decimal format
                     // payment_date: new Date().toISOString().split('T')[0], // Get the current date in 'YYYY-MM-DD' format
                     // payment_status: 'Pending', // Assuming default status or you could map it based on a form field

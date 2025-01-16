@@ -12,7 +12,7 @@ export const authenticateUserMiddleware = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, config.JWT_TOKEN_SECRET);
-    console.log({ decoded });
+    // console.log({ decoded });
     req.user = decoded;
 
     next();

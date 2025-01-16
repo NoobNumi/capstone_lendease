@@ -116,6 +116,131 @@ const Alert = ({ type = "info", title, description, onClose }) => {
 
 
 
+const LoanEvaluationResult = ({ result, loanDetails }) => {
+  const [loanApprovalSettings, setLoanApprovalSettings] = useState({}); // Changed variable name here
+
+
+  const [isLoaded, setisLoaded] = useState(false);
+
+  const fetchloanApprovalSettings = async () => {
+    try {
+
+
+      let res = await axios({
+        method: 'post',
+        url: `loan/checkLoanApplicationApprovalRate`,
+        data: {
+          loan_application_id: loanDetails.loan_id
+        }
+      });
+
+      setLoanApprovalSettings(res.data.data.result)
+      setisLoaded(true)
+
+    } catch (err) {
+
+    } finally {
+
+    }
+  };
+
+  useEffect(() => {
+    fetchloanApprovalSettings(); // Changed function call here
+  }, []);
+
+  const { approved, message, breakdown, overallApprovalPercentage } = loanApprovalSettings;
+
+  // Function to assign colors to progress bars based on percentage
+  const progressBarClass = (percentage) => {
+    if (percentage >= 80) return 'bg-green-500'; // Green for good approval
+    if (percentage >= 50) return 'bg-yellow-500'; // Yellow for moderate
+    return 'bg-red-500'; // Red for poor approval
+  };
+
+
+
+  console.log({ approved })
+
+  return isLoaded && (
+    <div className="max-w-3xl mx-auto p-8 bg-white shadow-lg rounded-xl">
+      <h2 className="text-2xl font-semibold text-center mb-6 text-gray-800">
+
+        Overall Approval Percentage: {overallApprovalPercentage.toFixed(1)}%
+
+      </h2>
+
+      {/* Overall Approval Status */}
+      <div className="mb-4">
+        {/* <h3
+          className={`text-2xl font-bold ${approved ? 'text-green-600' : 'text-red-600'
+            }`}
+        >
+          {message}
+        </h3> */}
+
+        <Alert
+          type={
+            approved ? 'success' : 'error'
+          } // Can be "success", "error", "info", "warning"
+          title={
+            approved ? 'APPROVED' : 'DENIED'
+          }
+          description={message}
+
+        />
+
+
+        {/* Overall Progress Bar */}
+        {/* <div className="mt-4">
+          <div
+            className={`w-full h-2 rounded-full ${progressBarClass(
+              overallApprovalPercentage
+            )}`}
+            style={{ width: `${overallApprovalPercentage}%` }}
+          ></div>
+        </div> */}
+      </div>
+
+      {/* Breakdown Sections */}
+      <div className="space-y-6">
+        {Object.keys(breakdown).map((key) => {
+          const item = breakdown[key];
+          console.log(item.percentage); // Debug: check if percentage is correct
+          return (
+            <div key={key}>
+              <p className="text-lg font-semibold text-gray-700 capitalize">{key.replace(/([A-Z])/g, ' $1')}</p>
+              <div className="relative pt-1">
+                <div className="flex mb-2 items-center justify-between">
+                  <span className="text-sm text-gray-500">{item.message}</span>
+                  <span className="font-medium">{item.percentage}%</span>
+                </div>
+                <div className="flex mb-4">
+
+
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={` rounded-full h-2 ${progressBarClass(item.percentage)}`}
+                      style={{ width: `${item.percentage}%` }} // Dynamic width based on percentage
+                    ></div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-8">
+        <p className="text-center text-sm text-gray-500">
+          Note: The loan application is evaluated based on credit score, monthly income, loan-to-income ratio, and employment years.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+
 function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
 
 
@@ -245,7 +370,7 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
           {activeTab === "loan-details" && (
             <Section title="Loan Details">
 
-              <LoanCalculator
+              {loanDetails.loan_id && <LoanCalculator
                 {...formikProps}
                 isReadOnly={true}
                 calculatorLoanAmmount={formikProps.values.calculatorLoanAmmount}
@@ -253,7 +378,7 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
                 calculatorMonthsToPay={formikProps.values.calculatorMonthsToPay}
                 selectedLoan={loanDetails}
 
-              />
+              />}
               {/* <div className="space-y-3">
                 {Object.entries(loanDetails).map(([key, value]) => (
                   <div key={key} className="flex items-center">
@@ -744,16 +869,36 @@ function LoanApplication() {
 
   const [currentStep, setCurrentStep] = useState(0);
 
+
+  const [loanSettings, setLoanSettings] = useState({}); // Changed variable name here
+
+  const fetchloanSettings = async () => {
+    try {
+      setIsLoaded(false);
+      const res = await axios.get(`settings/read/1`); // Using shorthand for axios.get
+      const settings = res.data.data; // Changed variable name here
+      setLoanSettings(settings); // Changed function call here
+    } catch (err) {
+
+    } finally {
+      setIsLoaded(true); // Ensure isLoaded is set to true regardless of success or error
+    }
+  };
+
+  useEffect(() => {
+    fetchloanSettings(); // Changed function call here
+  }, []);
+
   const formikConfig = () => {
 
 
 
-
+    console.log({ loanDetails })
     return {
       initialValues: {
 
         calculatorLoanAmmount: 20000,
-        calculatorInterestRate: 36,
+        calculatorInterestRate: (loanSettings?.interest_rate || 3) * loanDetails.repayment_schedule_id,
         calculatorMonthsToPay: 6,
         calculatorTotalAmountToPay: 0,
         remarks: '',
@@ -780,6 +925,8 @@ function LoanApplication() {
             loan_status: values.status,
             remarks: values.remarks
           }
+
+
 
           let res = await axios({
             method: 'post',
@@ -819,9 +966,33 @@ function LoanApplication() {
   };
 
 
+  const result = {
+    approved: false,
+    message: 'Loan application denied due to the following criteria not meeting the required thresholds:',
+    breakdown: {
+      creditScore: {
+        percentage: 80,
+        message: 'Credit score meets the required threshold.'
+      },
+      income: {
+        percentage: 60,
+        message: 'Income is below the required minimum.'
+      },
+      loanToIncomeRatio: {
+        percentage: 40,
+        message: 'Loan amount exceeds the allowed limit based on income.'
+      },
+      employmentYears: {
+        percentage: 90,
+        message: 'Employment history meets the required duration.'
+      }
+    },
+    overallApprovalPercentage: 65
+  };
 
 
-  return isLoaded && (
+  console.log({ loanSettings })
+  return isLoaded && loanSettings.id && (
     <Formik {...formikConfig()}>
       {(formikProps) => {
         return <TitleCard
@@ -877,14 +1048,24 @@ function LoanApplication() {
 
               <p className="text-sm text-gray-500 mt-1 font-bold"></p>
               <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
-                <Alert
+
+                {
+                  loanDetails.loan_id && <LoanEvaluationResult
+
+                    result={result}
+                    loanDetails={loanDetails}
+                  />
+
+                }
+
+                {/* <Alert
                   type={
                     formikProps.values.status === 'Approved' ? 'success' : 'warning'
                   } // Can be "success", "error", "info", "warning"
                   title="Approval Confirmation"
                   description="Are you sure you want to approve this loan application?"
 
-                />
+                /> */}
                 <TextAreaInput
                   isRequired
                   label="Remarks"

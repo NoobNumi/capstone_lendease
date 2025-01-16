@@ -16,6 +16,126 @@ const upload = multer({ storage: multer.memoryStorage() });
 let firebaseStorage = config.firebaseStorage;
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+const accountSid = 'ACbe246063583580e176da8274a8071c4a'; // Replace with your Twilio Account SID
+const authToken = 'faa226819bb25872991f707ec4e2d2d2'; // Replace with your Twilio Auth Token
+import twilio from 'twilio'; // Use import statement for Twilio
+import { Vonage } from '@vonage/server-sdk';
+// twillo YCBPSCDZWYP11Z5JUD89W7DT
+const loanApprovalMessage = ({
+  firstName,
+  lastName,
+  loanAmount,
+  loanId
+}) => `Dear ${firstName} ${lastName},
+
+Congratulations! Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been approved. Our team will contact you with the next steps.
+
+Thank you for choosing us!`;
+
+const loanRejectionMessage = ({
+  firstName,
+  lastName,
+  loanId
+}) => `Dear ${firstName} ${lastName},
+
+We regret to inform you that your loan application (Loan ID: ${loanId}) has been declined after careful review. Please contact us for further details.
+
+Thank you for your understanding.`;
+
+const loanAdvancePaymentMessage = ({
+  firstName,
+  lastName,
+  dueAmount,
+  dueDate
+}) => `Dear ${firstName} ${lastName},
+
+This is a reminder that your loan advance payment of ${dueAmount} is due on ${dueDate}. Please ensure timely payment to avoid penalties.
+
+Thank you for your cooperation.`;
+
+const loanPaymentAcceptanceMessage = ({
+  firstName,
+  lastName,
+  paymentAmount,
+  paymentDate
+}) => `Dear ${firstName} ${lastName},
+
+We have successfully received your payment of ${paymentAmount} on ${paymentDate}. Thank you for your timely payment.
+
+Best regards,
+[Your Company Name]`;
+
+const loanPaymentRejectionMessage = ({
+  firstName,
+  lastName,
+  paymentAmount,
+  reason
+}) => `Dear ${firstName} ${lastName},
+
+We regret to inform you that your payment of ${paymentAmount} could not be processed. Reason: ${reason}. Please contact us to resolve this issue.
+
+Thank you.`;
+
+const loanCreationMessage = ({
+  firstName,
+  lastName,
+  loanAmount,
+  loanId
+}) => `Dear ${firstName} ${lastName},
+
+Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been successfully created. Our team will review your application and get back to you shortly.
+
+Thank you for choosing us!`;
+
+const sendMessage = async ({
+  firstName,
+  lastName,
+  phoneNumber,
+  messageType,
+  additionalData = {}
+}) => {
+  const client = twilio(accountSid, authToken);
+  const templates = {
+    loanApproval: loanApprovalMessage,
+    loanRejection: loanRejectionMessage,
+    loanAdvancePayment: loanAdvancePaymentMessage,
+    loanPaymentAcceptance: loanPaymentAcceptanceMessage,
+    loanPaymentRejection: loanPaymentRejectionMessage,
+    loanCreation: loanCreationMessage
+  };
+
+  const text = templates[messageType]
+    ? templates[messageType]({ firstName, lastName, ...additionalData })
+    : 'No valid message type provided.';
+
+  const from = 'YourCompany'; // Set your company name or short code as sender
+  const to = phoneNumber;
+
+  try {
+    const vonage = new Vonage({
+      apiKey: '96c9acc9',
+      apiSecret: 'OR9Ypw0s0EKw58I9'
+    });
+    // await vonage.sms.send(
+    //   { to, from, text: messageText },
+    //   (error, response) => {
+    //     if (error) {
+    //       console.error('Failed to send message:', error);
+    //     } else {
+    //       console.log('Message sent successfully:', response);
+    //     }
+    //   }
+    // );
+    console.log({ to, from, text });
+    await vonage.sms.send({ to, from, text }).then(resp => {
+      console.log('Message sent successfully');
+      console.log(resp);
+    });
+  } catch (error) {
+    console.error('Error occurred while sending message:', error);
+  }
+};
+
 router.post(
   '/create',
   authenticateUserMiddleware,
@@ -196,7 +316,21 @@ router.post(
       let { loan_status, approval_date, remarks } = data;
       let loan_officer_id = user_id;
 
-      console.log({ loan_officer_id });
+      const [rows1] = await db.query(
+        `
+        SELECT la.*, ba.* FROM loan la INNER 
+        JOIN borrower_account ba ON la.borrower_id = 
+        ba.borrower_id 
+        where la.loan_id = ?
+  
+           `,
+        [loanId]
+      );
+
+      let loanDetails = rows1[0];
+
+      console.log({ loanDetails });
+
       const [rows] = await db.query(
         `
         UPDATE loan 
@@ -206,7 +340,7 @@ router.post(
           loan_officer_id = ? 
         WHERE loan_application_id = ?;
         `,
-        [loan_status, remarks, loan_officer_id, loanId]
+        [loan_status, remarks, loan_officer_id, loanDetails.loan_application_id]
       );
 
       await db.query(
@@ -216,8 +350,41 @@ router.post(
           status = ?
         WHERE application_id  = ?;
         `,
-        [loan_status, loanId]
+        [loan_status, loanDetails.loan_application_id]
       );
+
+      const { first_name, last_name, contact_number, loan_amount } =
+        loanDetails;
+
+      function formatPhoneNumber(phoneNumber) {
+        // Remove any non-digit characters
+        let cleaned = phoneNumber.replace(/\D/g, '');
+
+        // Check if the number starts with '09' or any other prefix and always convert to '+63'
+        if (cleaned.startsWith('9')) {
+          cleaned = '+63' + cleaned.substring(1); // Replace '0' or '9' with '+63'
+        } else if (cleaned.startsWith('0')) {
+          cleaned = '+63' + cleaned.substring(1); // Replace '0' with '+63'
+        }
+
+        // Ensure the number has the correct length after conversion
+        if (cleaned.length === 13) {
+          return cleaned; // Return the correctly formatted number
+        } else {
+          return 'Invalid phone number length';
+        }
+      }
+
+      // console.log(formatPhoneNumber(contact_number));
+      await sendMessage({
+        firstName: first_name,
+        lastName: last_name,
+        phoneNumber: formatPhoneNumber(contact_number),
+        messageType:
+          loan_status === 'Approved' ? 'loanApproval' : 'loanRejection',
+
+        additionalData: { loanId: loanId, loanAmount: loan_amount }
+      });
 
       res.status(200).json({ success: true });
 

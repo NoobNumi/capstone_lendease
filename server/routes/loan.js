@@ -16,6 +16,106 @@ const upload = multer({ storage: multer.memoryStorage() });
 let firebaseStorage = config.firebaseStorage;
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+// Function to evaluate loan application with detailed breakdown and explanations
+const evaluateLoanApplicationWithDetailedBreakdown = (
+  application,
+  parameters
+) => {
+  const { creditScore, monthlyIncome, loanAmount, employmentYears } =
+    application;
+  const {
+    minCreditScore,
+    minMonthlyIncome,
+    maxLoanToIncomeRatio,
+    minEmploymentYears
+  } = parameters;
+
+  // Calculate credit score percentage
+  const creditScorePercentage =
+    creditScore >= minCreditScore ? 100 : (creditScore / minCreditScore) * 100;
+  const creditScoreMessage =
+    creditScore >= minCreditScore
+      ? 'Credit score meets the required threshold.'
+      : `Credit score is lower than the required minimum of ${minCreditScore}. (${creditScorePercentage.toFixed(
+          2
+        )}%)`;
+
+  // Calculate income percentage
+  const incomePercentage =
+    monthlyIncome >= minMonthlyIncome
+      ? 100
+      : (monthlyIncome / minMonthlyIncome) * 100;
+  const incomeMessage =
+    monthlyIncome >= minMonthlyIncome
+      ? 'Income meets the required minimum.'
+      : `Income is below the required minimum of ${minMonthlyIncome}. (${incomePercentage.toFixed(
+          2
+        )}%)`;
+
+  // Calculate loan-to-income ratio percentage
+  const maxLoanAmount = monthlyIncome * 12 * maxLoanToIncomeRatio;
+  const loanToIncomePercentage =
+    loanAmount <= maxLoanAmount ? 100 : (maxLoanAmount / loanAmount) * 100;
+  const loanToIncomeMessage =
+    loanAmount <= maxLoanAmount
+      ? 'Loan amount is within the acceptable loan-to-income ratio.'
+      : `Loan amount exceeds the allowed limit based on income (${loanToIncomePercentage.toFixed(
+          2
+        )}%).`;
+
+  // Calculate employment years percentage
+  const employmentYearsPercentage =
+    employmentYears >= minEmploymentYears
+      ? 100
+      : (employmentYears / minEmploymentYears) * 100;
+  const employmentYearsMessage =
+    employmentYears >= minEmploymentYears
+      ? 'Employment history meets the required duration.'
+      : `Employment history is below the required minimum of ${minEmploymentYears} years. (${employmentYearsPercentage.toFixed(
+          2
+        )}%)`;
+
+  // Final approval decision based on the lowest percentage
+  const overallApprovalPercentage = Math.min(
+    creditScorePercentage,
+    incomePercentage,
+    loanToIncomePercentage,
+    employmentYearsPercentage
+  );
+
+  // Construct approval/denial message
+  let approvalMessage = 'Loan application approved.';
+
+  if (overallApprovalPercentage < 100) {
+    approvalMessage =
+      'Loan application denied due to the following criteria not meeting the required thresholds:';
+  }
+
+  return {
+    approved: overallApprovalPercentage === 100,
+    message: approvalMessage,
+    breakdown: {
+      creditScore: {
+        percentage: creditScorePercentage,
+        message: creditScoreMessage
+      },
+      income: {
+        percentage: incomePercentage,
+        message: incomeMessage
+      },
+      loanToIncomeRatio: {
+        percentage: loanToIncomePercentage,
+        message: loanToIncomeMessage
+      },
+      employmentYears: {
+        percentage: employmentYearsPercentage,
+        message: employmentYearsMessage
+      }
+    },
+    overallApprovalPercentage
+  };
+};
+
 const getBorrowerAccountByUserAccountId = async userId => {
   const [rows] = await db.query(
     `
@@ -29,6 +129,82 @@ SELECT borrower_id  FROM user_account WHERE user_id = ?
 
   return rows[0].borrower_id;
 };
+
+router.post('/checkLoanApplicationApprovalRate', async (req, res) => {
+  let loan_application_id = req.body.loan_application_id; // User loan application details
+  let application = req.body.application; // User loan application details
+  const loanType = req.body.loanType; // Example: "personal", "business", "mortgage"
+
+  try {
+    const [rows] = await db.query(
+      `
+  
+ SELECT b.*, l.loan_amount
+  FROM borrower_account b JOIN loan l ON b.borrower_id = l.borrower_id 
+ WHERE l.loan_id = ?;
+        
+         
+         `,
+      [loan_application_id]
+    );
+
+    // Default parameters for loan evaluation
+    const loanParameters = {
+      personal: {
+        minCreditScore: 700,
+        minMonthlyIncome: 15000,
+        maxLoanToIncomeRatio: 0.5,
+        minEmploymentYears: 2
+      }
+    };
+
+    // Select parameters based on loan type
+    const selectedParameters =
+      loanParameters[loanType] || loanParameters['personal'];
+
+    // // Validate application input
+    // if (
+    //   !application ||
+    //   !application.creditScore ||
+    //   !application.monthlyIncome ||
+    //   !application.loanAmount ||
+    //   application.employmentYears === undefined
+    // ) {
+    //   return res.status(400).json({
+    //     error:
+    //       'Provide all required fields: creditScore, monthlyIncome, loanAmount, employmentYears.'
+    //   });
+    // }
+
+    // Evaluate the loan application with detailed breakdown
+
+    let borrowerInfo = rows[0];
+
+    application = {
+      creditScore: borrowerInfo.credit_score,
+      monthlyIncome: borrowerInfo.monthly_income,
+      loanAmount: borrowerInfo.loan_amount,
+      employmentYears: borrowerInfo.employment_years
+    };
+    const result = evaluateLoanApplicationWithDetailedBreakdown(
+      application,
+      selectedParameters
+    );
+
+    res.status(201).json({
+      success: true,
+      data: {
+        result
+      }
+    });
+  } catch (err) {
+    console.error(err); // Log the error for debugging
+    res.status(500).json({
+      success: false,
+      message: 'An error occurred. Please try again later.'
+    });
+  }
+});
 router.post(
   '/create',
   authenticateUserMiddleware,

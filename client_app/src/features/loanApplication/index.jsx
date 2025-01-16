@@ -371,16 +371,32 @@ function LoanApplication() {
             (
               <div className="flex">
 
-                <button className="btn btn-outline btn-sm" onClick={() => {
-                  //  console.log({ loan })
-                  // setisEditModalOpen(true)
-                  setselectedLoan(loan);
+                {/* <button className="btn btn-outline btn-sm"
 
-                  document.getElementById('viewLoan').showModal();
-                  // setFieldValue('Admin_Fname', 'dex');
-                }}>
+                // onClick={() => {
+                //   //  console.log({ loan })
+                //   // setisEditModalOpen(true)
+                //   setselectedLoan(loan);
+
+                //   document.getElementById('viewLoan').showModal();
+                //   // setFieldValue('Admin_Fname', 'dex');
+                // }}
+
+                >
+
                   <i class="fa-solid fa-eye"></i>
-                </button>
+                </button> */}
+
+                <a
+                  href={`loan_details/${loan.loan_id}`} // Replace with the actual URL for the loan details
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-outline btn-sm"
+                >
+                  <i className="fa-solid fa-eye"></i>
+                </a>
+
+
 
                 {/* <button
                   className="btn btn-outline btn-sm ml-2"
@@ -554,6 +570,26 @@ function LoanApplication() {
 
 
 
+  const [loanSettings, setLoanSettings] = useState({}); // Changed variable name here
+
+
+
+  const fetchloanSettings = async () => {
+    try {
+      const res = await axios.get(`settings/read/1`); // Using shorthand for axios.get
+      const settings = res.data.data; // Changed variable name here
+      setLoanSettings(settings); // Changed function call here
+    } catch (err) {
+      console.error('Error fetching pricing settings:', err); // Log the error
+      setError('Failed to fetch pricing settings'); // Changed error message here
+    } finally {
+      setIsLoaded(true); // Ensure isLoaded is set to true regardless of success or error
+    }
+  };
+
+  useEffect(() => {
+    fetchloanSettings(); // Changed function call here
+  }, []);
 
   const formikConfig = (selectedUser) => {
 
@@ -611,7 +647,7 @@ function LoanApplication() {
         // proposed_loan_amount: Yup.number()
         //   .typeError('Loan amount must be a number')
         //   .required('Proposed loan amount is required'),
-        installment_duration: Yup.string().required('Duration is required'),
+        // installment_duration: Yup.string().required('Duration is required'),
         numberField: Yup.number().required('Number is required'),
         //   .required('Installment duration is required'),
         loan_security: Yup.string().required('Loan security (ATM/Passbook) is required')
@@ -670,7 +706,7 @@ function LoanApplication() {
 
 
         calculatorLoanAmmount: 20000,
-        calculatorInterestRate: 36,
+        calculatorInterestRate: (loanSettings?.interest_rate || 3),
         calculatorMonthsToPay: 6,
         calculatorTotalAmountToPay: 0,
 
@@ -1198,6 +1234,48 @@ function LoanApplication() {
 
                             </div>
                             <div className="mt-4 z-50 grid grid-cols-1 gap-3 md:grid-cols-2 ">
+
+
+
+                              {/* <InputText
+
+                                isRequired
+                                placeholder=""
+                                label="Proposed loan amount"
+                                name="proposed_loan_amount"
+                                type="number"
+
+                                value={values.proposed_loan_amount}
+                                onBlur={handleBlur} // This apparently updates `touched`?
+                              /> */}
+
+                            </div>
+                            <div className="mt-4 z-50 grid grid-cols-1 gap-3 md:grid-cols-3 ">
+                              {/* <div className='mt-2'>
+                                <Dropdown
+                                  // icons={mdiAccount}
+                                  label="Installment Duration (Months)"
+                                  name="installment_duration"
+                                  placeholder=""
+                                  value={values.installment_duration}
+                                  setFieldValue={setFieldValue}
+                                  onBlur={handleBlur}
+                                  options={[
+                                    {
+                                      name: '1',
+                                      displayName: '1'
+                                    },
+                                  ].map(val => {
+                                    return {
+                                      value: val.name,
+                                      label: val.displayName
+                                    };
+                                  })}
+
+                                />
+
+                              </div> */}
+
                               <div className='mt-2'>
                                 <Dropdown
                                   // icons={mdiAccount}
@@ -1226,48 +1304,6 @@ function LoanApplication() {
                                 />
 
                               </div>
-
-
-                              <InputText
-
-                                isRequired
-                                placeholder=""
-                                label="Proposed loan amount"
-                                name="proposed_loan_amount"
-                                type="number"
-
-                                value={values.proposed_loan_amount}
-                                onBlur={handleBlur} // This apparently updates `touched`?
-                              />
-
-                            </div>
-                            <div className="mt-4 z-50 grid grid-cols-1 gap-3 md:grid-cols-2 ">
-                              <div className='mt-2'>
-                                <Dropdown
-                                  // icons={mdiAccount}
-                                  label="Installment Duration (Months)"
-                                  name="installment_duration"
-                                  placeholder=""
-                                  value={values.installment_duration}
-                                  setFieldValue={setFieldValue}
-                                  onBlur={handleBlur}
-                                  options={[
-                                    {
-                                      name: '1',
-                                      displayName: '1'
-                                    },
-                                  ].map(val => {
-                                    return {
-                                      value: val.name,
-                                      label: val.displayName
-                                    };
-                                  })}
-
-                                />
-
-                              </div>
-
-
                               <InputText
 
                                 isRequired
@@ -1279,9 +1315,6 @@ function LoanApplication() {
                                 value={values.numberField}
                                 onBlur={handleBlur} // This apparently updates `touched`?
                               />
-
-                            </div>
-                            <div className="grid grid-cols-1 gap-3 md:grid-cols-1 mt-2">
                               <InputText
                                 isRequired
                                 placeholder="ATM/Passbook number"
@@ -1294,6 +1327,9 @@ function LoanApplication() {
                               />
 
                             </div>
+                            {/* <div className="grid grid-cols-1 gap-3 md:grid-cols-1 mt-2">
+                           
+                            </div> */}
                           </div>
                           }
 

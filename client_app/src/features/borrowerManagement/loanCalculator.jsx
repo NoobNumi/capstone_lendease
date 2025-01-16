@@ -8,7 +8,7 @@ const LoanCalculator = memo(({
   handleBlur,
   values,
   calculatorLoanAmmount = 5000,
-  calculatorInterestRate = 36,
+  calculatorInterestRate = 7,
   calculatorMonthsToPay = 6,
   calculatorTotalAmountToPay = 0,
   isReadOnly = false

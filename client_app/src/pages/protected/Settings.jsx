@@ -345,14 +345,14 @@ const PricingTab = () => {
   const decoded = jwtDecode(token);
 
   const [isLoaded, setIsLoaded] = useState(false);
-  const [pricingSettings, setPricingSettings] = useState({}); // Changed variable name here
+  const [loanSettings, setLoanSettings] = useState({}); // Changed variable name here
   const [error, setError] = useState(null); // Add error state for error handling
 
-  const fetchPricingSettings = async () => {
+  const fetchloanSettings = async () => {
     try {
-      const res = await axios.get(`settings/pricing/1`); // Using shorthand for axios.get
+      const res = await axios.get(`settings/read/1`); // Using shorthand for axios.get
       const settings = res.data.data; // Changed variable name here
-      setPricingSettings(settings); // Changed function call here
+      setLoanSettings(settings); // Changed function call here
     } catch (err) {
       console.error('Error fetching pricing settings:', err); // Log the error
       setError('Failed to fetch pricing settings'); // Changed error message here
@@ -362,80 +362,77 @@ const PricingTab = () => {
   };
 
   useEffect(() => {
-    fetchPricingSettings(); // Changed function call here
+    fetchloanSettings(); // Changed function call here
   }, []);
   const formikConfig = () => {
-
-
     return {
       initialValues: {
-        ...pricingSettings
+        minCreditScore: loanSettings.min_credit_score, // Minimum Credit Score
+        minMonthlyIncome: loanSettings.min_monthly_income, // Minimum Monthly Income
+        maxLoanToIncomeRatio: loanSettings.loan_to_income_ratio, // Maximum Loan-to-Income Ratio
+        minEmploymentYears: loanSettings.employment_years, // Minimum Employment Years
+        interestRate: loanSettings.interest_rate
       },
       validationSchema: Yup.object({
-        Base_Price_Brand_New: Yup.number()
-          .required('Base Price for Brand New is required')
-          .positive('Base Price must be a positive number'),
+        // Credit Score Validation
+        minCreditScore: Yup.number()
+          .required('Minimum Credit Score is required')
+          .positive('Credit Score must be a positive number'),
 
-        Amount_Per_Gram_Brand_New: Yup.number()
-          .required('Amount Per Gram for Brand New is required')
-          .positive('Amount Per Gram must be a positive number')
-          .test('is-greater', 'Amount Per Gram must be greater than Base Price', function (value) {
-            const { Base_Price_Brand_New } = this.parent; // Access the other field
-            return value > Base_Price_Brand_New; // Return true if the condition is met
-          }),
-        Base_Price_Subasta: Yup.number()
-          .required('Base Price for Subasta is required')
-          .positive('Base Price must be a positive number'),
+        // Employment Validations
+        minMonthlyIncome: Yup.number()
+          .required('Minimum Monthly Income is required')
+          .positive('Monthly Income must be a positive number'),
 
-        Amount_Per_Gram_Subasta: Yup.number()
-          .required('Amount Per Gram for Subasta is required')
-          .positive('Amount Per Gram must be a positive number')
-          .test('is-greater', 'Amount Per Gram must be greater than Base Price', function (value) {
-            const { Base_Price_Subasta } = this.parent; // Access the other field
-            return value > Base_Price_Subasta; // Return true if the condition is met
-          }),
-        Interest_Brand_New: Yup.number()
-          .required('Interest is required')
-          .positive('Interest must be a positive number'),
-        Interest_Subasta: Yup.number()
-          .required('Interest is required')
-          .positive('Interest must be a positive number')
+        maxLoanToIncomeRatio: Yup.number()
+          .required('Maximum Loan-to-Income Ratio is required')
+          .positive('Loan-to-Income Ratio must be a positive number'),
+
+        minEmploymentYears: Yup.number()
+          .required('Minimum Employment Years is required')
+          .min(0, 'Employment Years cannot be negative')
+          .integer('Employment Years must be a whole number'),
       }),
-      // validateOnMount: true,
-      // validateOnChange: false,
-      onSubmit: async (values, { setFieldError, setSubmitting }) => {
+      onSubmit: async (values, { setSubmitting }) => {
         setSubmitting(true);
-
         try {
 
+          console.log({ values })
+          // API request
+          const response = await axios.put(`settings/update/1`, values);
 
-
-
-          let res = await axios({
-            method: 'put',
-            url: `settings/pricing/1`,
-            data: {
-              ...values
-            }
-          });
-
-          toast.success('Updated Successfully', {
+          // Success notification
+          toast.success('Form updated successfully', {
             position: 'top-right',
             autoClose: 2000,
             hideProgressBar: false,
             closeOnClick: true,
             pauseOnHover: true,
             draggable: true,
-            progress: undefined,
-            theme: 'light'
+            theme: 'light',
           });
+
+          console.log('Response:', response.data);
         } catch (error) {
-          console.log({ error });
+          console.error('Error submitting form:', error);
+
+          // Error notification
+          toast.error('Failed to update settings. Please try again.', {
+            position: 'top-right',
+            autoClose: 2000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: 'light',
+          });
         } finally {
+          setSubmitting(false);
         }
-      }
+      },
     };
   };
+
 
 
 
@@ -475,75 +472,77 @@ const PricingTab = () => {
             Child
           </label> */}
                 <h1 className="text-2xl font-bold text-orange-300">
-                  Brand New
+                  Credit Score
                 </h1>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3 ">
 
 
                   <InputText
 
-                    label="Base Price"
-                    name="Base_Price_Brand_New"
+                    label="Minimum Credit Score"
+                    name="minCreditScore"
                     type="number"
                     placeholder=""
-                    value={values.Base_Price_Brand_New}
+                    value={values.minCreditScore}
+                    onBlur={handleBlur} // This apparently updates `touched`?
+                  />
+
+                </div>
+                <h1 className="text-2xl font-bold text-orange-300 mt-4">
+                  Employment
+                </h1>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3 ">
+
+
+                  <InputText
+
+                    label="Min Monthly Income"
+                    name="minMonthlyIncome"
+                    type="number"
+                    placeholder=""
+                    value={values.minMonthlyIncome}
+                    onBlur={handleBlur} // This apparently updates `touched`?
+                  />
+
+                  <InputText
+
+                    label="Max Loan to Income Ratio"
+                    name="maxLoanToIncomeRatio"
+                    type="number"
+                    placeholder=""
+                    value={values.maxLoanToIncomeRatio}
                     onBlur={handleBlur} // This apparently updates `touched`?
                   />
                   <InputText
 
-                    label="Amount Per Gram"
-                    name="Amount_Per_Gram_Brand_New"
+                    label="Min Employment Years"
+                    name="minEmploymentYears"
                     type="number"
                     placeholder=""
-                    value={values.Amount_Per_Gram_Brand_New}
-                    onBlur={handleBlur} // This apparently updates `touched`?
-                  />
-                  <InputText
-
-                    label="Interest Per Gram"
-                    name="Interest_Brand_New"
-                    type="number"
-                    placeholder=""
-                    value={values.Interest_Brand_New}
+                    value={values.minEmploymentYears}
                     onBlur={handleBlur} // This apparently updates `touched`?
                   />
                 </div>
-                <h1 className="text-2xl font-bold text-orange-300">
-                  Subasta
-                </h1>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3 ">
+                <h1 className="text-2xl font-bold text-orange-300 mt-1">
+                  Interest Rate
+                </h1>    <div className="grid grid-cols-1 gap-3 md:grid-cols-3 ">
 
 
                   <InputText
 
-                    label="Base Price"
-                    name="Base_Price_Subasta"
+                    label="Interest Rate (%)"
+                    name="interestRate"
                     type="number"
                     placeholder=""
-                    value={values.Base_Price_Subasta}
+                    value={values.interestRate}
                     onBlur={handleBlur} // This apparently updates `touched`?
                   />
-                  <InputText
 
-                    label="Amount Per Gram"
-                    name="Amount_Per_Gram_Subasta"
-                    type="number"
-                    placeholder=""
-                    value={values.Amount_Per_Gram_Subasta}
-                    onBlur={handleBlur} // This apparently updates `touched`?
-                  />
-                  <InputText
 
-                    label="Interest Per Gram"
-                    name="Interest_Subasta"
-                    type="number"
-                    placeholder=""
-                    value={values.Interest_Subasta}
-                    onBlur={handleBlur} // This apparently updates `touched`?
-                  />
                 </div>
                 <button
                   type="submit"
+                  onClick={handleSubmit}
                   className={
                     'btn mt-4 shadow-lg  bg-buttonPrimary font-bold text-white'
                   }>
@@ -1084,10 +1083,10 @@ const AuditTrailTab = () => {
 };
 function InternalPage() {
   const dispatch = useDispatch();
-  const [selectedTab, setSelectedTab] = useState('Account');
+  const [selectedTab, setSelectedTab] = useState('Settings');
   const categories = {
-    General: ['Account', 'Pricing', 'Notifications', 'Audit Trail'],
-    'Access Control': ['Accounts', 'Record Management'],
+    General: ['Settings'],
+
   };
 
   const content = {
@@ -1098,12 +1097,13 @@ function InternalPage() {
 
   // Map selectedTab to the corresponding component
   const tabComponents = {
-    Account: <Tab1Content />,
-    Pricing: <PricingTab />,
-    Notifications: <NotificationsTab />,
-    Accounts: <AccountSettingsTab />,
-    "Record Management": <RecordManagementTab />,
-    "Audit Trail": <AuditTrailTab />,
+    // Account: <Tab1Content />,
+    'Settings': <PricingTab />,
+    'Loan Interest': <PricingTab />,
+    // Notifications: <NotificationsTab />,
+    // Accounts: <AccountSettingsTab />,
+    // "Record Management": <RecordManagementTab />,
+    // "Audit Trail": <AuditTrailTab />,
   };
 
 
