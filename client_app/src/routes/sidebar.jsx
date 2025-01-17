@@ -88,7 +88,7 @@ const AppRoutes = () => {
         newRoutes.push({
           path: '/app/docs',
           icon: <Squares2X2Icon className={iconClasses} />,
-          name: 'Documents and Resources',
+          name: 'Disbursement',
         });
       }
 

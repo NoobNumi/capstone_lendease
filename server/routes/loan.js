@@ -16,6 +16,66 @@ const upload = multer({ storage: multer.memoryStorage() });
 let firebaseStorage = config.firebaseStorage;
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+const accountSid = 'ACbe246063583580e176da8274a8071c4a'; // Replace with your Twilio Account SID
+const authToken = 'faa226819bb25872991f707ec4e2d2d2'; // Replace with your Twilio Auth Token
+import twilio from 'twilio'; // Use import statement for Twilio
+import { Vonage } from '@vonage/server-sdk';
+
+const loanCreationMessage = ({
+  firstName,
+  lastName,
+  loanAmount,
+  loanId
+}) => `Dear ${firstName} ${lastName},
+
+Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been successfully created. Our team will review your application and get back to you shortly.
+
+Thank you for choosing us!`;
+
+const sendMessage = async ({
+  firstName,
+  lastName,
+  phoneNumber,
+  messageType,
+  additionalData = {}
+}) => {
+  const client = twilio(accountSid, authToken);
+  const templates = {
+    loanCreation: loanCreationMessage
+  };
+
+  const text = templates[messageType]
+    ? templates[messageType]({ firstName, lastName, ...additionalData })
+    : 'No valid message type provided.';
+
+  const from = 'YourCompany'; // Set your company name or short code as sender
+  const to = phoneNumber;
+
+  try {
+    const vonage = new Vonage({
+      apiKey: '96c9acc9',
+      apiSecret: 'OR9Ypw0s0EKw58I9'
+    });
+    // await vonage.sms.send(
+    //   { to, from, text: messageText },
+    //   (error, response) => {
+    //     if (error) {
+    //       console.error('Failed to send message:', error);
+    //     } else {
+    //       console.log('Message sent successfully:', response);
+    //     }
+    //   }
+    // );
+    console.log({ to, from, text });
+    await vonage.sms.send({ to, from, text }).then(resp => {
+      console.log('Message sent successfully');
+      console.log(resp);
+    });
+  } catch (error) {
+    console.error('Error occurred while sending message:', error);
+  }
+};
+
 // Function to evaluate loan application with detailed breakdown and explanations
 const evaluateLoanApplicationWithDetailedBreakdown = (
   application,
@@ -244,7 +304,7 @@ router.post(
 
       //  insert into loan table
 
-      await db.query(
+      const [result] = await db.query(
         `INSERT INTO loan 
         (
        loan_application_id, 
@@ -272,11 +332,56 @@ router.post(
         ]
       );
 
+      const loanId = result.insertId;
       // insert QR CODE
       await db.query(`INSERT INTO qr_code ( code, type) VALUES ( ?, ?)`, [
         loan_application_id,
         'Loan Application'
       ]);
+
+      const [rows1] = await db.query(
+        `
+        SELECT la.*, ba.* FROM loan la INNER 
+        JOIN borrower_account ba ON la.borrower_id = 
+        ba.borrower_id 
+        where la.loan_id = ?
+  
+           `,
+        [loanId]
+      );
+
+      let loanDetails = rows1[0];
+
+      const { first_name, last_name, contact_number, loan_amount } =
+        loanDetails;
+
+      function formatPhoneNumber(phoneNumber) {
+        // Remove any non-digit characters
+        let cleaned = phoneNumber.replace(/\D/g, '');
+
+        // Check if the number starts with '09' or any other prefix and always convert to '+63'
+        if (cleaned.startsWith('9')) {
+          cleaned = '+63' + cleaned.substring(1); // Replace '0' or '9' with '+63'
+        } else if (cleaned.startsWith('0')) {
+          cleaned = '+63' + cleaned.substring(1); // Replace '0' with '+63'
+        }
+
+        // Ensure the number has the correct length after conversion
+        if (cleaned.length === 13) {
+          return cleaned; // Return the correctly formatted number
+        } else {
+          return 'Invalid phone number length';
+        }
+      }
+
+      // console.log(formatPhoneNumber(contact_number));
+      await sendMessage({
+        firstName: first_name,
+        lastName: last_name,
+        phoneNumber: formatPhoneNumber(contact_number),
+        messageType: 'loanCreation',
+        additionalData: { loanId: loanId, loanAmount: loan_amount }
+      });
 
       res.status(201).json({
         success: true,

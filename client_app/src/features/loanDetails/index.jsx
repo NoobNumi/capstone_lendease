@@ -65,6 +65,121 @@ import {
 
 
 
+const LoanDetailsHeader = ({ selectedLoan, paymentList }) => {
+  const [progress, setProgress] = useState(75); // Example progress value
+
+  const [loanPaymentList, setloanPaymentList] = useState([]);
+
+
+
+
+  const fetchloanPaymentList = async () => {
+
+
+    let res = await axios({
+      method: 'get',
+      url: `loan/${selectedLoan?.loan_id}/paymentList`,
+      data: {
+
+      }
+    });
+    let list = res.data.data;
+
+    setloanPaymentList(list)
+
+
+  };
+
+
+
+  useEffect(() => {
+
+    if (selectedLoan?.loan_id || loanId) {
+      fetchloanPaymentList()
+    }
+
+
+  }, []);
+
+
+
+
+  function getProgressPercentage(paymentList, loanPaymentList) {
+    // Calculate total due amount (sum of amounts in paymentList)
+    const totalDueAmount = paymentList.reduce((total, payment) => total + payment.dueAmount, 0);
+
+    // Calculate total paid amount (sum of approved payments in loanPaymentList)
+    const totalPaidAmount = loanPaymentList.reduce((total, payment) => {
+      if (payment.payment_status === 'Approved') {
+        return total + parseFloat(payment.payment_amount);
+      }
+      return total;
+    }, 0);
+
+    // Calculate percentage of progress
+    const progress = (totalPaidAmount / totalDueAmount) * 100;
+    const percentage = Math.min(progress, 100); // Ensure that the percentage doesn't exceed 100%
+
+    return {
+      percentage: percentage.toFixed(2), // Return percentage as a string with 2 decimals
+      totalPaidAmount: totalPaidAmount.toFixed(2)// Return total paid amount with 2 decimals
+    };
+  }
+
+  // Example usage
+
+
+
+  // Get progress percentage and total paid amount
+  const { percentage, totalPaidAmount } = getProgressPercentage(paymentList, loanPaymentList);
+
+  console.log({ percentage, totalPaidAmount }); // Output the progress percentage and total paid amount
+
+  const getStrokeColor = (progress) => {
+    if (progress <= 30) return "#EF4444"; // Red for low progress
+    if (progress <= 70) return "#F59E0B"; // Yellow for medium progress
+    return "#10B981"; // Green for high progress
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        {/* Left: Title */}
+        <h3 className="text-2xl font-bold text-gray-700 flex items-center w-3/4">
+          Loan Details
+        </h3>
+
+
+        {/* Right: Circular Progress Bar */}
+        <div className="w-1/4 bg-gray-200 rounded-full h-4 mb-2 relative">
+          {/* Progress Bar */}
+          <div
+            className="h-4 rounded-full"
+            style={{
+              width: `${percentage}%`, // Dynamic width based on progress percentage
+              backgroundColor: getStrokeColor(percentage), // Dynamic color based on progress
+              transition: 'width 0.5s ease', // Smooth animation for width change
+            }}
+          />
+          {/* Percentage Text inside the Progress Bar */}
+          <span
+            className="absolute p-2 inset-0 flex justify-center items-center text-white font-bold"
+          >
+            {percentage}% (₱{totalPaidAmount}) Paid
+          </span>
+        </div>
+      </div>
+      <hr className="border-gray-300 mb-4" />
+
+      {/* Display total amount paid */}
+
+    </div>
+  );
+
+
+};
+
+
 const Alert = ({ type = "info", title, description, onClose }) => {
   const typeStyles = {
     success: {
@@ -245,7 +360,7 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
 
 
 
-  console.log({ rowIndex })
+  const [paymentList, setPaymentList] = useState([]); // Example progress value
 
 
   const [activeTab, setActiveTab] = useState("user-details");
@@ -368,7 +483,13 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
             </Section>
           )}
           {activeTab === "loan-details" && (
-            <Section title="Loan Details">
+            <div>
+              <LoanDetailsHeader
+                selectedLoan={loanDetails}
+                paymentList={paymentList}
+              />
+
+
 
               {loanDetails.loan_id && <LoanCalculator
                 {...formikProps}
@@ -377,17 +498,10 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
                 calculatorInterestRate={formikProps.values.calculatorInterestRate}
                 calculatorMonthsToPay={formikProps.values.calculatorMonthsToPay}
                 selectedLoan={loanDetails}
+                setPaymentList={setPaymentList}
 
               />}
-              {/* <div className="space-y-3">
-                {Object.entries(loanDetails).map(([key, value]) => (
-                  <div key={key} className="flex items-center">
-                    <span className="w-40 text-gray-600 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span>
-                    <span className="text-gray-800 font-medium">{value}</span>
-                  </div>
-                ))}
-              </div> */}
-            </Section>
+            </div>
           )}
         </div>
       </div>

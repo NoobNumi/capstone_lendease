@@ -57,10 +57,12 @@ const loanPaymentAcceptanceMessage = ({
   firstName,
   lastName,
   paymentAmount,
-  paymentDate
+  paymentDate,
+  loanId
 }) => `Dear ${firstName} ${lastName},
 
-We have successfully received your payment of ${paymentAmount} on ${paymentDate}. Thank you for your timely payment.
+We have successfully received your payment of ${paymentAmount} for 
+(Loan ID: ${loanId}) on ${paymentDate}. Thank you for your timely payment.
 
 Best regards,
 [Your Company Name]`;
@@ -69,10 +71,12 @@ const loanPaymentRejectionMessage = ({
   firstName,
   lastName,
   paymentAmount,
-  reason
+  reason,
+  loanId
 }) => `Dear ${firstName} ${lastName},
 
-We regret to inform you that your payment of ${paymentAmount} could not be processed. Reason: ${reason}. Please contact us to resolve this issue.
+We regret to inform you that your payment of ${paymentAmount} for 
+(Loan ID: ${loanId}) could not be processed. Please contact us to resolve this issue.
 
 Thank you.`;
 
@@ -400,4 +404,108 @@ router.post(
   }
 );
 
+router.post(
+  '/:loanId/updatePaymentStatus',
+  authenticateUserMiddleware,
+  async (req, res) => {
+    try {
+      let { user_id } = req.user;
+      let data = req.body;
+      let loanId = req.params.loanId;
+
+      let { action, selectedTableRowIndex } = data;
+      let loan_officer_id = user_id;
+
+      const [rows1] = await db.query(
+        `
+        SELECT la.*, ba.* FROM loan la INNER 
+        JOIN borrower_account ba ON la.borrower_id = 
+        ba.borrower_id 
+        where la.loan_id = ?
+  
+           `,
+        [loanId]
+      );
+
+      let loanDetails = rows1[0];
+
+      const [rows] = await db.query(
+        `
+        UPDATE payment 
+        SET 
+          payment_status = ?, 
+          loan_officer_id = ? 
+        WHERE loan_id = ? AND  selectedTableRowIndex = ? 
+        `,
+        [action, user_id, loanId, selectedTableRowIndex]
+      );
+
+      const { first_name, last_name, contact_number, loan_amount } =
+        loanDetails;
+
+      function formatPhoneNumber(phoneNumber) {
+        // Remove any non-digit characters
+        let cleaned = phoneNumber.replace(/\D/g, '');
+
+        // Check if the number starts with '09' or any other prefix and always convert to '+63'
+        if (cleaned.startsWith('9')) {
+          cleaned = '+63' + cleaned.substring(1); // Replace '0' or '9' with '+63'
+        } else if (cleaned.startsWith('0')) {
+          cleaned = '+63' + cleaned.substring(1); // Replace '0' with '+63'
+        }
+
+        // Ensure the number has the correct length after conversion
+        if (cleaned.length === 13) {
+          return cleaned; // Return the correctly formatted number
+        } else {
+          return 'Invalid phone number length';
+        }
+      }
+
+      // console.log(formatPhoneNumber(contact_number));
+
+      const [rows2] = await db.query(
+        `
+        SELECT * from payment
+        where selectedTableRowIndex = ?
+  
+           `,
+        [selectedTableRowIndex]
+      );
+
+      const paymentDetails = rows2[0];
+
+      let paymentAmount = paymentDetails.payment_amount;
+      let paymentDate = paymentDetails.payment_date;
+
+      await sendMessage({
+        firstName: first_name,
+        lastName: last_name,
+        phoneNumber: formatPhoneNumber(contact_number),
+        messageType:
+          action === 'Approved'
+            ? 'loanPaymentAcceptance'
+            : 'loanPaymentRejection',
+
+        additionalData: {
+          loanId: loanId,
+          loanAmount: loan_amount,
+          paymentAmount,
+          paymentDate
+        }
+      });
+
+      res.status(200).json({ success: true });
+
+      // if (rows.length > 0) {
+      //   res.status(200).json({ success: true, data: rows });
+      // } else {
+      //   res.status(404).json({ message: 'No loans found for this user.' });
+      // }
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ error: error });
+    }
+  }
+);
 export default router;

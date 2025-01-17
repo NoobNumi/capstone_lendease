@@ -19,6 +19,56 @@ import { QRCodeSVG } from 'qrcode.react';
 import Radio from '../../components/Input/Radio';
 
 import { NavLink, Routes, Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+
+
+
+const PaymentSummary = ({ totalPayments, completedPayments, totalAmount, amountPaid }) => {
+  const paymentProgress = (completedPayments / totalPayments) * 100 || 0;
+  const amountProgress = (amountPaid / totalAmount) * 100 || 0;
+
+  return (
+    <div className="p-6 bg-white rounded-lg">
+      <h2 className="text-lg font-semibold text-gray-800 mb-4">Payment Summary</h2>
+
+      {/* Number of Payments */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-sm font-medium text-gray-600">
+            Payments: {completedPayments} / {totalPayments}
+          </span>
+          <span className="text-sm font-medium text-gray-600">
+            {paymentProgress.toFixed(0)}%
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-green-500 h-2 rounded-full"
+            style={{ width: `${paymentProgress}%` }}
+          ></div>
+        </div>
+      </div>
+
+      {/* Total Amount Paid */}
+      <div>
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-sm font-medium text-gray-600">
+            Amount Paid: ${amountPaid.toLocaleString()} / ${totalAmount.toLocaleString()}
+          </span>
+          <span className="text-sm font-medium text-gray-600">
+            {amountProgress.toFixed(0)}%
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-blue-500 h-2 rounded-full"
+            style={{ width: `${amountProgress}%` }}
+          ></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const LoanCalculator = memo(({
   setFieldValue,
   handleBlur,
@@ -28,7 +78,8 @@ const LoanCalculator = memo(({
   calculatorMonthsToPay = 6,
   calculatorTotalAmountToPay = 0,
   isReadOnly = false,
-  selectedLoan
+  selectedLoan,
+  setPaymentList
 }) => {
 
   const navigate = useNavigate();
@@ -136,7 +187,7 @@ const LoanCalculator = memo(({
 
     setPayments(paymentDetails);
 
-
+    setPaymentList(paymentDetails)
 
 
     if (rowIndex) {
@@ -237,8 +288,22 @@ const LoanCalculator = memo(({
   console.log({ loanPaymentList })
 
   const [selectedImage, setSelectedImage] = useState(null);
+  const totalPayments = 10; // Example: Total expected payments
+  const completedPayments = 7; // Example: Payments made so far
+  const totalAmounts = 5000; // Example: Total expected amount
+  const amountPaid = 3500; // Example: Amount paid so far
   return (
     <div className="max-w-5xl mx-auto p-8 bg-white rounded-xl shadow-md">
+
+
+      {/* <PaymentSummary
+        totalPayments={totalPayments}
+        completedPayments={completedPayments}
+        totalAmount={totalAmounts}
+        amountPaid={amountPaid}
+      />
+ */}
+
       {/* <h4 className="text-2xl font-bold mb-8 text-center text-gray-800">Loan Calculator</h4> */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
         <div>
@@ -822,9 +887,7 @@ const LoanCalculator = memo(({
           <p className="text-sm text-gray-500 mt-1 font-bold"></p>
           <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
 
-            {
-              console.log({ selectedPayment })
-            }
+
 
             {(selectedPayment.loan_id) &&
               <Formik
@@ -833,7 +896,8 @@ const LoanCalculator = memo(({
                   payment_method: selectedPayment.payment_method,
                   reference_number: selectedPayment.reference_number,
                   proof_of_payment: '',
-                  paid_amount: selectedPayment.amount || selectedPayment.payment_amount
+                  paid_amount: selectedPayment.amount || selectedPayment.payment_amount,
+                  payment_date: selectedPayment.payment_date || selectedPayment.payment_date
                 }}
                 validationSchema={Yup.object({
 
@@ -876,12 +940,11 @@ const LoanCalculator = memo(({
                     // payment_method: values.payment_method,// Function to map payment method to ID
 
                     // reference_number: values.reference_number,
-                    // selectedTableRowIndex: selectedIndex
+                    selectedTableRowIndex: selectedPayment.selectedTableRowIndex
                   };
 
 
-                  console.log({ formattedData })
-                  return true
+
 
                   try {
 
@@ -889,27 +952,14 @@ const LoanCalculator = memo(({
 
                     let res = await axios({
                       method: 'post',
-                      url: `loan/${selectedLoan.loan_application_id}/payment`,
+                      url: `admin/loan/${selectedLoan.loan_id}/updatePaymentStatus`,
                       data: formattedData
                     })
 
 
-                    const formData = new FormData();
-                    formData.append('loan_id', formattedData.loan_id);
-                    formData.append('selectedTableRowIndex', formattedData.selectedTableRowIndex);
 
-                    formData.append('proofOfPayment', files.proofOfPayment); // Assuming values contains File objects
-                    await axios({
-                      // headers: {
-                      //   'content-type': 'multipart/form-data'
-                      // },
-                      method: 'POST',
-                      url: 'loan/payment/upload-files',
-                      data: formData
-                    });
-
-
-                    toast.success(`Payment Addedd Successfully`, {
+                    document.getElementById('viewPayment').close();
+                    toast.success(`Updated Successfully`, {
                       position: 'top-right',
                       autoClose: 3000,
                       hideProgressBar: false,
@@ -920,9 +970,9 @@ const LoanCalculator = memo(({
                       theme: 'light'
                     });
                     await fetchloanPaymentList()
-                    resetForm()
 
-                    document.getElementById('addPayment').close();
+
+
 
 
                   } catch (error) {
@@ -964,8 +1014,10 @@ const LoanCalculator = memo(({
 
                   // console.log({ errors, files })
                   let hasError1 = errors['proof_of_payment'] && files.proofOfPayment == null;
-
-
+                  {
+                    console.log({ selectedPayment })
+                  }
+                  let formattedPaymentDate = format(selectedPayment.payment_date, 'MMM dd, yyyy hh:mm:a');
                   return <Form onSubmit={handleSubmit}>
 
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 ">
@@ -997,8 +1049,20 @@ const LoanCalculator = memo(({
 
                     </div>
 
-                    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4 ">
+                    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 ">
 
+                      <InputText
+                        isReadOnly={true}
+                        disabled
+                        isRequired
+                        placeholder=""
+                        label="Payment Date"
+                        name="payment_date"
+                        type="text"
+
+                        value={formattedPaymentDate}
+                        onBlur={handleBlur} // This apparently updates `touched`?
+                      />
                       <InputText
                         isReadOnly={true}
                         disabled
@@ -1011,6 +1075,14 @@ const LoanCalculator = memo(({
                         value={values.paid_amount}
                         onBlur={handleBlur} // This apparently updates `touched`?
                       />
+
+
+
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3 ">
+
+
                       <div className='mt-2'>
                         <Dropdown
                           isDisabled
