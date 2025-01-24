@@ -340,11 +340,12 @@ function LoanApplication() {
       {
         Header: 'Is Disbursed?',
         accessor: 'disbursement_id',
-        Cell: ({ value, row }) => {
-          let proof_of_disbursement = row.original.proof_of_disbursement;
-          return <h2 className='font-bold'>{proof_of_disbursement ? "Yes" : "No"}</h2>;
+        Cell: ({ value }) => {
+          return <h2 className='font-bold'>{value ? "Yes" : "No"}</h2>;
         }
       },
+
+
 
       {
         Header: 'Status',

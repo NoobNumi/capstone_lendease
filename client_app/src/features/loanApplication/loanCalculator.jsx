@@ -82,6 +82,8 @@ const LoanCalculator = memo(({
   setPaymentList
 }) => {
 
+
+  console.log({ selectedLoan })
   const navigate = useNavigate();
 
   const { loanId, rowIndex } = useParams();
@@ -187,7 +189,10 @@ const LoanCalculator = memo(({
 
     setPayments(paymentDetails);
 
-    setPaymentList(paymentDetails)
+    if (setPaymentList) {
+      setPaymentList(paymentDetails)
+    }
+
 
 
     if (rowIndex) {
@@ -500,7 +505,7 @@ const LoanCalculator = memo(({
 
                   {
                     current?.payment_status ? <StatusPill value={current?.payment_status} /> :
-                      loan_status === "Approved" && (
+                      loan_status === "Approved" && selectedLoan?.proof_of_disbursement && (
                         (index === 0 || previousPaymentStatus?.payment_status) && (
                           <div className="flex">
                             <button className="btn btn-outline btn-sm" onClick={async () => {

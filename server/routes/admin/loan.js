@@ -245,27 +245,93 @@ router.post(
       const files = req.files;
 
       const loan_application_id = req.body.loan_application_id;
+      const uploadType = req.body.uploadType;
 
-      console.log({ loan_application_id });
+      console.log({ loan_application_id, files, uploadType });
 
-      // Upload each file to Firebase Storage
-      for (const [key, fileArray] of Object.entries(files)) {
-        console.log('dex');
-        const file = fileArray[0];
+      let {
+        recipient_name,
+        recipient_account_number,
+        payment_method,
+        payment_channel,
+        amount
+      } = req.body;
 
-        const storageRef = ref(
-          firebaseStorage,
-          `lendease/loans/${loan_application_id}/${file.originalname}`
-        );
-        const metadata = { contentType: file.mimetype };
+      if (uploadType === 'for_proof_of_disbursement') {
+        // Upload each file to Firebase Storage
+        for (const [key, fileArray] of Object.entries(files)) {
+          const file = fileArray[0];
 
-        // // Upload the file to Firebase Storage
-        await uploadBytes(storageRef, file.buffer, metadata);
+          const storageRef = ref(
+            firebaseStorage,
+            `lendease/loans/${loan_application_id}/proof_of_disbursement/${file.originalname}`
+          );
+          const metadata = { contentType: file.mimetype };
 
-        // // Get the file's download URL
-        // const downloadURL = await getDownloadURL(storageRef);
-        // console.log({ downloadURL });
-        console.log(`${key} uploaded successfully.`);
+          // // Upload the file to Firebase Storage
+          await uploadBytes(storageRef, file.buffer, metadata);
+
+          // // Get the file's download URL
+          const proof_of_disbursement = await getDownloadURL(storageRef);
+
+          const existingLoan = await db.query(
+            `SELECT loan_id FROM disbursement_details WHERE loan_id = ?`,
+            [loan_application_id]
+          );
+
+          console.log({ existingLoan });
+          if (existingLoan.length === 0) {
+            const result = await db.query(
+              `
+                INSERT INTO disbursement_details (
+                  loan_id, 
+                  recipient_name,
+                  recipient_account_number,
+                  amount,
+                  payment_method, 
+                  payment_channel,
+                  notes,
+                  proof_of_disbursement 
+                )
+                VALUES (?, ?, ?, ? ,?, ?, ?, ?)
+              `,
+              [
+                loan_application_id,
+                recipient_name,
+                recipient_account_number,
+                amount,
+                payment_method,
+                payment_channel,
+                '',
+                proof_of_disbursement
+              ]
+            );
+          } else {
+            // Handle the case where loan_id already exists
+            console.log('Loan ID already exists');
+          }
+          console.log(`${key} uploaded successfully...`);
+        }
+      } else {
+        // Upload each file to Firebase Storage
+        for (const [key, fileArray] of Object.entries(files)) {
+          const file = fileArray[0];
+
+          const storageRef = ref(
+            firebaseStorage,
+            `lendease/loans/${loan_application_id}/${file.originalname}`
+          );
+          const metadata = { contentType: file.mimetype };
+
+          // // Upload the file to Firebase Storage
+          await uploadBytes(storageRef, file.buffer, metadata);
+
+          // // Get the file's download URL
+          // const downloadURL = await getDownloadURL(storageRef);
+          // console.log({ downloadURL });
+
+          console.log(`${key} uploaded successfully.`);
+        }
       }
 
       res.status(200).json({ message: 'Files uploaded successfully!' });

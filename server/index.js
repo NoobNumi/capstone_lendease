@@ -6,6 +6,7 @@ import loanAdminRoute from './routes/admin/loan.js';
 import loanRoute from './routes/loan.js';
 import userRoute from './routes/userRoute.js';
 import adminRoute from './routes/admin/admin.js';
+import adminStatsRoute from './routes/admin/statistics.js';
 import borrowerRoute from './routes/admin/borrower.js';
 import authRoute from './routes/auth.js';
 import smsRoute from './routes/sms.js';
@@ -55,6 +56,8 @@ app.use('/api/admin/loan', loanAdminRoute);
 app.use('/api/user', userRoute);
 app.use('/api/admin', adminRoute);
 app.use('/api/admin/borrower', borrowerRoute);
+
+app.use('/api/admin_stats/statistics', adminStatsRoute);
 
 app.use('/api/auth', authRoute);
 app.use('/api/sms', smsRoute);

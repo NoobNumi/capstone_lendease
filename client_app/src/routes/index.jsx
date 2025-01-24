@@ -47,6 +47,10 @@ const LoanApplication = lazy(() => import('../pages/protected/LoanApplication'))
 const LoanManagement = lazy(() => import('../pages/protected/LoanManagement'));
 const BorrowersManagement = lazy(() => import('../pages/protected/BorrowersManagement'));
 const LoanDetails = lazy(() => import('../pages/protected/LoanDetails'));
+
+
+const Disbursement = lazy(() => import('../pages/protected/Disbursement'));
+
 const token = checkAuth();
 
 const decoded = jwtDecode(token);
@@ -135,6 +139,11 @@ routes = [
   {
     path: '/loan_application',
     component: LoanApplication
+  },
+
+  {
+    path: '/disbursement',
+    component: Disbursement
   },
 
   {

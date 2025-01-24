@@ -60,11 +60,19 @@ function LeftSidebar() {
       </div> */}
       {/* <hr class="border-t-2 border-white mx-auto w-1/2 my-2"></hr> */}
       <div className=" mx-auto flex items-center justify-center mb-3 mt-6">
-        <img
+        {/* <img
           src={selectedUser?.profile_pic || 'https://img.freepik.com/premium-vector/young-smiling-man-avatar-man-with-brown-beard-mustache-hair-wearing-yellow-sweater-sweatshirt-3d-vector-people-character-illustration-cartoon-minimal-style_365941-860.jpg?w=740'}
           alt="Logo"
           className="w-24 h-24 rounded-full"
-        />
+        /> */}
+
+        <div className="bg-white p-2 rounded-full shadow-lg">
+          <img
+            src="/LOGO.png"
+            alt="Logo"
+            className="w-24 h-24 rounded-full border-2 border-blue-950 p-2"
+          />
+        </div>
       </div>
 
       <ul className="menu bg-blue-950 text-white items-center justify-between mx-auto ">

@@ -278,7 +278,24 @@ router.post(
       loan_type_specific,
       calculatorLoanAmmount,
       calculatorInterestRate,
-      calculatorMonthsToPay
+      calculatorMonthsToPay,
+
+      work_name,
+      has_business,
+      type_of_business,
+
+      disbursement_type, // The type of disbursement
+      disbursement_bank_or_wallet_name, // The bank or e-wallet name
+      disbursement_account_name, // The account holder's name
+      disbursement_account_number, // The account number
+
+      business_address,
+      income_flow,
+      income_amount,
+      numberField,
+      loan_security,
+      relationship_to_loan_guarantor,
+      loan_guarantor
     } = data;
 
     let { user_id } = req.user;
@@ -287,7 +304,7 @@ router.post(
     let borrower_id = await getBorrowerAccountByUserAccountId(user_id);
     // map to db
     let loan_application_id = uuidv4();
-    let loan_amount = calculatorLoanAmmount || proposed_loan_amount;
+    let loan_amount_val = calculatorLoanAmmount || proposed_loan_amount;
     let repayment_schedule_id = calculatorMonthsToPay;
     let loan_type_value = loan_type || loan_type_specific;
     let interest_rate = calculatorInterestRate;
@@ -299,7 +316,7 @@ router.post(
       await db.query(
         `INSERT INTO loan_application (application_id, borrower_id, loan_amount, status, qr_code_id)
        VALUES (?, ?, ?, ?, ?)`,
-        [loan_application_id, borrower_id, loan_amount, loan_status, 1]
+        [loan_application_id, borrower_id, loan_amount_val, loan_status, 1]
       );
 
       //  insert into loan table
@@ -318,12 +335,12 @@ router.post(
        repayment_schedule_id
        
        ) 
-       VALUES ( ?, ?, ?, ?, ? ,?, ?,?,?)`,
+       VALUES ( ?, ?, ?, ?, ? ,?, ?,?,? )`,
         [
           loan_application_id,
           borrower_id,
           loan_type_value,
-          loan_amount,
+          loan_amount_val,
           interest_rate,
           loan_status,
           purpose,
@@ -333,6 +350,63 @@ router.post(
       );
 
       const loanId = result.insertId;
+
+      let mappedKey = {
+        work_name: 'non_employee_work_name',
+        has_business: 'non_employee_has_business',
+        type_of_business: 'non_employee_type_of_business',
+        disbursement_type: 'disbursement_type',
+        disbursement_bank_or_wallet_name: 'disbursement_bank_or_wallet_name',
+        disbursement_account_name: 'disbursement_account_name',
+        disbursement_account_number: 'disbursement_account_number',
+        business_address: 'non_employee_business_address',
+        income_flow: 'non_employee_income_flow',
+        income_amount: 'non_employee_income_amount',
+        numberField: 'non_employee_numberField',
+        loan_security: 'non_employee_loan_security',
+        relationship_to_loan_guarantor:
+          'non_employee_relationship_to_loan_guarantor',
+        loan_guarantor: 'non_employee_loan_guarantor'
+      };
+
+      await db.query(
+        `
+        UPDATE loan SET 
+            ${mappedKey.work_name} = ?, 
+            ${mappedKey.has_business} = ?, 
+            ${mappedKey.type_of_business} = ?, 
+            ${mappedKey.disbursement_type} = ?, 
+            ${mappedKey.disbursement_bank_or_wallet_name} = ?, 
+            ${mappedKey.disbursement_account_name} = ?, 
+            ${mappedKey.disbursement_account_number} = ?, 
+            ${mappedKey.business_address} = ?, 
+            ${mappedKey.income_flow} = ?, 
+            ${mappedKey.income_amount} = ?, 
+            ${mappedKey.numberField} = ?, 
+            ${mappedKey.loan_security} = ?, 
+            ${mappedKey.relationship_to_loan_guarantor} = ?, 
+            ${mappedKey.loan_guarantor} = ? 
+        WHERE loan_id = ?
+        `,
+        [
+          work_name,
+          has_business,
+          type_of_business,
+          disbursement_type,
+          disbursement_bank_or_wallet_name,
+          disbursement_account_name,
+          disbursement_account_number,
+          business_address,
+          income_flow,
+          income_amount,
+          numberField,
+          loan_security,
+          relationship_to_loan_guarantor,
+          loan_guarantor,
+          loanId // This is the last parameter
+        ]
+      );
+
       // insert QR CODE
       await db.query(`INSERT INTO qr_code ( code, type) VALUES ( ?, ?)`, [
         loan_application_id,
@@ -352,8 +426,7 @@ router.post(
 
       let loanDetails = rows1[0];
 
-      const { first_name, last_name, contact_number, loan_amount } =
-        loanDetails;
+      let { first_name, last_name, contact_number, loan_amount } = loanDetails;
 
       function formatPhoneNumber(phoneNumber) {
         // Remove any non-digit characters
@@ -469,9 +542,13 @@ router.post('/list', authenticateUserMiddleware, async (req, res) => {
       `
 
 
-      SELECT la.*, ba.* FROM loan la INNER 
+      SELECT la.*, ba.*, dd.* , la.loan_id as loan_id  FROM loan la INNER 
       JOIN borrower_account ba ON la.borrower_id = 
-      ba.borrower_id WHERE la.borrower_id  = ? 
+      ba.borrower_id 
+      
+      LEFT  JOIN disbursement_details dd ON la.loan_id = dd.loan_id
+      
+      WHERE la.borrower_id  = ? 
 
       ORDER BY la.application_date DESC
 
@@ -501,10 +578,12 @@ router.get('/:loanId/details', authenticateUserMiddleware, async (req, res) => {
       `
 
 
-      SELECT la.*, ba.* FROM loan la INNER 
+      SELECT la.*, ba.* ,dd.* , la.loan_id as loan_id FROM loan la INNER 
       JOIN borrower_account ba ON la.borrower_id = 
       ba.borrower_id 
  
+         LEFT  JOIN disbursement_details dd ON la.loan_id = dd.loan_id
+         
      where la.loan_id = ?
        
 

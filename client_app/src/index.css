@@ -3,6 +3,21 @@
 @tailwind utilities;
 
 @media print {
+  @page {
+    margin: 1cm;
+  }
+
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+}
+
+@media print {
   .hidden-print {
   }
   ::-webkit-scrollbar {

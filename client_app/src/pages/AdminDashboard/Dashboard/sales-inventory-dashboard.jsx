@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from "react";
 import SalesOverview from "./sales-overview";
-import InventoryOverview from "./inventory-overview";
-import RecentOrders from "./recent-orders";
 import DateRangeFilter from "./date-range-filter";
-import TopSellingProducts from "./top-selling-products";
-
-import { BsPeople, BsCartCheck, BsHourglassSplit, BsBarChart } from "react-icons/bs";
-
-import axios from 'axios';
-
-import { format, eachDayOfInterval } from 'date-fns';
+import { BsHourglassSplit, BsCheckCircle, BsXCircle, BsBarChart, BsPeople } from "react-icons/bs"; // Adjust icons as needed
+import axios from "axios";
+import { format } from "date-fns";
 
 export default function SalesInventoryDashboard() {
   const [dateRange, setDateRange] = useState({
-    start: new Date(new Date().setDate(new Date().getDate() - 30)),
+    start: new Date(new Date().setDate(new Date().getDate() - 365)),
     end: new Date(),
   });
 
@@ -21,185 +15,100 @@ export default function SalesInventoryDashboard() {
     setDateRange({ start, end });
   };
 
-  const [activeTab, setActiveTab] = useState("sales");
+  const [statsData, setStatsData] = useState({
+    loanStats: [],
+    totalBorrowers: 0,
+    disbursementStats: { totalDisbursed: 0 },
+  });
 
 
-  const [statsData, setStatsData] = useState({}); // State to store stats
+  const [isLoaded, setIsLoaded] = useState(false);
 
-
-  // Fetch stats data from the API
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await axios.get('/orders/stats/main-overview', {
+        const response = await axios.get("/admin_stats/statistics", {
           params: {
-            startDate: dateRange.start,
-            endDate: dateRange.end,
+            startDate: format(dateRange.start, "yyyy-MM-dd"),
+            endDate: format(dateRange.end, "yyyy-MM-dd"),
           },
         });
         setStatsData(response.data.data);
+        setIsLoaded(true)
       } catch (err) {
-        //setError(err.message);
-      } finally {
-        //setLoading(false);
+        console.error("Error fetching stats:", err.message);
       }
     };
 
     fetchStats();
   }, [dateRange.end, dateRange.start]);
 
-
-
-  // Map the data to the card configuration
-  //dex
-  const stats = [
-    {
-      id: 1,
-      label: "Active Borrowers",
-      value: statsData.totalCustomers || 0, // Replace with actual field name
-      icon: <BsPeople className="text-blue-500 text-4xl" />,
-      bgColor: "bg-blue-100",
-    },
-    {
-      id: 2,
-      label: "Completed Loans",
-      value: statsData.completedOrders || 0, // Replace with actual field name
-      icon: <BsCartCheck className="text-green-500 text-4xl" />,
-      bgColor: "bg-green-100",
-    },
-    {
-      id: 3,
-      label: "Pending Application",
-      value: statsData.pendingOrders || 0, // Replace with actual field name
+  // Map loan status to icons and background colors
+  const loanStatusConfig = {
+    Pending: {
       icon: <BsHourglassSplit className="text-yellow-500 text-4xl" />,
       bgColor: "bg-yellow-100",
     },
-    {
-      id: 4,
-      label: "Total Loans",
-      value: statsData.totalOversales ? `₱${statsData.totalOversales.toLocaleString()}` : "₱0",
-      icon: <BsBarChart className="text-purple-500 text-4xl" />,
-      bgColor: "bg-purple-100",
+    Approved: {
+      icon: <BsCheckCircle className="text-green-500 text-4xl" />,
+      bgColor: "bg-green-100",
     },
-  ];
-
-
-
-
-
-  const [salesData, setSalesData] = useState([]);
-  const [salesByItemArray, setSalesByItemArray] = useState([]);
-
-  const formatSalesData = (data) => {
-    return data.map((item) => ({
-      ...item,
-      date: format(new Date(item.date), 'yyyy-MM-dd'),  // Format date to 'yyyy-MM-dd'
-      sales: item.totalSales, // Use the quantity as the sales number
-    }));
+    Rejected: {
+      icon: <BsXCircle className="text-red-500 text-4xl" />,
+      bgColor: "bg-red-100",
+    },
+    Default: {
+      icon: <BsBarChart className="text-gray-500 text-4xl" />,
+      bgColor: "bg-gray-100",
+    },
   };
 
-  useEffect(() => {
-    const fetchSalesData = async () => {
-
-      const response = await axios.get('/orders/stats/sales-overview', {
-        params: {
-          startDate: dateRange.start,
-          endDate: dateRange.end,
-        },
-      });
-      const formattedData = formatSalesData(response.data.salesData);  // Format the API response
-
-      // console.log({ formattedData })
-      setSalesData(formattedData);  // Store formatted data in state
-      setSalesByItemArray(response.data.salesByItemArray)
-    };
-
-    fetchSalesData();  // Call the function when the component mounts
-  }, [dateRange.start, dateRange.end]);  // Dependency array ensures effect is triggered on startDate or endDate change
-
-
-
-  console.log({ salesData })
-
-
-  return (
+  return isLoaded && (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-7xl">
-
-        {/* <h1 className="mb-8 text-4xl font-bold text-gray-800">
-          Sales and Inventory Report
-        </h1> */}
+        {/* Loan Stats Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6">
-          {stats.map((stat) => (
-            <div
-              key={stat.id}
-              className={`flex items-center p-4 rounded-lg shadow-md ${stat.bgColor}`}
-            >
-              <div className="mr-4">{stat.icon}</div>
-              <div>
-                <p className="text-gray-700 font-bold text-lg">{stat.value}</p>
-                <p className="text-gray-500">{stat.label}</p>
-              </div>
+
+          <div
+            key={`011`}
+            className={`flex items-center p-4 rounded-lg shadow-md bg-blue-100`}
+          >
+            <div className="mr-4"><BsPeople className="text-blue-500 text-4xl" /></div>
+            <div>
+
+              <p className="text-gray-500 font-bold">{statsData.totalBorrowers} Borrower</p>
+
             </div>
-          ))}
-        </div>
-
-        <div className="mb-8 rounded-lg bg-white p-6 shadow">
-          <DateRangeFilter
-            setDateRange={setDateRange}
-
-            onFilterChange={handleDateRangeChange} />
-        </div>
-
-        <div className="space-y-8">
-          <div className="flex rounded-lg bg-white p-1 shadow-sm">
-            <button
-              className={`px-6 py-3 text-sm font-medium ${activeTab === "sales"
-                ? "bg-blue-500 text-white"
-                : "bg-gray-100 text-gray-700"
-                } rounded-lg focus:outline-none`}
-              onClick={() => setActiveTab("sales")}
-            >
-              Profit
-            </button>
-            <button
-              className={`px-6 py-3 text-sm font-medium ${activeTab === "inventory"
-                ? "bg-blue-500 text-white"
-                : "bg-gray-100 text-gray-700"
-                } rounded-lg focus:outline-none`}
-              onClick={() => setActiveTab("inventory")}
-            >
-              Disbursement
-            </button>
           </div>
 
-          {activeTab === "sales" && (
-            <div className="space-y-8">
-              <SalesOverview dateRange={dateRange}
+          {statsData.loanStats.map((stat, index) => {
+            const config = loanStatusConfig[stat.loan_status] || loanStatusConfig.Default;
+            return (
+              <div
+                key={index}
+                className={`flex items-center p-4 rounded-lg shadow-md ${config.bgColor}`}
+              >
+                <div className="mr-4">{config.icon}</div>
+                <div>
 
-                setDateRange={setDateRange}
-              />
-              {/* <RecentOrders
+                  <p className="text-gray-500 font-bold">{stat.count || 0} {stat.loan_status}</p>
+                  <p className="text-gray-900 text-sm font-bold">
+                    ₱{stat.totalAmount ? stat.totalAmount.toLocaleString() : "0.00"}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
+        {/* Date Range Filter */}
+        <div className="mb-8 rounded-lg bg-white p-6 shadow">
+          <DateRangeFilter setDateRange={setDateRange} onFilterChange={handleDateRangeChange} />
+        </div>
 
-                dateRange={dateRange} salesData={salesData} /> */}
-            </div>
-          )}
-
-          {activeTab === "inventory" && (
-            <div className="space-y-8">
-              <InventoryOverview
-                setDateRange={setDateRange}
-                dateRange={dateRange}
-
-                salesByItemArray={salesByItemArray
-
-                }
-              />
-              <TopSellingProducts dateRange={dateRange}
-                salesByItemArray={salesByItemArray} />
-            </div>
-          )}
+        {/* Other Sections */}
+        <div className="space-y-8">
+          <SalesOverview dateRange={dateRange} setDateRange={setDateRange} />
         </div>
       </div>
     </div>

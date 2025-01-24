@@ -12,7 +12,8 @@ import axios from 'axios';
 
 import 'react-tooltip/dist/react-tooltip.css'
 
-
+import React from "react";
+import { PrinterIcon } from "lucide-react";
 import Table, {
   AvatarCell,
   SelectColumnFilter,
@@ -64,6 +65,7 @@ import {
 
 
 
+import ToPrint from "./toPrint";
 
 const LoanDetailsHeader = ({ selectedLoan, paymentList }) => {
   const [progress, setProgress] = useState(75); // Example progress value
@@ -156,7 +158,7 @@ const LoanDetailsHeader = ({ selectedLoan, paymentList }) => {
           <div
             className="h-4 rounded-full"
             style={{
-              width: `${percentage}%`, // Dynamic width based on progress percentage
+              width: `${percentage || 0}%`, // Dynamic width based on progress percentage
               backgroundColor: getStrokeColor(percentage), // Dynamic color based on progress
               transition: 'width 0.5s ease', // Smooth animation for width change
             }}
@@ -387,6 +389,26 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
   return (
     <div className="w-full max-w-6xl mx-auto p-4">
       <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+
+        {
+          !loanDetails.proof_of_disbursement && <div className="mt-4 col-span-2 mb-2">
+            <div className="bg-yellow-100 border border-yellow-500 text-yellow-700 p-4 rounded">
+              <p className="font-semibold">Info:</p>
+              <p>Please wait while we process the disbursement.</p>
+            </div>
+          </div>
+        }
+
+        {
+          loanDetails.proof_of_disbursement && <div className="mt-4 col-span-2 mb-2">
+            <div className="bg-green-100 border border-green-500 text-green-700 p-4 rounded">
+              <p className="font-semibold">Info:</p>
+              <p>Congratulations! This loan has been approved and successfully disbursed.You can now check the payment schedule and make an advance loan payment.</p>
+            </div>
+          </div>
+        }
+
+
         <div className="grid w-full grid-cols-3 bg-gray-100">
           {[
             { key: "user-details", label: "User Details", icon: <User className="w-4 h-4 mr-2" /> },
@@ -489,7 +511,15 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
                 paymentList={paymentList}
               />
 
+              {loanDetails.loan_id && <ToPrint
+                calculatorInterestRate={formikProps.values.calculatorInterestRate}
+                selectedLoan={loanDetails}
+                calculatorLoanAmmount={formikProps.values.calculatorLoanAmmount}
 
+                calculatorMonthsToPay={formikProps.values.calculatorMonthsToPay}
+
+                setPaymentList={setPaymentList}
+              />}
 
               {loanDetails.loan_id && <LoanCalculator
                 {...formikProps}

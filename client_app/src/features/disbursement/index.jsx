@@ -80,7 +80,7 @@ import { FaCheckCircle } from "react-icons/fa"; // Font Awesome icon
 
 import { jwtDecode } from 'jwt-decode';
 import checkAuth from '../../app/auth';
-import LoanCalculator from "./loanCalculator";
+// import LoanCalculator from "./loanCalculator";
 import { format, formatDistance, formatRelative, subDays } from 'date-fns';
 
 import { formatAmount } from './../../features/dashboard/helpers/currencyFormat';
@@ -126,10 +126,10 @@ const TopSideButtons = ({ removeFilter, applyFilter, applySearch, myLoanList }) 
       )} */}
       <div className="badge badge-neutral mr-2 px-4 p-4 bg-white text-blue-950">Total : {myLoanList.length}</div>
 
-      <button className="btn btn-outline bg-blue-950 text-white" onClick={() => document.getElementById('addLoan').showModal()}>
+      {/* <button className="btn btn-outline bg-blue-950 text-white" onClick={() => document.getElementById('addLoan').showModal()}>
         Add
         <PlusCircleIcon className="h-6 w-6 text-white-500" />
-      </button>
+      </button> */}
 
       {/* 
       <button
@@ -222,7 +222,11 @@ function LoanApplication() {
     });
     let list = res.data.data;
 
-    setLoanList(list)
+
+    console.log({
+      list: list.filter(l => l.loan_status === 'Approved')
+    })
+    setLoanList(list.filter(l => l.loan_status === 'Approved'))
 
 
   };
@@ -317,25 +321,25 @@ function LoanApplication() {
           return <span className="">{value} Months</span>;
         }
       },
-      {
-        Header: 'Date Created',
-        accessor: 'application_date',
-        Cell: ({ row, value }) => {
-          return <span className="">
+      // {
+      //   Header: 'Date Created',
+      //   accessor: 'application_date',
+      //   Cell: ({ row, value }) => {
+      //     return <span className="">
 
-            {value &&
-              format(value, 'MMM dd, yyyy hh:mm a')}
+      //       {value &&
+      //         format(value, 'MMM dd, yyyy hh:mm a')}
 
-          </span>;
-        }
-      },
-      {
-        Header: 'Date Approved',
-        accessor: 'approval_date',
-        Cell: ({ row, value }) => {
-          return <span className="">{value}</span>;
-        }
-      },
+      //     </span>;
+      //   }
+      // },
+      // {
+      //   Header: 'Date Approved',
+      //   accessor: 'approval_date',
+      //   Cell: ({ row, value }) => {
+      //     return <span className="">{value}</span>;
+      //   }
+      // },
 
       {
         Header: 'Is Disbursed?',
@@ -345,6 +349,17 @@ function LoanApplication() {
           return <h2 className='font-bold'>{proof_of_disbursement ? "Yes" : "No"}</h2>;
         }
       },
+      {
+        Header: 'Disbursement date',
+        accessor: 'disbursement_date',
+        Cell: ({ row, value }) => {
+          return value && <span className="">{
+
+            format(value, 'MMM dd, yyyy hh:mm a')
+          }</span>;
+        }
+      },
+
 
       {
         Header: 'Status',
@@ -370,21 +385,21 @@ function LoanApplication() {
             (
               <div className="flex">
 
-                {/* <button className="btn btn-outline btn-sm"
+                <button className="btn btn-outline btn-sm mr-2"
 
-                // onClick={() => {
-                //   //  //console.log({ loan })
-                //   // setisEditModalOpen(true)
-                //   setselectedLoan(loan);
+                  onClick={() => {
+                    //  //console.log({ loan })
+                    // setisEditModalOpen(true)
+                    setselectedLoan(loan);
 
-                //   document.getElementById('viewLoan').showModal();
-                //   // setFieldValue('Admin_Fname', 'dex');
-                // }}
+                    document.getElementById('viewLoan').showModal();
+
+                  }}
 
                 >
 
-                  <i class="fa-solid fa-eye"></i>
-                </button> */}
+                  <i class="fa-solid fa-credit-card"></i>
+                </button>
 
                 <a
                   href={`loan_details/${loan.loan_id}`} // Replace with the actual URL for the loan details
@@ -1832,18 +1847,7 @@ function LoanApplication() {
 
                     const Calculator = useMemo(() => (
                       <div>
-                        <Form className="">
-                          <LoanCalculator
-                            isReadOnly={false}
-                            values={values}
-                            setFieldValue={setFieldValue}
-                            handleBlur={handleBlur}
-                            calculatorLoanAmmount={values.calculatorLoanAmmount}
-                            calculatorInterestRate={values.calculatorInterestRate}
-                            calculatorMonthsToPay={values.calculatorMonthsToPay}
-                            calculatorTotalAmountToPay={values.calculatorTotalAmountToPay}
-                          />
-                        </Form>
+
                       </div>
                     ), [currentStep, errors, values]);
 
@@ -2061,59 +2065,298 @@ function LoanApplication() {
 
 
             >✕</button>
-
-            <div className="modal-header flex items-center justify-between p-4 bg-gradient-to-r from-gray-200 to-gray-300
-      z-10 text-blue-950 border bg-white text-blue-950  rounded-t-lg">
-              <h1 className="text-xl font-bold">Loan Details</h1>
-
+            <div className="bg-white p-1 rounded-full shadow-lg bg-gradient-to-r from-gray-200 to-gray-300 z-10 text-blue-950 border bg-white rounded flex items-center space-x-4">
+              <img
+                src="/LOGO.png"
+                alt="Logo"
+                className="w-20 h-20 rounded-full border-2 border-blue-950"
+              />
+              <p className="font-bold text-lg">Loan Disbursement</p>
             </div>
+            {
+              console.log({ selectedLoan })
+            }
+            {selectedLoan.loan_id && <Formik
+              initialValues={{
+                loan_amount: selectedLoan.loan_amount,
+                disbursement_type: selectedLoan.disbursement_type,
+                disbursement_bank_or_wallet_name: selectedLoan.disbursement_bank_or_wallet_name,
+                disbursement_account_name: selectedLoan.disbursement_account_name,
+                disbursement_account_number: selectedLoan.disbursement_account_number,
+                borrowerValidID: null,
+                amount: selectedLoan.amount
+              }}
+              validationSchema={Yup.object({
+                amount: Yup.number()
+                  .required('Required'),
+                // .test('amount-equal-loan', 'Amount must be equal to loan amount', function (value) {
+                //   const { loan_amount } = this.parent;
+                //   return selectedLoan.loan_amount === value;
+                // }),
+                borrowerValidID: Yup.string()
+                  .required('Required')
 
-            <p className="text-sm text-gray-500 mt-1 font-bold"></p>
-            <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
-              <StatusPill value={selectedLoan.loan_status} />
-              {selectedLoan.loan_application_id && <Formik
-                initialValues={{
-                  calculatorLoanAmmount: parseFloat(selectedLoan.loan_amount),
-                  calculatorInterestRate: parseFloat(selectedLoan.interest_rate),
-                  calculatorMonthsToPay: parseFloat(selectedLoan.repayment_schedule_id),
-                  loan_status: selectedLoan.loan_status
-                }}
-              >
-                {({
-                  validateForm,
-                  handleSubmit,
-                  handleChange,
-                  handleBlur, // handler for onBlur event of form elements
-                  values,
-                  touched,
-                  errors,
-                  submitForm,
-                  setFieldTouched,
-                  setFieldValue,
-                  setFieldError,
-                  setErrors,
-                  isSubmitting
-                }) => {
+              })}
+              onSubmit={async (values, { setSubmitting, resetForm }) => {
 
 
+                const formData = new FormData();
 
-                  return <LoanCalculator
-                    selectedLoan={selectedLoan}
-                    isReadOnly={true}
-                    values={values}
-                    setFieldValue={setFieldValue}
-                    handleBlur={handleBlur}
-                    calculatorLoanAmmount={values.calculatorLoanAmmount}
-                    calculatorInterestRate={values.calculatorInterestRate}
-                    calculatorMonthsToPay={values.calculatorMonthsToPay}
-                    calculatorTotalAmountToPay={values.calculatorTotalAmountToPay}
-                  />
+                formData.append('loan_application_id', selectedLoan.loan_id);
+                formData.append('borrowerValidID', values.borrowerValidID);
+                formData.append('uploadType', 'for_proof_of_disbursement');
+
+                formData.append('amount', values.amount);
+
+                formData.append('recipient_name', values.disbursement_account_name);
+                formData.append('recipient_account_number', values.disbursement_account_number);
+                formData.append('payment_method', values.disbursement_type);
+                formData.append('payment_channel', values.disbursement_bank_or_wallet_name);
+
+                try {
+
+                  await axios({
+                    // headers: {
+                    //   'content-type': 'multipart/form-data'
+                    // },
+                    method: 'POST',
+                    url: 'admin/loan/upload-files',
+                    data: formData
+                  });
 
 
-                }}</Formik>
-              }
 
-            </div>
+                  setSubmitting(false);
+
+                  resetForm();
+                  loanList();
+                  document.getElementById('viewLoan').close();
+
+                  toast.success('Successfully Disbursed!', {
+                    onClose: () => {
+
+                    },
+                    position: 'top-right',
+                    autoClose: 500,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: 'light'
+                  });
+
+                } catch (error) {
+
+                }
+              }}
+            >
+              {({ values, handleChange, handleBlur, setFieldValue, errors }) => {
+                let hasError1 = errors['borrowerValidID'];
+                let hasError2 = errors['bankStatement'];
+                let hasError3 = errors['coMakersValidID'];
+                return <Form className="">
+
+
+                  <div>
+
+
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 ">
+                      <div className='mt-4'>
+
+                        <Radio
+                          isRequired
+                          label="Preferred Disbursement Type*"
+                          name="disbursement_type" // This should be "loan_type"
+                          value={values.disbursement_type}
+                          setFieldValue={setFieldValue}
+                          onBlur={handleBlur}
+                          options={[
+                            { value: 'CASH', label: 'CASH' },
+                            { value: 'E-WALLET/BANK TRANSFER', label: 'E-WALLET/BANK TRANSFER' }
+                          ]}
+                        />
+                      </div>
+
+
+                      {values.disbursement_type === 'CASH' && (
+                        <div className="mt-4 col-span-2">
+                          <div className="bg-yellow-100 border border-yellow-500 text-yellow-700 p-4 rounded">
+                            <p className="font-semibold">Info:</p>
+                            <p> Please double-check the cash before giving it to the borrower.</p>
+                          </div>
+                        </div>
+                      )}
+
+
+                    </div>
+
+
+                    {values.disbursement_type === 'E-WALLET/BANK TRANSFER' && (
+
+                      <div>
+                        <div className="mt-4 col-span-2">
+                          <div className="bg-yellow-100 border border-yellow-500 text-yellow-700 p-4 rounded">
+                            <p className="font-semibold">Important:</p>
+                            <p>
+                              Please carefully review and double-check the bank or e-wallet details. Disbursements are
+                              irreversible once sent.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                          <div className='mt-2'>
+                            <Dropdown
+
+                              // icons={mdiAccount}
+                              label="Bank/E-Wallet Name"
+                              name="disbursement_bank_or_wallet_name"
+                              placeholder=""
+                              value={values.disbursement_bank_or_wallet_name}
+                              setFieldValue={setFieldValue}
+                              onBlur={handleBlur}
+                              options={[
+                                {
+                                  name: 'Gcash',
+                                  displayName: 'Gcash'
+                                }, {
+                                  name: 'Paymaya',
+                                  displayName: 'Paymaya'
+                                },
+                                {
+                                  name: 'BDO',
+                                  displayName: 'BDO'
+                                },
+                                {
+                                  name: 'BPI',
+                                  displayName: 'BPI'
+                                }
+                              ].map(val => {
+                                return {
+                                  value: val.name,
+                                  label: val.displayName
+                                };
+                              })}
+
+                            />
+                          </div>
+
+
+                          <InputText
+                            isReadOnly
+                            disabled
+                            isRequired
+                            placeholder="Account Name"
+                            label="Account Name"
+                            name="disbursement_account_name"
+                            type="text"
+                            value={values.disbursement_account_name}
+                            onBlur={handleBlur}
+                          // onChange={(e) => setFieldValue('disbursement_account_name', e.target.value)}
+                          />
+                          <InputText
+                            isReadOnly
+                            disabled
+                            isRequired
+                            placeholder="Account Number"
+                            label="Account Number"
+                            name="disbursement_account_number"
+                            type="text"
+                            value={values.disbursement_account_number}
+                            onBlur={handleBlur}
+                          // onChange={(e) => setFieldValue('disbursement_account_number', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                          <InputText
+                            isReadOnly
+                            disabled
+                            isRequired
+                            placeholder="Loan Amount"
+                            label="Loan Amount"
+                            name="loan_amount"
+                            type="text"
+                            value={values.loan_amount}
+                            onBlur={handleBlur}
+                          // onChange={(e) => setFieldValue('disbursement_account_name', e.target.value)}
+                          />
+
+                          <InputText
+
+                            isRequired
+                            placeholder="Disbursed Amount"
+                            label="Disbursed Amount"
+                            name="amount"
+                            type="text"
+                            value={values.amount}
+                            onBlur={handleBlur}
+                          // onChange={(e) => setFieldValue('disbursement_account_name', e.target.value)}
+                          />    </div>
+                      </div>
+                    )}
+
+
+                    <div className="space-y-4 mt-4">
+                      {/* Borrower's Valid ID */}
+                      <h1 className="font-bold text-lg text-center">Upload Proof of Disbursement</h1>
+                      {selectedLoan.proof_of_disbursement && <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                        <div key={1} className="flex flex-col items-center">
+                          <div
+                            className="relative aspect-square w-full rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer"
+                          // onClick={() => setSelectedImage(doc.src)}
+                          >
+                            <img
+                              src={selectedLoan.proof_of_disbursement}
+                              alt={''}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                          {/* <span className="mt-2 text-sm text-gray-600">{doc.label}</span> */}
+                        </div>
+                      </div>
+                      }
+                      <div
+
+                        className={`${hasError1 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
+                          }`}>
+
+
+
+                        <DropzoneArea
+                          fieldName="borrowerValidID"
+                          files={files}
+                          dropzoneProps={dropzoneProps("borrowerValidID")}
+                          setFieldValue={setFieldValue}
+                          errors={errors}
+                        />
+                        {errors.borrowerValidID && <p className="text-red-500 text-sm mt-2">{errors.borrowerValidID}</p>}
+                      </div>
+
+
+
+
+                    </div>
+                    <div className="flex justify-between mt-4">
+                      <button
+                        type="submit"
+                        className="btn bg-buttonPrimary text-white"
+                        onClick={() => {
+                          //console.log({ files })
+
+
+
+                        }}
+                      >
+                        Submit
+                      </button>                  </div>
+                  </div>
+
+
+                </Form>
+
+              }}</Formik>}
           </div>
         </dialog >
         <Table
