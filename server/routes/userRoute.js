@@ -193,4 +193,106 @@ router.get('/borrowers/list', async (req, res) => {
   }
 });
 
+router.post(
+  '/register',
+  // authenticateUserMiddleware,
+  // upload.single('profilePic'),
+  async (req, res) => {
+    let data = req.body;
+
+    let {
+      first_name,
+      middle_name,
+      last_name,
+      address_region,
+      address_province,
+      address_city,
+      address_barangay,
+      email,
+      password,
+      contact_number,
+      date_of_birth
+    } = data;
+    try {
+      // Check if email already exists
+      const emailQuery = 'SELECT * FROM borrower_account WHERE email = ?';
+      const [emailResult] = await db.query(emailQuery, [email]);
+
+      // Check if contact_number already exists
+      const contactQuery =
+        'SELECT * FROM borrower_account WHERE contact_number = ?';
+      const [contactResult] = await db.query(contactQuery, [contact_number]);
+
+      console.log({ email, emailResult });
+      if (emailResult.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email already exists.'
+        });
+      }
+
+      if (contactResult.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Contact number already exists.'
+        });
+      }
+      const [result] = await db.query(
+        `
+
+          INSERT INTO borrower_account (
+          first_name, 
+          middle_name, 
+          last_name, 
+          address_region, 
+          address_province, 
+          address_city,
+          address_barangay, 
+          email, 
+          contact_number, 
+          date_of_birth
+      
+    ) VALUES (?, ?, ?, ?, ? , ?, ?, ?, ?, ?)
+
+        `,
+        [
+          first_name,
+          middle_name,
+          last_name,
+          address_region,
+          address_province,
+          address_city,
+          address_barangay,
+          email,
+          contact_number,
+          date_of_birth
+        ]
+      );
+
+      const insertedId = result.insertId;
+
+      const queryInsertAccount = `
+    INSERT INTO user_account (
+    username,
+    password,
+    role_id,
+    borrower_id
+    
+    ) VALUES (?, ?, ?, ? )
+  `;
+
+      const valuesInsertAccount = [email, password, 4, insertedId];
+
+      await db.query(queryInsertAccount, valuesInsertAccount);
+
+      res.status(200).json({
+        success: true
+      });
+    } catch (error) {
+      console.log(error);
+      res.status(400).send(error.message);
+    }
+  }
+);
+
 export default router;

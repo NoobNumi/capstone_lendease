@@ -51,6 +51,9 @@ const LoanDetails = lazy(() => import('../pages/protected/LoanDetails'));
 
 const Disbursement = lazy(() => import('../pages/protected/Disbursement'));
 
+
+const Register = lazy(() => import('../pages/Register'));
+
 const token = checkAuth();
 
 const decoded = jwtDecode(token);
@@ -165,6 +168,11 @@ routes = [
   {
     path: '/borrowers',
     component: BorrowersManagement
+  },
+
+  {
+    path: '/register_now',
+    component: Register
   },
 
 ];

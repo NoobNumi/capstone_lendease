@@ -48,7 +48,7 @@ const MyTextInput = ({
   return (
     <>
       <div className="mb-6 last:mb-0">
-        {label && <label className={`mt-2 font-bold text-neutral-600  block mb-2 ${labelColor}`}>
+        {label && <label className={`mt-2 font-bold   block mb-2 ${labelColor}`}>
           {label} {isRequired ? '*' : ''} </label>
         }
         {/* {label && (

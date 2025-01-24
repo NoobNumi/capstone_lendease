@@ -22,6 +22,9 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const MyProfile = lazy(() => import('./pages/MyProfile'));
 const PaymentOrder = lazy(() => import('./pages/PaymentOrder'));
 const LayawayPaymentOrder = lazy(() => import('./pages/LayAwayPayment'));
+
+const AccountVerification = lazy(() => import('./features/user/components/AccountVerification'));
+
 // Initializing different libraries
 initializeApp();
 
@@ -55,7 +58,10 @@ function App() {
           <Route path="/myprofile/:userId/layaway/:transactionId" element={<LayawayPaymentOrder />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          {/* <Route path="/register" element={<Register />} /> */}
+          <Route path="/register" element={<Register />} />
+
+
+          <Route path="/verify-email/:token" element={<AccountVerification />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           {/* Place new routes over this */}
           <Route element={<AuthWrapper />}>

@@ -70,13 +70,28 @@ function Login() {
 
         window.location.href = '/app/dashboard';
       } catch (error) {
-        toast.error('Login Failed. Unknown User.', {
+        const errorMessage =
+          error.response && error.response.data && error.response.data.message
+            ? error.response.data.message
+            : 'An unknown error occurred.';
+        // console.log(error.response.data.message)
+
+        console.log({ errorMessage })
+
+        if (errorMessage === 'Please verify you account first. Check your email to verify.') {
+          const res = await axios.post('auth/send-verification-email', {
+            email: values.email
+          });
+        }
+        toast.error(errorMessage, {
           position: 'top-right',
           autoClose: 3000,
           hideProgressBar: false,
           closeOnClick: true,
           pauseOnHover: true,
           draggable: true,
+          progress: undefined,
+          theme: 'light'
         });
       }
     },
@@ -165,13 +180,7 @@ function Login() {
                       )}
                     </button>
                   </div>
-                  <div className="text-right text-blue-950">
-                    <a href="/forgot-password">
-                      <span className="text-sm hover:text-buttonPrimary hover:underline cursor-pointer transition duration-200">
-                        Forgot Password?
-                      </span>
-                    </a>
-                  </div>
+
                   <button
                     type="submit"
                     className={`btn mt-2 w-full bg-blue-950 font-bold text-white ${loading ? 'loading' : ''
@@ -179,6 +188,20 @@ function Login() {
                   >
                     Sign in
                   </button>
+                  <div className="text-right text-blue-950">
+                    <a href="/forgot-password">
+                      <span className="text-sm hover:text-buttonPrimary hover:underline cursor-pointer transition duration-200">
+                        Forgot Password?
+                      </span>
+                    </a>
+                  </div>
+                  <div className="text-center text-blue-950">
+                    <a href="/register">
+                      <span className="text-sm hover:text-buttonPrimary hover:underline cursor-pointer transition duration-200">
+                        Don't have account? Register
+                      </span>
+                    </a>
+                  </div>
                 </Form>
               )}
             </Formik>
