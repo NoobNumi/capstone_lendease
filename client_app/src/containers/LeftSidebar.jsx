@@ -25,15 +25,17 @@ function LeftSidebar() {
     const decoded = jwtDecode(token);
     let user_id = decoded.user_id;
 
+    console.log({ decoded })
+
     let res = await axios({
       method: 'GET',
       url: `user/${user_id}`
     });
     let user = res.data.data;
 
+    console.log({ user })
 
-
-    setSelectedUser(user);
+    setSelectedUser({ ...user, email: decoded.username });
     setIsLoaded(true);
   };
 
@@ -85,7 +87,7 @@ function LeftSidebar() {
         {selectedUser && (
           <li className="flex items-center justify-between mb-3">
             <label className="text-white">
-              Hello, <span className="font-bold">{selectedUser.first_name} {selectedUser.last_name}</span>
+              Hello, <span className="font-bold">{selectedUser.email}</span>
             </label>
           </li>
         )}

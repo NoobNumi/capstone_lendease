@@ -449,17 +449,17 @@ function LoanApplication() {
           return <span className="text-green-500 font-bold">{formatCurrency(value)}</span>;
         }
       },
-      {
-        Header: 'Next Payment Date',
-        accessor: '',
-        Cell: ({ row, value }) => {
-          // let firstName = row.original.first_name;
-          // let middleName = row.original.middle_name;
-          // let lastName = row.original.last_name;
+      // {
+      //   Header: 'Next Payment Date',
+      //   accessor: '',
+      //   Cell: ({ row, value }) => {
+      //     // let firstName = row.original.first_name;
+      //     // let middleName = row.original.middle_name;
+      //     // let lastName = row.original.last_name;
 
-          return <span className="">{value}</span>;
-        }
-      },
+      //     return <span className="">{value}</span>;
+      //   }
+      // },
       {
         Header: 'Action',
         accessor: '',

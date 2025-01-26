@@ -100,12 +100,17 @@ function ForgotPassword() {
     }
 
     return (
-        <div className="min-h-screen bg-base-200 flex items-center bg-customBlue shadow-lg">
+        <div className="min-h-screen bg-base-200 flex items-center bg-blue-950 shadow-lg">
             <div className="card mx-auto w-full max-w-5xl  shadow-xl">
                 <div className="grid  md:grid-cols-2 grid-cols-1  bg-base-100 rounded-xl">
-                    <div className=''>
-                        <LandingIntro />
+                    <div className="flex justify-center items-center">
+                        <img
+                            src="/LOGO.png"
+                            alt="Logo"
+                            className="w-24 h-24 rounded-full border-2 border-blue-950 p-2"
+                        />
                     </div>
+
                     <div className='py-24 px-10'>
                         <h2 className='text-2xl font-semibold mb-2 text-center'>Forgot Password</h2>
 

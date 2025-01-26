@@ -46,53 +46,131 @@ const AppRoutes = () => {
 
 
 
-      if (role === 'borrower') {
-        newRoutes.push({
-          path: '/app/dashboard',
-          icon: <Squares2X2Icon className={iconClasses} />,
-          name: 'Dashboard',
-        });
+      // if (role === 'borrower') {
+      //   newRoutes.push({
+      //     path: '/app/dashboard',
+      //     icon: <Squares2X2Icon className={iconClasses} />,
+      //     name: 'Dashboard',
+      //   });
 
 
 
-      }
+      // }
 
 
 
       if (role === 'Borrower') {
 
         //  console.log({ selectedUserId })
-        newRoutes.push({
-          path: '/app/dashboard',
-          icon: <Squares2X2Icon className={iconClasses} />,
-          name: 'Dashboard',
-        });
-        newRoutes.push({
-          path: `/app/userProfile/${selectedUserId}`,
-          icon: <Squares2X2Icon className={iconClasses} />,
-          name: 'Profile',
-        });
-
+        // newRoutes.push({
+        //   path: '/app/dashboard',
+        //   icon: <Squares2X2Icon className={iconClasses} />,
+        //   name: 'Dashboard',
+        // });
 
         newRoutes.push({
           path: '/app/loan_application',
           icon: <Squares2X2Icon className={iconClasses} />,
           name: 'My Loans',
         });
+
         newRoutes.push({
-          path: '/app/payments',
+          path: `/app/userProfile/${selectedUserId}`,
           icon: <Squares2X2Icon className={iconClasses} />,
-          name: 'Payments',
+          name: 'My Profile',
         });
+
+
+
+        // newRoutes.push({
+        //   path: '/app/payments',
+        //   icon: <Squares2X2Icon className={iconClasses} />,
+        //   name: 'Payments',
+        // });
+
+        // newRoutes.push({
+        //   path: '/app/disbursement',
+        //   icon: <Squares2X2Icon className={iconClasses} />,
+        //   name: 'Disbursement',
+        // });
+      }
+
+
+      if (role === 'Collector') {
+
+
+
+        newRoutes.push({
+          path: '/app/loan_management',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'Loan Management',
+        });
+
+
+
+
+
+
+      }
+
+      if (role === 'Loan Officer') {
+
+
+        // newRoutes.push({
+        //   path: '/app/dashboard',
+        //   icon: <Squares2X2Icon className={iconClasses} />,
+        //   name: 'Dashboard',
+        // });
+
+        newRoutes.push({
+          path: '/app/loan_management',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'Loan Management',
+        });
+
+        // newRoutes.push({
+        //   path: '/app/payments',
+        //   icon: <Squares2X2Icon className={iconClasses} />,
+        //   name: 'Payments',
+        // });
 
         newRoutes.push({
           path: '/app/disbursement',
           icon: <Squares2X2Icon className={iconClasses} />,
           name: 'Disbursement',
         });
+
+        // newRoutes.push({
+        //   path: '/app/borrowers',
+        //   icon: <Squares2X2Icon className={iconClasses} />,
+        //   name: 'Borrowers',
+        // });
+
+        newRoutes.push({
+          path: '/app/sms_logs',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'SMS Logs',
+        });
+
+
+        // newRoutes.push({
+        //   path: '/app/online_forms',
+        //   icon: <Squares2X2Icon className={iconClasses} />,
+        //   name: 'Online Forms',
+        // });
+
+        // newRoutes.push({
+        //   path: '/app/loan_details/:loanId',
+        //   icon: <Squares2X2Icon className={iconClasses} />,
+        //   name: 'Loan Details',
+        // });
+
+
       }
 
-      if (role === 'Loan Officer') {
+
+
+      if (role === 'Admin') {
 
 
         newRoutes.push({
@@ -107,10 +185,16 @@ const AppRoutes = () => {
           name: 'Loan Management',
         });
 
+        // newRoutes.push({
+        //   path: '/app/payments',
+        //   icon: <Squares2X2Icon className={iconClasses} />,
+        //   name: 'Payments',
+        // });
+
         newRoutes.push({
-          path: '/app/payments',
+          path: '/app/disbursement',
           icon: <Squares2X2Icon className={iconClasses} />,
-          name: 'Payments',
+          name: 'Disbursement',
         });
 
         newRoutes.push({
@@ -119,6 +203,23 @@ const AppRoutes = () => {
           name: 'Borrowers',
         });
 
+
+        newRoutes.push({
+          path: '/app/collection_officers',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'Loan Officers',
+        });
+
+
+        newRoutes.push({
+          path: '/app/collectors',
+          icon: <Squares2X2Icon className={iconClasses} />,
+          name: 'Collectors',
+        });
+
+
+
+
         newRoutes.push({
           path: '/app/sms_logs',
           icon: <Squares2X2Icon className={iconClasses} />,
@@ -126,11 +227,11 @@ const AppRoutes = () => {
         });
 
 
-        newRoutes.push({
-          path: '/app/online_forms',
-          icon: <Squares2X2Icon className={iconClasses} />,
-          name: 'Online Forms',
-        });
+        // newRoutes.push({
+        //   path: '/app/online_forms',
+        //   icon: <Squares2X2Icon className={iconClasses} />,
+        //   name: 'Online Forms',
+        // });
 
         // newRoutes.push({
         //   path: '/app/loan_details/:loanId',
@@ -139,17 +240,17 @@ const AppRoutes = () => {
         // });
 
 
+        newRoutes.push({
+          path: '/app/settings',
+          icon: <CogIcon className={iconClasses} />,
+          name: 'Settings',
+        });
+
+
       }
 
 
 
-
-
-      newRoutes.push({
-        path: '/app/settings',
-        icon: <CogIcon className={iconClasses} />,
-        name: 'Settings',
-      });
 
 
       setRoutes(newRoutes);

@@ -56,4 +56,40 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/loan_interest_income', async (req, res) => {
+  const { startDate, endDate } = req.query;
+
+  // Validate required query parameters
+  if (!startDate || !endDate) {
+    return res
+      .status(400)
+      .json({ error: 'startDate and endDate are required' });
+  }
+
+  try {
+    // Query to fetch loan interest income data
+    const [rows] = await db.query(
+      `
+
+SELECT DATE(approval_date) AS date, 
+       ROUND(SUM(loan_amount * (interest_rate / 100)), 2) AS totalInterestIncome
+FROM loan
+WHERE approval_date BETWEEN ? AND ?
+
+AND loan_status = 'Approved'
+GROUP BY DATE(approval_date)
+ORDER BY DATE(approval_date) ASC;
+       
+       `,
+      [startDate, endDate]
+    );
+
+    // Respond with the data
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error fetching data' });
+  }
+});
+
 export default router;

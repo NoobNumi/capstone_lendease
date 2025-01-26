@@ -532,7 +532,9 @@ router.post(
 );
 
 router.post('/list', authenticateUserMiddleware, async (req, res) => {
-  let { user_id } = req.user;
+  let { user_id, role } = req.user;
+
+  console.log({ role });
 
   try {
     let borrower_id = await getBorrowerAccountByUserAccountId(user_id);
@@ -548,7 +550,9 @@ router.post('/list', authenticateUserMiddleware, async (req, res) => {
       
       LEFT  JOIN disbursement_details dd ON la.loan_id = dd.loan_id
       
-      WHERE la.borrower_id  = ? 
+
+      ${role === 'Borrower' ? ' WHERE la.borrower_id  = ?' : ''}
+
 
       ORDER BY la.application_date DESC
 

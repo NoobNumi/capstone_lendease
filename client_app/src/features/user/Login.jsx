@@ -68,7 +68,7 @@ function Login() {
         localStorage.setItem('token', token);
         localStorage.setItem('loggedInUser', JSON.stringify(user));
 
-        window.location.href = '/app/dashboard';
+        window.location.href = '/app/loan_application';
       } catch (error) {
         const errorMessage =
           error.response && error.response.data && error.response.data.message

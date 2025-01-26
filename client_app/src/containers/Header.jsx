@@ -135,12 +135,12 @@ function Header() {
           <ul
             tabIndex={0}
             className="menu menu-compact dropdown-content mt-3 p-2 shadow bg-base-100 rounded-box w-52 text-slate-900 font-bold">
-            <li>
+            {/* <li>
               <Link
                 to={`/app/settings-profile/user?userId=${loggedInUser.userId}`}>
                 <a>Profile</a>
               </Link>
-            </li>
+            </li> */}
             <div className="divider mt-0 mb-0"></div>
             <li>
               <a onClick={logoutUser}>Logout</a>

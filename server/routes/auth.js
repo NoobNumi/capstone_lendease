@@ -227,7 +227,7 @@ router.post('/forgetPassword', async (req, res, next) => {
 
     console.log({ user });
     const foundUserByEmail = user.find(u => {
-      return u.email === email;
+      return u.username === email;
     });
 
     // If user not found, send error message
@@ -238,7 +238,7 @@ router.post('/forgetPassword', async (req, res, next) => {
       });
     } else {
       // Generate a unique JWT token for the user that contains the user's id
-      const token = jwt.sign({ email: foundUserByEmail.email }, 'secret', {
+      const token = jwt.sign({ email: foundUserByEmail.username }, 'secret', {
         expiresIn: '10m'
       });
 
@@ -246,14 +246,14 @@ router.post('/forgetPassword', async (req, res, next) => {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: 'avdeasisjewelry2@gmail.com',
-          pass: 'dqeq ukrn hvjg vnyx'
+          user: 'dextermiranda441@gmail.com', // Replace with your email
+          pass: 'oczk mljj symm bjgc' // Replace with your email password
         }
       });
 
       // Email configuration
       const mailOptions = {
-        from: 'avdeasisjewelry2@gmail.com',
+        from: 'dextermiranda441@gmail.com',
         to: email,
         subject: 'Reset Password',
         html: `<h1>Reset Your Password</h1>
@@ -295,7 +295,7 @@ router.post('/reset-password/:token', async (req, res, next) => {
       findUserByEmailQuery(decodedToken.email)
     );
     const foundUserByEmail = user.find(u => {
-      return u.email === decodedToken.email;
+      return u.username === decodedToken.email;
     });
 
     console.log({ foundUserByEmail });
@@ -307,26 +307,12 @@ router.post('/reset-password/:token', async (req, res, next) => {
       });
     } else {
       var [user] = await mySqlDriver.execute(
-        updatePassword(foundUserByEmail.email, newPassword)
+        `UPDATE user_account SET password = '${newPassword}' 
+        WHERE username = '${foundUserByEmail.username}'`
       );
-
-      await auditTrailMiddleware({
-        employeeId: foundUserByEmail.EmployeeID,
-        action: 'Reset Password'
-      });
 
       res.status(200).send({ message: 'Password updated' });
     }
-
-    // Hash the new password
-    // const salt = await bycrypt.genSalt(10);
-    // req.body.newPassword = await bycrypt.hash(req.body.newPassword, salt);
-
-    // // Update user's password, clear reset token and expiration time
-    // user.password = req.body.newPassword;
-    // await user.save();
-
-    // // Send success response
   } catch (err) {
     console.log(err);
     // Send error response if any error occurs

@@ -554,38 +554,35 @@ function LoanApplication() {
     return {
       initialValues: {
         "loan_type": "GOVERNMENT AND PRIVATE EMPLOYEES LOAN",
-        "first_name": "Dexter",
-        "middle_name": "Bequillo",
-        "last_name": "Miranda",
+        "first_name": "",
+        "middle_name": "",
+        "last_name": "",
         "work": "",
-        "address_region": "05",
-        "address_province": "0505",
-        "address_city": "050506",
-        "address_barangay": "050506062",
-        "residence_type": "OWN",
-        "work_type": "Private Employee",
-        "position": "Programmer",
-        "status": "Working",
-        "agency_name": "None",
+        "address_region": "",
+        "address_province": "",
+        "address_city": "",
+        "address_barangay": "",
+        "residence_type": "",
+        "work_type": "",
+        "position": "",
+        "status": "",
+        "agency_name": "",
         "school_name": "",
         "pensioner": "NO",
         "monthly_pension": "",
-        "loan_type_specific": "OTHERS",
+        "loan_type_specific": "",
         "proposed_loan_amount": 20000,
         "installment_duration": "1",
-        "loan_security": "BDO-123",
+        "loan_security": "",
         "numberField": 1,
         "borrowerValidID": {
-          "path": "./BANBAN ENTRANCE.jpg",
-          "relativePath": "./BANBAN ENTRANCE.jpg"
+
         },
         "bankStatement": {
-          "path": "./EAST-VALENCIA Entrance.jpg",
-          "relativePath": "./EAST-VALENCIA Entrance.jpg"
+
         },
         "coMakersValidID": {
-          "path": "./OLD Poblacion Entrance.jpg",
-          "relativePath": "./OLD Poblacion Entrance.jpg"
+
         },
         calculatorLoanAmmount: 20000,
         calculatorInterestRate: 7,
