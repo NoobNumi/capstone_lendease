@@ -36,7 +36,7 @@ function AccountVerification() {
     };
 
     useEffect(() => {
-        verify();
+        // verify();
     }, []);
 
     return (

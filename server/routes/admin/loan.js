@@ -274,7 +274,7 @@ router.post(
           // // Get the file's download URL
           const proof_of_disbursement = await getDownloadURL(storageRef);
 
-          const existingLoan = await db.query(
+          const [existingLoan] = await db.query(
             `SELECT loan_id FROM disbursement_details WHERE loan_id = ?`,
             [loan_application_id]
           );
