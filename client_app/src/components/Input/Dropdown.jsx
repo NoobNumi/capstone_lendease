@@ -9,6 +9,8 @@ import CreatableSelect from 'react-select/creatable';
 
 
 const MyTextInput = ({
+  isMulti = false,
+  canAddOptions = false,
   label,
   icons,
   hasTextareaHeight,
@@ -54,31 +56,61 @@ const MyTextInput = ({
         )}
 
         <div className="relative">
-          <CreatableSelect
-            isDisabled={isDisabled}
-            defaultInputValue={defaultInputValue}
-            defaultValue={defaultValue}
-            placeholder="Select"
-            value={options.filter(v => {
-              return v.value === field.value;
-            })}
-            isClearable={true}
-            classNames={{
-              control: () => `${controlClassName}`
-            }}
-            options={options}
-            onChange={({ value }) => {
-              if (affectedInput) {
-                props.setFieldValue(affectedInput, value);
-              }
 
-              props.setFieldValue(props.name, value);
+          {
+            !!canAddOptions ? <CreatableSelect
 
-              if (functionToCalled) {
-                functionToCalled(value);
-              }
-            }}
-          />
+              value={value}
+
+              isMulti={isMulti}
+              placeholder="Select"
+              // value={options.filter(v => {
+              //   return v.value === field.value;
+              // })}
+
+              classNames={{
+                control: () => `${controlClassName}`
+              }}
+              options={options}
+              // onChange={({ value }) => {
+              //   // if (affectedInput) {
+              //   //   props.setFieldValue(affectedInput, value);
+              //   // }
+
+              //   // props.setFieldValue(props.name, value);
+
+              //   if (functionToCalled) {
+              //     functionToCalled(value);
+              //   }
+              // }}
+              {...props}
+            /> : <CreatableSelect
+              isDisabled={isDisabled}
+              defaultInputValue={defaultInputValue}
+              defaultValue={defaultValue}
+              placeholder="Select"
+              value={options.filter(v => {
+                return v.value === field.value;
+              })}
+              isClearable={true}
+              classNames={{
+                control: () => `${controlClassName}`
+              }}
+              options={options}
+              onChange={({ value }) => {
+                if (affectedInput) {
+                  props.setFieldValue(affectedInput, value);
+                }
+
+                props.setFieldValue(props.name, value);
+
+                if (functionToCalled) {
+                  functionToCalled(value);
+                }
+              }}
+            />
+          }
+
           {/* <input
             className={`${controlClassName} pl-10`}
             {...field}

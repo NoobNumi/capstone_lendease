@@ -68,6 +68,11 @@ function Login() {
         localStorage.setItem('token', token);
         localStorage.setItem('loggedInUser', JSON.stringify(user));
 
+
+        let loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+
+
+
         window.location.href = '/app/loan_application';
       } catch (error) {
         const errorMessage =

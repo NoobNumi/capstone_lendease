@@ -14,6 +14,7 @@ const LoanCalculator = memo(({
   isReadOnly = false
 }) => {
 
+  console.log({ isReadOnly })
 
 
   const [loanAmount, setLoanAmount] = useState(calculatorLoanAmmount);

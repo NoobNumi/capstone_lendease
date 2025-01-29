@@ -12,10 +12,11 @@ const checkAuth = () => {
     'documentation',
     'myprofile',
     'reset-password',
-    'register'
+    'register',
+    'verify-email'
   ];
 
-  console.log({ PUBLIC_ROUTES });
+  // console.log({ PUBLIC_ROUTES });
 
   const isPublicPage = PUBLIC_ROUTES.some(r =>
     window.location.href.includes(r)

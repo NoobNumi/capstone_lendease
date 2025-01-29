@@ -20,7 +20,7 @@ const LoanSchedule = ({ selectedLoan, calculatorInterestRate, calculatorLoanAmmo
   });
 
 
-  console.log({ calculatorMonthsToPay })
+  //console.log({ calculatorMonthsToPay })
 
 
 
@@ -84,7 +84,7 @@ const LoanSchedule = ({ selectedLoan, calculatorInterestRate, calculatorLoanAmmo
   const totalDueAmount = payments.reduce((sum, payment) => sum + payment.dueAmount, 0);
 
 
-  console.log({ payments })
+  // console.log({ payments })
   const [isHidden, setIsHidden] = useState(true);
 
   return (

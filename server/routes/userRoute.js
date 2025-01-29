@@ -27,6 +27,13 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: multer.memoryStorage() });
 
+let mapped = {
+  Borrower: { table_name: 'borrower_account', column_id: 'borrower_id' },
+  'Loan Officer': { table_name: 'loan_officer', column_id: 'officer_id' },
+  Collector: { table_name: 'collector_account', column_id: 'collector_id' },
+  Admin: { table_name: 'admin_account', column_id: 'admin_id' }
+};
+
 // Get user by ID
 router.get('/:id', async (req, res) => {
   try {
@@ -35,15 +42,30 @@ router.get('/:id', async (req, res) => {
       [req.params.id]
     );
 
-    let { borrower_id } = resul1[0];
+    let { borrower_id, officer_id, collector_id, admin_id, role_id } =
+      resul1[0];
+
+    let selected_id = borrower_id || officer_id || collector_id || admin_id;
+
+    const roleQuery = `SELECT * FROM user_role WHERE role_id = ?`;
+    const [roleResult] = await db.query(roleQuery, [role_id]);
+
+    let roleName = roleResult[0].role_name;
+
+    let table_name = mapped[roleName].table_name;
+    let column_id = mapped[roleName].column_id;
+
+    console.log({ table_name, column_id });
+
     const [result] = await db.query(
-      'SELECT * FROM borrower_account WHERE borrower_id  = ?',
-      [borrower_id]
+      `SELECT * FROM ${table_name} WHERE ${column_id}  = ?`,
+      [selected_id]
     );
 
+    console.log({ result });
     let data = {
       ...result[0],
-      role: 'Borrower'
+      role: roleName
     };
     res.status(200).json({ success: true, data: data });
   } catch (err) {
@@ -211,50 +233,72 @@ router.post(
       email,
       password,
       contact_number,
-      date_of_birth
+      date_of_birth,
+      role
     } = data;
-    try {
-      // Check if email already exists
-      const emailQuery = 'SELECT * FROM borrower_account WHERE email = ?';
+
+    let mapped = {
+      Borrower: 'borrower_account',
+      'Loan Officer': 'loan_officer',
+      Collector: 'collector_account'
+    };
+
+    const checkRole = async (email, contact_number, role) => {
+      let table_name = mapped[role];
+
+      const emailQuery = `SELECT * FROM ${table_name} WHERE email = ?`;
       const [emailResult] = await db.query(emailQuery, [email]);
 
       // Check if contact_number already exists
-      const contactQuery =
-        'SELECT * FROM borrower_account WHERE contact_number = ?';
+      const contactQuery = `SELECT * FROM ${table_name} WHERE contact_number = ?`;
       const [contactResult] = await db.query(contactQuery, [contact_number]);
 
-      console.log({ email, emailResult });
-      if (emailResult.length > 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email already exists.'
-        });
-      }
+      let isExists = emailResult.length > 0 || contactResult.length > 0;
+      return isExists;
+    };
 
-      if (contactResult.length > 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Contact number already exists.'
-        });
+    const checkAllRoles = async (email, contact_number) => {
+      try {
+        for (const role in mapped) {
+          const exists = await checkRole(email, contact_number, role);
+          if (exists) {
+            console.log(`Exists in role: ${role}`);
+            return { exists: true, role }; // Early exit if a match is found
+          }
+        }
+        console.log('Does not exist in any role');
+        return { exists: false, role: null };
+      } catch (error) {
+        console.error('Error in checkAllRoles:', error.message);
+        throw error;
       }
+    };
+
+    const result = await checkAllRoles(email, contact_number);
+
+    if (result.exists) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email or Contact Number already exists.'
+      });
+    } else {
       const [result] = await db.query(
         `
+        INSERT INTO ${mapped[role]} (
+        first_name, 
+        middle_name, 
+        last_name, 
+        address_region, 
+        address_province, 
+        address_city,
+        address_barangay, 
+        email, 
+        contact_number, 
+        date_of_birth
+    
+  ) VALUES (?, ?, ?, ?, ? , ?, ?, ?, ?, ?)
 
-          INSERT INTO borrower_account (
-          first_name, 
-          middle_name, 
-          last_name, 
-          address_region, 
-          address_province, 
-          address_city,
-          address_barangay, 
-          email, 
-          contact_number, 
-          date_of_birth
-      
-    ) VALUES (?, ?, ?, ?, ? , ?, ?, ?, ?, ?)
-
-        `,
+      `,
         [
           first_name,
           middle_name,
@@ -271,26 +315,33 @@ router.post(
 
       const insertedId = result.insertId;
 
-      const queryInsertAccount = `
-    INSERT INTO user_account (
-    username,
-    password,
-    role_id,
-    borrower_id
-    
-    ) VALUES (?, ?, ?, ? )
-  `;
+      const roleQuery = `SELECT * FROM user_role WHERE role_name = ?`;
+      const [roleResult] = await db.query(roleQuery, [role]);
 
-      const valuesInsertAccount = [email, password, 4, insertedId];
+      let role_id = roleResult[0].role_id;
+
+      let mappedColumnId = {
+        Borrower: 'borrower_id',
+        'Loan Officer': 'officer_id',
+        Collector: 'collector_id'
+      };
+      const queryInsertAccount = `
+            INSERT INTO user_account (
+                username,
+                password,
+                role_id,
+                ${mappedColumnId[role]}
+
+            ) VALUES (?, ?, ?)
+      `;
+
+      const valuesInsertAccount = [email, password, role_id, insertedId];
 
       await db.query(queryInsertAccount, valuesInsertAccount);
 
       res.status(200).json({
         success: true
       });
-    } catch (error) {
-      console.log(error);
-      res.status(400).send(error.message);
     }
   }
 );

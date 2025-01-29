@@ -77,19 +77,14 @@ const LoanDetailsHeader = ({ selectedLoan, paymentList }) => {
 
   const fetchloanPaymentList = async () => {
 
-
     let res = await axios({
       method: 'get',
       url: `loan/${selectedLoan?.loan_id}/paymentList`,
       data: {
-
       }
     });
     let list = res.data.data;
-
     setloanPaymentList(list)
-
-
   };
 
 
@@ -135,7 +130,7 @@ const LoanDetailsHeader = ({ selectedLoan, paymentList }) => {
   // Get progress percentage and total paid amount
   const { percentage, totalPaidAmount } = getProgressPercentage(paymentList, loanPaymentList);
 
-  console.log({ percentage, totalPaidAmount }); // Output the progress percentage and total paid amount
+  //console.log({ percentage, totalPaidAmount }); // Output the progress percentage and total paid amount
 
   const getStrokeColor = (progress) => {
     if (progress <= 30) return "#EF4444"; // Red for low progress
@@ -167,7 +162,7 @@ const LoanDetailsHeader = ({ selectedLoan, paymentList }) => {
           <span
             className="absolute p-2 inset-0 flex justify-center items-center text-white font-bold"
           >
-            {percentage}% (₱{totalPaidAmount}) Paid
+            {percentage || 0}% (₱{totalPaidAmount}) Paid
           </span>
         </div>
       </div>
@@ -276,7 +271,6 @@ const LoanEvaluationResult = ({ result, loanDetails }) => {
 
 
 
-  console.log({ approved })
 
   return isLoaded && (
     <div className="max-w-3xl mx-auto p-8 bg-white shadow-lg rounded-xl">
@@ -322,7 +316,7 @@ const LoanEvaluationResult = ({ result, loanDetails }) => {
       <div className="space-y-6">
         {Object.keys(breakdown).map((key) => {
           const item = breakdown[key];
-          console.log(item.percentage); // Debug: check if percentage is correct
+          // console.log(item.percentage); // Debug: check if percentage is correct
           return (
             <div key={key}>
               <p className="text-lg font-semibold text-gray-700 capitalize">{key.replace(/([A-Z])/g, ' $1')}</p>
@@ -386,6 +380,8 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
   }, [rowIndex]); // Dependency array ensures this runs when rowIndex changes
 
 
+
+  console.log({ values: formikProps.values })
   return (
     <div className="w-full max-w-6xl mx-auto p-4">
       <div className="bg-white shadow-lg rounded-xl overflow-hidden">
@@ -521,16 +517,19 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
                 setPaymentList={setPaymentList}
               />}
 
-              {loanDetails.loan_id && <LoanCalculator
-                {...formikProps}
-                isReadOnly={true}
-                calculatorLoanAmmount={formikProps.values.calculatorLoanAmmount}
-                calculatorInterestRate={formikProps.values.calculatorInterestRate}
-                calculatorMonthsToPay={formikProps.values.calculatorMonthsToPay}
-                selectedLoan={loanDetails}
-                setPaymentList={setPaymentList}
+              {loanDetails.loan_id &&
 
-              />}
+
+                <LoanCalculator
+                  {...formikProps}
+                  isReadOnly={true}
+                  calculatorLoanAmmount={formikProps.values.calculatorLoanAmmount}
+                  calculatorInterestRate={formikProps.values.calculatorInterestRate}
+                  calculatorMonthsToPay={formikProps.values.calculatorMonthsToPay}
+                  selectedLoan={loanDetails}
+                  setPaymentList={setPaymentList}
+
+                />}
             </div>
           )}
         </div>
@@ -598,7 +597,7 @@ const TopSideButtons = ({ removeFilter, applyFilter, applySearch,
 
   const locationFilters = [''];
 
-  console.log({ loanDetails })
+  //console.log({ loanDetails })
 
   const showFiltersAndApply = params => {
     applyFilter(params);
@@ -643,12 +642,16 @@ const TopSideButtons = ({ removeFilter, applyFilter, applySearch,
     setModalMessage("");
   };
 
+
+  //console.log({ loggedInUser })
+
+  let canApprove = loggedInUser.role === 'Loan Officer' || loggedInUser.role === 'Admin'
   return (
     <div className="inline-block float-right">
 
       {
 
-        loanDetails.loan_status !== 'Approved' && <div className="flex space-x-4">
+        canApprove && loanDetails.loan_status !== 'Approved' && <div className="flex space-x-4">
           {/* Approve Button */}
           <button
             className="btn flex items-center font-bold text-white bg-customBlue rounded-md 
@@ -785,7 +788,7 @@ function LoanApplication() {
   const { loanId, rowIndex } = useParams();
 
 
-  console.log({ loanId, rowIndex })
+
   const [file, setFile] = useState(null);
   const [faqList, setList] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -809,7 +812,7 @@ function LoanApplication() {
   const prepareAddress = async () => {
     await regions().then(region => {
 
-      console.log({ region })
+      //console.log({ region })
       setRegions(
         region.map(r => {
           return {
@@ -897,117 +900,7 @@ function LoanApplication() {
 
   // console.log(users);
   let loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
-  const columns = useMemo(
-    () => [
 
-      {
-        Header: '#',
-        accessor: '',
-        Cell: ({ row }) => {
-          return <span className="">{row.index + 1}</span>;
-        }
-      },
-      {
-        Header: 'Type',
-        accessor: 'loan_type_value',
-        Cell: ({ row, value }) => {
-          return <span className="">{value}</span>;
-        }
-      },
-      {
-        Header: 'Loan Amount',
-        accessor: 'loan_amount',
-        Cell: ({ row, value }) => {
-          return <span className="">{formatAmount(value)}</span>;
-        }
-      },
-      {
-        Header: 'Interest Rate',
-        accessor: 'interest_rate',
-        Cell: ({ row, value }) => {
-          return <span className="">{value}</span>;
-        }
-      },
-      {
-        Header: 'Months To Pay',
-        accessor: 'repayment_schedule_id',
-        Cell: ({ row, value }) => {
-          return <span className="">{value} Months</span>;
-        }
-      },
-      {
-        Header: 'Date Created',
-        accessor: 'application_date',
-        Cell: ({ row, value }) => {
-          return <span className="">
-
-            {value &&
-              format(value, 'MMM dd, yyyy hh:mm a')}
-
-          </span>;
-        }
-      },
-      {
-        Header: 'Date Approved',
-        accessor: 'approval_date',
-        Cell: ({ row, value }) => {
-          return <span className="">{value}</span>;
-        }
-      },
-      {
-        Header: 'Status',
-        accessor: 'loan_status',
-        Cell: ({ row, value }) => {
-          return <StatusPill value={value} />
-
-
-
-        }
-      },
-
-
-      {
-        Header: 'Action',
-        accessor: '',
-        Cell: ({ row }) => {
-          let loan = row.original;
-
-
-
-          return (
-            (
-              <div className="flex">
-
-                <button className="btn btn-outline btn-sm" onClick={() => {
-
-                  // setisEditModalOpen(true)
-                  setselectedLoan(loan);
-
-                  document.getElementById('viewLoan').showModal();
-                  // setFieldValue('Admin_Fname', 'dex');
-                }}>
-                  <i className="fa-solid fa-eye"></i>
-                </button>
-
-                {/* <button
-                  className="btn btn-outline btn-sm ml-2"
-                  onClick={() => {
-
-
-                    setactiveChildID(l.id);
-
-                  }}>
-                  <i className="fa-solid fa-archive"></i>
-                </button> */}
-              </div>
-            )
-          );
-        }
-      },
-
-    ],
-    []
-  );
 
 
 
@@ -1025,24 +918,24 @@ function LoanApplication() {
     } catch (err) {
 
     } finally {
-      setIsLoaded(true); // Ensure isLoaded is set to true regardless of success or error
+
     }
   };
 
   useEffect(() => {
     fetchloanSettings(); // Changed function call here
+    setIsLoaded(true);
   }, []);
 
-  const formikConfig = () => {
+  const formikConfig = (interest_rate) => {
 
 
 
-    console.log({ loanDetails })
     return {
       initialValues: {
 
         calculatorLoanAmmount: 20000,
-        calculatorInterestRate: (loanSettings?.interest_rate || 3) * loanDetails.repayment_schedule_id,
+        calculatorInterestRate: (interest_rate || 3) * loanDetails.repayment_schedule_id,
         calculatorMonthsToPay: 6,
         calculatorTotalAmountToPay: 0,
         remarks: '',
@@ -1135,9 +1028,8 @@ function LoanApplication() {
   };
 
 
-  console.log({ loanSettings })
-  return isLoaded && loanSettings.id && (
-    <Formik {...formikConfig()}>
+  return isLoaded && !!loanSettings.interest_rate && (
+    <Formik {...formikConfig(loanSettings.interest_rate)}>
       {(formikProps) => {
         return <TitleCard
           titleBadge={true}
@@ -1158,11 +1050,13 @@ function LoanApplication() {
 
 
 
-
             <LoanManagementTabs
               loanDetails={loanDetails}
               formikProps={formikProps}
               rowIndex={rowIndex} />
+
+
+
 
           </div>
           <ToastContainer />

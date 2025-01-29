@@ -81,9 +81,9 @@ import { format, formatDistance, formatRelative, subDays } from 'date-fns';
 
 import { formatAmount } from '../dashboard/helpers/currencyFormat';
 
+import PersonalInfoForm from './PersonalInfoForm';
 
-import PersonalInfoForm from './../loanOfficerManagement/PersonalInfoForm';
-
+import PersonalInfoFormCreate from './PersonalInfoForm';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-PH', {
@@ -137,10 +137,10 @@ const TopSideButtons = ({ removeFilter, applyFilter, applySearch, faqList }) => 
       )} */}
       {/* <div className="badge badge-neutral mr-2 px-2 p-4 text-blue-950 px-2 py-4 bg-white">Total : {faqList.length}</div> */}
 
-      {/* <button className="btn btn-outline bg-customBlue text-white" onClick={() => document.getElementById('addBorrower').showModal()}>
+      <button className="btn btn-outline bg-customBlue text-white" onClick={() => document.getElementById('addBorrower').showModal()}>
         Add
         <PlusCircleIcon className="h-6 w-6 text-white-500" />
-      </button> */}
+      </button>
 
       {/* 
       <button
@@ -175,8 +175,10 @@ const TopSideButtons = ({ removeFilter, applyFilter, applySearch, faqList }) => 
   );
 };
 
-function LoanApplication() {
+function LoanApplication({ role }) {
 
+
+  //console.log({ role })
 
   // Define file handling logic
   const [files, setFiles] = useState({
@@ -207,7 +209,7 @@ function LoanApplication() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeChildID, setactiveChildID] = useState('');
-  const [selectedLoan, setselectedLoan] = useState({});
+  const [selectedLoan, setselectedLoan] = useState(null);
   const [isEditModalOpen, setisEditModalOpen] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -224,7 +226,7 @@ function LoanApplication() {
   const prepareAddress = async () => {
     await regions().then(region => {
 
-      console.log({ region })
+      //console.log({ region })
       setRegions(
         region.map(r => {
           return {
@@ -234,40 +236,28 @@ function LoanApplication() {
         })
       );
     });
-    // await regionByCode('01').then(region => console.log(region.region_name));
-    await provinces().then(data => {
 
-      console.log({ data })
-      // setProvince(
-      //   province.map(r => {
-      //     return {
-      //       value: r.province_code,
-      //       label: r.province_name
-      //     };
-      //   })
-      // );
-
-    });
-    // await provincesByCode('01').then(province => console.log(province));
-    // await provinceByName('Rizal').then(province =>
-    //   console.log(province.province_code)
-    // );
-    await cities().then(city => console.log(city));
-    await barangays().then(barangays => console.log(barangays));
   };
 
   const borrowerList = async () => {
 
+
+    let route_name = 'loan_officer';
+
+    if (role === 'Collector') {
+      route_name = 'collector';
+    }
+
     let res = await axios({
       method: 'get',
-      url: 'admin/borrower/list',
+      url: `admin/${route_name}/list`,
       data: {
 
       }
     });
     let list = res.data.data;
 
-    setborrowerList(list.filter(b => !!b.borrower_id))
+    setborrowerList(list)
 
 
   };
@@ -295,7 +285,7 @@ function LoanApplication() {
     // });
     // let list = res.data.data;
 
-    // console.log({ list });
+    // //console.log({ list });
     // setList(list);
   };
 
@@ -322,7 +312,7 @@ function LoanApplication() {
     return classes.filter(Boolean).join(' ');
   }
 
-  // console.log(users);
+  // //console.log(users);
   let loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
   const columns = useMemo(
     () => [
@@ -336,7 +326,7 @@ function LoanApplication() {
       },
 
       {
-        Header: 'Valid ID',
+        Header: 'Profile Picture',
         accessor: 'profile_pic',
         Cell: ({ row, value }) => {
 
@@ -366,6 +356,15 @@ function LoanApplication() {
           return <span className="">{firstName} {middleName} {lastName}</span>;
         }
       },
+      {
+        Header: 'email',
+        accessor: 'email',
+        Cell: ({ row, value }) => {
+
+          return <span className="">{value}</span>;
+        }
+      },
+
       {
         Header: 'Address',
         accessor: '',
@@ -441,34 +440,25 @@ function LoanApplication() {
           return <span className="">{value}</span>;
         }
       },
-
       {
-        Header: 'Current Loan',
-        accessor: 'loan_amount',
+        Header: 'Is Verified',
+        accessor: 'is_verified ',
         Cell: ({ row, value }) => {
           // let firstName = row.original.first_name;
           // let middleName = row.original.middle_name;
           // let lastName = row.original.last_name;
 
-          return <span className="text-green-500 font-bold">{formatCurrency(value)}</span>;
+          return <span className="">{value ? 'YES' : 'NO'}</span>;
         }
       },
-      // {
-      //   Header: 'Next Payment Date',
-      //   accessor: '',
-      //   Cell: ({ row, value }) => {
-      //     // let firstName = row.original.first_name;
-      //     // let middleName = row.original.middle_name;
-      //     // let lastName = row.original.last_name;
 
-      //     return <span className="">{value}</span>;
-      //   }
-      // },
+
+
       {
         Header: 'Action',
         accessor: '',
         Cell: ({ row }) => {
-          let loan = row.original;
+          let user = row.original;
 
 
 
@@ -476,25 +466,25 @@ function LoanApplication() {
             (
               <div className="flex">
 
-                {/* <button className="btn btn-outline btn-sm" onClick={() => {
-                  setselectedLoan(loan)
-                }}>
-                  <i class="fa-solid fa-eye"></i>
-                </button> */}
+                <button className="btn btn-outline btn-sm" onClick={() => {
 
-                <button
+                  setselectedLoan(user);
+
+                  document.getElementById('addBorrower').showModal();
+                }}>
+                  <i class="fa-solid fa-edit"></i>
+                </button>
+
+                {/* <button
                   className="btn btn-outline btn-sm ml-2"
                   onClick={() => {
 
 
-                    setselectedLoan(loan)
 
-                    console.log({ loan })
-                    document.getElementById('viewLoan').showModal()
 
                   }}>
                   <i class="fa-solid fa-edit"></i>
-                </button>
+                </button> */}
               </div>
             )
           );
@@ -506,7 +496,7 @@ function LoanApplication() {
   );
 
   const handleOnChange = e => {
-    console.log(e.target.files[0]);
+    //console.log(e.target.files[0]);
     setFile(e.target.files[0]);
   };
 
@@ -559,6 +549,9 @@ function LoanApplication() {
   const formikConfig = (selectUser) => {
 
 
+
+    //console.log({ selectUser })
+
     let PersonalInfoTabValidation = {};
 
     if (currentStep === 0) {
@@ -575,42 +568,9 @@ function LoanApplication() {
         date_of_birth: Yup.date().required('Date of birth is required'),
         age: Yup.number().min(1, 'Age must be greater than 0').required('Age is required'),
         gender: Yup.string().required('Gender is required'),
-        nationality: Yup.string().required('Nationality is required'),
-        // religion: Yup.string().required('Religion is required')
+        nationality: Yup.string().required('Nationality is required')
       }
     }
-    else if (currentStep === 1) {
-
-
-      // PersonalInfoTabValidation = {
-      //   work_type: Yup.string().required('Work type is required'),
-      //   position: Yup.string().required('Position is required'),
-      //   status: Yup.string().required('Status is required'),
-      //   monthly_income: Yup.number()
-      //     .positive('Monthly income must be a positive number')
-      //     .required('Monthly income is required'),
-      // }
-
-    }
-
-    // else if (currentStep === 3) {
-    //   PersonalInfoTabValidation = {
-    //     calculatorLoanAmmount: Yup.number().required('Required'),
-    //     calculatorInterestRate: Yup.number().required('Required'),
-    //     calculatorMonthsToPay: Yup.number().required('Required'),
-    //   }
-    // }
-
-    // else if (currentStep === 1) {
-
-    //   console.log("DEx")
-    //   PersonalInfoTabValidation = {
-    //     borrowerValidID: Yup.string().required("Borrower's Valid ID is required"),
-    //     bankStatement: Yup.string().required("Bank Statement is required"),
-    //     coMakersValidID: Yup.string().required("Co-maker's Valid ID is required"),
-    //   }
-    // }
-
 
 
 
@@ -635,7 +595,6 @@ function LoanApplication() {
         status: selectUser?.status || '',
         monthly_income: selectUser?.monthly_income || '',
 
-
       },
       validationSchema: Yup.object({
         ...PersonalInfoTabValidation
@@ -646,62 +605,142 @@ function LoanApplication() {
       onSubmit: async (values, { setFieldError, setSubmitting, resetForm }) => {
         setSubmitting(true);
 
-        console.log({ values })
+
 
 
         try {
 
-          if (!selectedLoan && !selectedLoan.borrower_id) {
-            let res = await axios({
-              method: 'post',
-              url: `admin/borrower/create`,
-              data: values
-            })
 
-            resetForm();
-            borrowerList();
-            document.getElementById('addBorrower').close();
 
-            toast.success('Successfully created!', {
-              onClose: () => {
 
-              },
-              position: 'top-right',
-              autoClose: 500,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: 'light'
-            });
 
-          } else {
-            let res = await axios({
-              method: 'put',
-              url: `admin/borrower/update/${selectedLoan.borrower_id}`,
-              data: { ...values, role: 'Borrower' }
-            })
-            resetForm();
-            borrowerList();
-            document.getElementById('viewLoan').close();
+          console.log({ role })
 
-            setselectedLoan(null)
 
-            toast.success('Successfully Updated!', {
-              onClose: () => {
+          if (role === 'Collector') {
 
-              },
-              position: 'top-right',
-              autoClose: 500,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: 'light'
-            });
+
+            if (selectedLoan && selectedLoan.collector_id) {
+              let res = await axios({
+                method: 'put',
+                url: `admin/collector/update/${selectedLoan.collector_id}`,
+                data: { ...values, role: 'Collector' }
+              })
+              resetForm();
+              borrowerList();
+              document.getElementById('addBorrower').close();
+
+              setselectedLoan(null)
+
+              toast.success('Successfully Updated!', {
+                onClose: () => {
+
+                },
+                position: 'top-right',
+                autoClose: 500,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: 'light'
+              });
+
+
+            } else {
+
+              let res = await axios({
+                method: 'post',
+                url: `admin/collector/create`,
+                data: { ...values, role: 'Collector' }
+              })
+              resetForm();
+              borrowerList();
+              document.getElementById('addBorrower').close();
+
+              toast.success('Successfully created!', {
+                onClose: () => {
+
+                },
+                position: 'top-right',
+                autoClose: 500,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: 'light'
+              });
+
+            }
+
           }
+
+          else if (role === 'Loan Officer') {
+
+            if (selectedLoan && selectedLoan.officer_id) {
+              let res = await axios({
+                method: 'put',
+                url: `admin/loan_officer/update/${selectedLoan.officer_id}`,
+                data: { ...values, role: 'Loan Officer' }
+              })
+              resetForm();
+              borrowerList();
+              document.getElementById('addBorrower').close();
+
+              setselectedLoan(null)
+
+              toast.success('Successfully Updated!', {
+                onClose: () => {
+
+                },
+                position: 'top-right',
+                autoClose: 500,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: 'light'
+              });
+
+
+            } else {
+
+              let res = await axios({
+                method: 'post',
+                url: `admin/loan_officer/create`,
+                data: { ...values, role: 'Loan Officer' }
+              })
+              resetForm();
+              borrowerList();
+              document.getElementById('addBorrower').close();
+
+              toast.success('Successfully created!', {
+                onClose: () => {
+
+                },
+                position: 'top-right',
+                autoClose: 500,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: 'light'
+              });
+
+            }
+
+          }
+
+
+
+
+
+
+
+
         } catch (error) {
           // Check if the error response contains a message
           const errorMessage = error?.response?.data?.message || 'Something went wrong';
@@ -771,7 +810,7 @@ function LoanApplication() {
     );
   };
 
-
+  //console.log({ selectedLoan })
 
   return (
 
@@ -788,27 +827,63 @@ function LoanApplication() {
       }>
       <div className="">
 
-
-        <dialog id="viewLoan" className="modal">
+        <dialog id="addBorrower" className="modal">
           <div className="modal-box w-11/12 max-w-5xl">
+            <form method="dialog">
+              {/* if there is a button in form, it will close the modal */}
+              <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
 
-            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-              onClick={() => {
-                setselectedLoan({})
-                document.getElementById("viewLoan").close()
-              }}
-
-
-            >✕</button>
-
+                onClick={() => {
+                  setselectedLoan(null)
+                }}
+              >✕</button>
+            </form>
             <h1 className="font-bold text-lg  p-4 bg-gradient-to-r from-gray-200 to-gray-300
       z-10 text-blue-950 border bg-white
-             text-blue-950 rounded-lg">Borrower Account</h1>
-
+             text-blue-950 rounded-lg">New Account</h1>
             <p className="text-sm text-gray-500 mt-1 font-bold"></p>
             <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
+              {/* {(!selectedLoan.officer_id || !selectedLoan.collector_id) &&
 
-              {(selectedLoan && selectedLoan.borrower_id) && <PersonalInfoForm
+
+                <PersonalInfoForm
+                  selectedLoan={selectedLoan}
+                  addressRegions={addressRegions}
+                  addressProvince={addressProvince}
+                  setProvince={setProvince}
+                  setCity={setCity}
+                  addressCity={addressCity}
+                  addressBarangay={addressBarangay}
+                  setBarangay={setBarangay}
+                  formikConfig={formikConfig}
+                  provincesByCode={provincesByCode}
+                  regions={regions}
+                  provinces={provinces}
+                  cities={cities}
+                  barangays={barangays}
+                />
+
+              } */}
+              {
+                selectedLoan === null && <PersonalInfoFormCreate
+                  selectedLoan={selectedLoan}
+                  addressRegions={addressRegions}
+                  addressProvince={addressProvince}
+                  setProvince={setProvince}
+                  setCity={setCity}
+                  addressCity={addressCity}
+                  addressBarangay={addressBarangay}
+                  setBarangay={setBarangay}
+                  formikConfig={formikConfig}
+                  provincesByCode={provincesByCode}
+                  regions={regions}
+                  provinces={provinces}
+                  cities={cities}
+                  barangays={barangays}
+                />
+              }
+
+              {((selectedLoan && selectedLoan.officer_id) || (selectedLoan && selectedLoan.collector_id)) && <PersonalInfoForm
                 selectedLoan={selectedLoan}
                 addressRegions={addressRegions}
                 addressProvince={addressProvince}
@@ -826,11 +901,31 @@ function LoanApplication() {
               />
 
               }
+              {/* 
+              {(!selectedLoan.officer_id || !selectedLoan.collector_id) && <PersonalInfoForm
+                selectedLoan={selectedLoan}
+                addressRegions={addressRegions}
+                addressProvince={addressProvince}
+                setProvince={setProvince}
+                setCity={setCity}
+                addressCity={addressCity}
+                addressBarangay={addressBarangay}
+                setBarangay={setBarangay}
+                formikConfig={formikConfig}
+                provincesByCode={provincesByCode}
+                regions={regions}
+                provinces={provinces}
+                cities={cities}
+                barangays={barangays}
+              />
 
-
+              } */}
             </div>
           </div>
         </dialog >
+
+
+
         <Table
           style={{ overflow: 'wrap' }}
           className="table-sm"

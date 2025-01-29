@@ -8,6 +8,10 @@ import userRoute from './routes/userRoute.js';
 import adminRoute from './routes/admin/admin.js';
 import adminStatsRoute from './routes/admin/statistics.js';
 import borrowerRoute from './routes/admin/borrower.js';
+import loanOfficerRoute from './routes/admin/loan_officer.js';
+
+import collectorRoute from './routes/admin/collector.js';
+
 import authRoute from './routes/auth.js';
 import smsRoute from './routes/sms.js';
 import settingsRoute from './routes/settings.js';
@@ -56,6 +60,9 @@ app.use('/api/admin/loan', loanAdminRoute);
 app.use('/api/user', userRoute);
 app.use('/api/admin', adminRoute);
 app.use('/api/admin/borrower', borrowerRoute);
+
+app.use('/api/admin/loan_officer', loanOfficerRoute);
+app.use('/api/admin/collector', collectorRoute);
 
 app.use('/api/admin_stats/statistics', adminStatsRoute);
 

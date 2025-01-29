@@ -46,6 +46,14 @@ const FAQ = lazy(() => import('../pages/protected/Faq'));
 const LoanApplication = lazy(() => import('../pages/protected/LoanApplication'));
 const LoanManagement = lazy(() => import('../pages/protected/LoanManagement'));
 const BorrowersManagement = lazy(() => import('../pages/protected/BorrowersManagement'));
+
+const LoanOfficerManagement = lazy(() => import('../pages/protected/LoanOfficerManagement'));
+
+
+
+const CollectorManagement = lazy(() => import('../pages/protected/CollectorManagement'));
+
+
 const LoanDetails = lazy(() => import('../pages/protected/LoanDetails'));
 
 
@@ -168,6 +176,15 @@ routes = [
   {
     path: '/borrowers',
     component: BorrowersManagement
+  },
+  {
+    path: '/loan_officers',
+    component: LoanOfficerManagement
+  },
+
+  {
+    path: '/collectors',
+    component: CollectorManagement
   },
 
   {

@@ -182,13 +182,16 @@ router.post('/login', async (req, res, next) => {
 
     // Send response with token
 
+    // console.log({ user });
+
+    // let {...otherProps, password} = user;
     res.json({
       success: true,
       token: accessToken,
       data: {
-        // role: 'borrower',
-        // userId: user.user_id,
-        // email: user.username
+        role: user.role,
+        userId: user.user_id,
+        email: user.username
       }
     });
   } catch (error) {

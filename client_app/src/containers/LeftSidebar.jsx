@@ -25,7 +25,7 @@ function LeftSidebar() {
     const decoded = jwtDecode(token);
     let user_id = decoded.user_id;
 
-    console.log({ decoded })
+    //console.log({ decoded })
 
     let res = await axios({
       method: 'GET',
@@ -35,7 +35,7 @@ function LeftSidebar() {
 
     console.log({ user })
 
-    setSelectedUser({ ...user, email: decoded.username });
+    setSelectedUser({ ...user });
     setIsLoaded(true);
   };
 
@@ -55,42 +55,66 @@ function LeftSidebar() {
 
   return isLoaded && (
 
-    <div className="drawer-side text-white bg-blue-950 h-screen w-60">
+    <div className="drawer-side  z-30   ">
       <label htmlFor="left-sidebar-drawer" className="drawer-overlay"></label>
       {/* <div className=" mx-auto flex items-center justify-center mb-8 mt-4">
         <img src="/A.V. Logo.png" alt="Logo" className="w-30 h-24" />
       </div> */}
       {/* <hr class="border-t-2 border-white mx-auto w-1/2 my-2"></hr> */}
-      <div className=" mx-auto flex items-center justify-center mb-3 mt-6">
-        {/* <img
-          src={selectedUser?.profile_pic || 'https://img.freepik.com/premium-vector/young-smiling-man-avatar-man-with-brown-beard-mustache-hair-wearing-yellow-sweater-sweatshirt-3d-vector-people-character-illustration-cartoon-minimal-style_365941-860.jpg?w=740'}
-          alt="Logo"
-          className="w-24 h-24 rounded-full"
-        /> */}
+      {/* <div className=" mx-auto flex items-center justify-center mb-3 mt-6">
+      
+      </div> */}
+      <label htmlFor="left-sidebar-drawer" className="drawer-overlay"></label>
 
-        <div className="bg-white p-2 rounded-full shadow-lg">
-          <img
-            src="/LOGO.png"
-            alt="Logo"
-            className="w-24 h-24 rounded-full border-2 border-blue-950 p-2"
-          />
-        </div>
-      </div>
 
-      <ul className="menu bg-blue-950 text-white items-center justify-between mx-auto ">
-        <button
-          className="btn btn-ghost bg-base-300 btn-circle z-50 top-0 right-0 mt-4 mr-2 absolute lg:hidden"
-          onClick={() => close()}>
-          <XMarkIcon className="h-5 w-5" />
+      <ul className="menu  pt-2 w-80 bg-base-100 min-h-full   text-base-content text-white bg-blue-950">
+        <button className="btn btn-ghost bg-base-300  btn-circle z-50 top-0 right-0 mt-4 mr-2 absolute lg:hidden" onClick={() => close()}>
+          <XMarkIcon className="h-5 inline-block w-5 text-blue-950" />
         </button>
+        <div className="mx-auto flex items-center justify-center mb-3 mt-6 px-4 w-full">
+          {/* Left side text (LEND) */}
+
+
+          <div className="text-white font-bold text-xl mr-2">
+            LEND
+          </div>
+
+          {/* Centered logo */}
+          <div className="bg-white p-2 rounded-full shadow-lg">
+            <img
+              src="/LOGO.png"
+              alt="Logo"
+              className="w-20 h-20 rounded-full border-2 border-blue-950 p-2"
+            />
+          </div>
+
+          {/* Right side text (EASE) */}
+          <div className="text-white font-bold text-xl ml-2">
+            EASE
+          </div>
+        </div>
+
+
+
 
         {selectedUser && (
           <li className="flex items-center justify-between mb-3">
             <label className="text-white">
-              Hello, <span className="font-bold">{selectedUser.email}</span>
+              Hello, <span className="font-bold">{selectedUser.first_name} {selectedUser.first_name}</span>
             </label>
+            <label className="bg-customBrown text-white rounded-lg text-xs p-1">
+              <span className="border-lg text-xs">{selectedUser.role}</span>
+            </label>
+
           </li>
         )}
+
+
+        {/* <span className={`font-bold text-white bg-blue-900 shadow-2xl px-2 py-2 rounded-lg
+          text-center w-50 mb-5`}>
+          {selectedUser.role}
+        </span> */}
+
 
         <RoutesSideBar />
       </ul>

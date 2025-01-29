@@ -83,7 +83,7 @@ const LoanCalculator = memo(({
 }) => {
 
 
-  console.log({ selectedLoan })
+  //console.log({ selectedLoan })
   const navigate = useNavigate();
 
   const { loanId, rowIndex } = useParams();
@@ -111,9 +111,9 @@ const LoanCalculator = memo(({
 
   const fetchloanPaymentList = async () => {
 
-    console.log({
-      hey: loanId
-    })
+    // console.log({
+    //   hey: loanId
+    // })
     let res = await axios({
       method: 'get',
       url: `loan/${selectedLoan?.loan_id || loanId}/paymentList`,
@@ -290,7 +290,7 @@ const LoanCalculator = memo(({
   };
 
 
-  console.log({ loanPaymentList })
+  //console.log({ loanPaymentList })
 
   const [selectedImage, setSelectedImage] = useState(null);
   const totalPayments = 10; // Example: Total expected payments
@@ -434,10 +434,10 @@ const LoanCalculator = memo(({
                   formattedDate = format(parsedDate, 'MMM dd, yyyy hh:mm:a');
 
                 } else {
-                  console.error('Invalid date format');
+                  // console.error('Invalid date format');
                 }
               } else {
-                console.error('Payment date is missing');
+                //console.error('Payment date is missing');
               }
 
 
@@ -449,7 +449,7 @@ const LoanCalculator = memo(({
 
 
 
-              console.log({ urlLink: `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${index + 1}` })
+              //   console.log({ urlLink: `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${index + 1}` })
 
 
               let highlight = parseInt(rowIndex) === index + 1;
@@ -583,9 +583,9 @@ const LoanCalculator = memo(({
           <p className="text-sm text-gray-500 mt-1 font-bold"></p>
           <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
 
-            {
+            {/* {
               console.log({ selectedPayment })
-            }
+            } */}
 
             {(selectedPayment.amount && selectedLoan.loan_application_id) &&
               <Formik
@@ -1019,9 +1019,9 @@ const LoanCalculator = memo(({
 
                   // console.log({ errors, files })
                   let hasError1 = errors['proof_of_payment'] && files.proofOfPayment == null;
-                  {
-                    console.log({ selectedPayment })
-                  }
+                  // {
+                  //   console.log({ selectedPayment })
+                  // }
                   let formattedPaymentDate = format(selectedPayment.payment_date, 'MMM dd, yyyy hh:mm:a');
                   return <Form onSubmit={handleSubmit}>
 

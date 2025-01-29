@@ -190,7 +190,6 @@ router.get('/get/:id', async (req, res) => {
 // Update Borrower Account (PUT)
 router.put('/update/:id', async (req, res) => {
   try {
-    const { id } = req.params;
     const {
       first_name,
       middle_name,
@@ -209,50 +208,51 @@ router.put('/update/:id', async (req, res) => {
       work_type,
       position,
       status,
-      monthly_income
+      monthly_income,
+      role
     } = req.body;
 
-    const query = `
-      UPDATE borrower_account
-      SET first_name = ?, middle_name = ?, last_name = ?, address_region = ?, address_province = ?, address_city = ?,
-          address_barangay = ?, email = ?, contact_number = ?, date_of_birth = ?, age = ?, gender = ?, nationality = ?,
-          religion = ?, work_type = ?, position = ?, status = ?, monthly_income = ?
-      WHERE id = ?
-    `;
-    const values = [
-      first_name,
-      middle_name,
-      last_name,
-      address_region,
-      address_province,
-      address_city,
-      address_barangay,
-      email,
-      contact_number,
-      date_of_birth,
-      age,
-      gender,
-      nationality,
-      religion,
-      work_type,
-      position,
-      status,
-      monthly_income,
-      id
-    ];
+    const userId = req.params.id; // Assuming you're passing the ID of the user to be updated in the URL
 
-    const [result] = await db.query(query, values);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Borrower account not found to update.'
-      });
-    }
+    const [result] = await db.query(
+      `
+        UPDATE borrower_account SET
+          first_name = ?, 
+          middle_name = ?, 
+          last_name = ?, 
+          address_region = ?, 
+          address_province = ?, 
+          address_city = ?, 
+          address_barangay = ?, 
+          email = ?, 
+          contact_number = ?, 
+          date_of_birth = ?,
+          gender = ?
+  
+          WHERE borrower_id = ?
+      `,
+      [
+        first_name,
+        middle_name,
+        last_name,
+        address_region,
+        address_province,
+        address_city,
+        address_barangay,
+        email,
+        contact_number,
+        new Date(date_of_birth)
+          .toISOString()
+          .slice(0, 19) // Extract YYYY-MM-DDTHH:mm:ss
+          .replace('T', ' '),
+        gender,
+        userId // Updating by the provided user ID
+      ]
+    );
 
     res.status(200).json({
       success: true,
-      message: 'Borrower account updated successfully!'
+      message: 'Account updated successfully'
     });
   } catch (err) {
     console.error(err);

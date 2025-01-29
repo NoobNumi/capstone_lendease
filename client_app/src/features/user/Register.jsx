@@ -136,6 +136,7 @@ const Tab1Content = ({
 
     return {
       initialValues: {
+        role: '',
         email: '',
         password: '',
         first_name: '',
@@ -149,6 +150,7 @@ const Tab1Content = ({
         date_of_birth: ''
       },
       validationSchema: Yup.object({
+        role: Yup.string().required('Required'),
         email: Yup.string().email('Invalid email address').required('Email is required'),
         password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
         first_name: Yup.string().required('First name is required'),
@@ -203,7 +205,7 @@ const Tab1Content = ({
 
 
 
-
+          return true
 
 
 
@@ -261,6 +263,34 @@ const Tab1Content = ({
             <Form className="">
 
 
+
+              <Dropdown
+                className="z-50"
+
+                label="Role"
+                name="role"
+                value={values.role}
+
+                onBlur={handleBlur}
+                options={[
+                  {
+                    value: 'Borrower',
+                    label: 'Borrower',
+                  },
+                  {
+                    value: 'Loan Officer',
+                    label: 'Loan Officer',
+                  },
+                  {
+                    value: 'Collector',
+                    label: 'Collector',
+                  }
+                ]}
+                affectedInput="role"
+                allValues={values}
+                setFieldValue={setFieldValue}
+
+              />
               <InputText
 
                 label="Email"

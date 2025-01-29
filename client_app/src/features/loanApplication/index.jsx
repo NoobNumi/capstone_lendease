@@ -13,27 +13,7 @@ import ViewColumnsIcon from '@heroicons/react/24/outline/EyeIcon';
 import PlusCircleIcon from '@heroicons/react/24/outline/PlusCircleIcon';
 import TrashIcon from '@heroicons/react/24/outline/TrashIcon';
 
-import PlayCircleIcon from '@heroicons/react/24/outline/PlusCircleIcon';
-import {
-  mdiAccount,
-  mdiBallotOutline,
-  mdiGithub,
-  mdiMail,
-  mdiUpload,
-  mdiAccountPlusOutline,
-  mdiPhone,
-  mdiLock,
-  mdiVanityLight,
-  mdiLockOutline,
-  mdiCalendarRange,
-  mdiPhoneOutline,
-  mdiMapMarker,
-  mdiEmailCheckOutline,
-  mdiAccountHeartOutline,
-  mdiCashCheck,
-  mdiAccountCreditCardOutline,
-  mdiCreditCardOutline
-} from '@mdi/js';
+
 import 'react-tooltip/dist/react-tooltip.css'
 // import Tooltip from 'react-tooltip';
 import { Tooltip } from 'react-tooltip';
@@ -84,6 +64,10 @@ import LoanCalculator from "./loanCalculator";
 import { format, formatDistance, formatRelative, subDays } from 'date-fns';
 
 import { formatAmount } from './../../features/dashboard/helpers/currencyFormat';
+
+
+import { jsPDF } from 'jspdf';
+
 const TopSideButtons = ({ removeFilter, applyFilter, applySearch, myLoanList }) => {
   const [filterParam, setFilterParam] = useState('');
   const [searchText, setSearchText] = useState('');
@@ -628,14 +612,15 @@ function LoanApplication() {
 
       if (loanType === 'NON-EMPLOYEE LOAN') {
         PersonalInfoTabValidation = {
-          work_name: Yup.string().required('Work is required'),
+
           has_business: Yup.string().required('Please specify if you own a business'),
-          type_of_business: Yup.string().required('Business type is required if you own a business'),
-          // type_of_business: Yup.string().when('has_business', {
-          //   is: 'YES',
-          //   then: Yup.string().required('Business type is required if you own a business'),
-          //   otherwise: Yup.string().notRequired(),
-          // }),
+          type_of_business: Yup.object().when('has_business', {
+            is: (value) => value === 'YES', // Ensure this is a valid condition
+            then: (schema) => schema.required('Required'), // Apply validation
+            otherwise: (schema) => schema.notRequired(),
+          }),
+          // Make optional
+
           business_address: Yup.string().required('Business address is required'),
           income_flow: Yup.string().required('Please specify your income flow'),
           income_amount: Yup.number().positive('Income must be a positive number').required('Income is required'),
@@ -663,6 +648,14 @@ function LoanApplication() {
           //   otherwise: Yup.string(),
           // }),
           pensioner: Yup.string().required('Please select if you are a pensioner'),
+
+
+          monthly_pension_amount: Yup.string().when('pensioner', {
+            is: (value) => value === 'YES', // Ensure this is a valid condition
+            then: (schema) => schema.required('Required'), // Apply validation
+            otherwise: (schema) => schema.notRequired(),
+          }),
+
           // monthly_pension: Yup.number()
           //   .typeError('Monthly pension must be a number')
           //   .when('pensioner', {
@@ -670,7 +663,7 @@ function LoanApplication() {
           //     then: Yup.number().required('Monthly pension amount is required'),
           //     otherwise: Yup.number().notRequired(),
           //   }),
-          loan_type_specific: Yup.string().required('Loan type is required'),
+          loan_type_specific: Yup.object().required('Loan type is required'),
           // proposed_loan_amount: Yup.number()
           //   .typeError('Loan amount must be a number')
           //   .required('Proposed loan amount is required'),
@@ -740,7 +733,7 @@ function LoanApplication() {
         "status": "",
         "agency_name": "",
         "school_name": "",
-        "pensioner": "",
+        "pensioner": "YES",
         "monthly_pension": "",
         "loan_type_specific": "",
         "proposed_loan_amount": "",
@@ -792,119 +785,196 @@ function LoanApplication() {
         console.log({ values })
 
 
-
-
-
-        // //console.log("dex submit")
-
-
-
-        let res = await axios({
-          method: 'post',
-          url: `loan/create`,
-          data: values
-        })
-
-
-
-        let loan_application_id = res.data.data.loan_application_id
-
-        const formData = new FormData();
-        formData.append('bankStatement', values.bankStatement); // Assuming values contains File objects
-        formData.append('borrowerValidID', values.borrowerValidID);
-        formData.append('coMakersValidID', values.coMakersValidID);
-        formData.append('loan_application_id', loan_application_id);
-
-        await axios({
-          // headers: {
-          //   'content-type': 'multipart/form-data'
-          // },
-          method: 'POST',
-          url: 'loan/upload-files',
-          data: formData
-        });
-
-        setSubmitting(false);
-
-        resetForm();
-        loanList();
-        document.getElementById('addLoan').close();
-
-        toast.success('Successfully created!', {
-          onClose: () => {
-
-          },
-          position: 'top-right',
-          autoClose: 500,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: 'light'
-        });
-
-        return true
-
-        if (currentStep === 2) {
-
-        }
         try {
 
-          if (selectedLoan.question) {
-            let res = await axios({
-              method: 'put',
-              url: `faq/${selectedLoan.id}`,
-              data: values
-            })
-            document.getElementById('editFaq').close();
-            await fetchFaqList();
-            resetForm();
-            toast.success('Successfully updated!', {
-              onClose: () => {
+          const doc = new jsPDF();
 
-              },
-              position: 'top-right',
-              autoClose: 500,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: 'light'
-            });
-
-          } else {
-            let res = await axios({
-              method: 'POST',
-              url: 'faq/create',
-              data: values
-            })
-            document.getElementById('addLoan').close();
-            await fetchFaqList();
-            resetForm();
-            toast.success('Successfully added!', {
-              onClose: () => {
-
-              },
-              position: 'top-right',
-              autoClose: 500,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: 'light'
-            });
+          let data = {
+            ...values,
+            loan_type_specific: values.loan_type_specific.value,
+            type_of_business: values?.type_of_business?.value || '',
 
           }
 
 
+          let res = await axios({
+            method: 'post',
+            url: `loan/create`,
+            data: data
+          })
+
+
+
+          let loan_application_id = res.data.data.loan_application_id
+
+          const formData = new FormData();
+          formData.append('bankStatement', values.bankStatement); // Assuming values contains File objects
+          formData.append('borrowerValidID', values.borrowerValidID);
+          formData.append('coMakersValidID', values.coMakersValidID);
+          formData.append('loan_application_id', loan_application_id);
+
+          await axios({
+            // headers: {
+            //   'content-type': 'multipart/form-data'
+            // },
+            method: 'POST',
+            url: 'loan/upload-files',
+            data: formData
+          });
+
+          setSubmitting(false);
+
+          resetForm();
+          loanList();
+          document.getElementById('addLoan').close();
+
+          toast.success('Successfully created!', {
+            onClose: () => {
+
+            },
+            position: 'top-right',
+            autoClose: 500,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: 'light'
+          });
+
+          const content = [
+            `Loan Type: ${data.loan_type}`,
+            `Name: ${data.first_name} ${data.middle_name} ${data.last_name}`,
+            `Work: ${data.work || "N/A"}`,
+            `Region: ${data.address_region}`,
+            `Province: ${data.address_province}`,
+            `City: ${data.address_city}`,
+            `Barangay: ${data.address_barangay}`,
+            `Residence Type: ${data.residence_type}`,
+            `Work Type: ${data.work_type}`,
+            `Position: ${data.position}`,
+            `Status: ${data.status}`,
+            `Agency Name: ${data.agency_name}`,
+            `Pensioner: ${data.pensioner}`,
+            `Loan Type Specific: ${data.loan_type_specific}`,
+            `Proposed Loan Amount: ${data.proposed_loan_amount || "N/A"}`,
+            `Installment Duration: ${data.installment_duration || "N/A"}`,
+            `Loan Security: ${data.loan_security}`,
+            `Disbursement Type: ${data.disbursement_type}`,
+            `Business Address: ${data.business_address}`,
+            `Income Flow: ${data.income_flow}`,
+            `Income Amount: ${data.income_amount}`,
+            `Relationship to Loan Guarantor: ${data.relationship_to_loan_guarantor}`,
+            `Loan Guarantor: ${data.loan_guarantor}`,
+            `Calculator Loan Amount: ${data.calculatorLoanAmmount}`,
+            `Calculator Interest Rate: ${data.calculatorInterestRate}`,
+            `Calculator Months to Pay: ${data.calculatorMonthsToPay}`,
+            `Monthly Pension Amount: ${data.monthly_pension_amount}`
+          ];
+
+          // Adding a professional header
+          doc.setFontSize(18);
+          doc.text("Loan Application Details", 105, 20, { align: "center" });
+          doc.setFontSize(12);
+          doc.text("Generated on: " + new Date().toLocaleDateString(), 105, 28, { align: "center" });
+
+          // Drawing a line
+          doc.line(10, 35, 200, 35);
+
+          // Adding content with sections
+          const sections = [
+            {
+              title: "Personal Information", fields: [
+                `Name: ${data.first_name} ${data.middle_name} ${data.last_name}`,
+                `Work: ${data.work || "N/A"}`,
+                `Region: ${data.address_region}`,
+                `Province: ${data.address_province}`,
+                `City: ${data.address_city}`,
+                `Barangay: ${data.address_barangay}`,
+                `Residence Type: ${data.residence_type}`
+              ]
+            },
+            {
+              title: "Employment Details", fields: [
+                `Work Type: ${data.work_type}`,
+                `Position: ${data.position}`,
+                `Agency Name: ${data.agency_name}`
+              ]
+            },
+            {
+              title: "Loan Details", fields: [
+                `Loan Type: ${data.loan_type}`,
+                `Loan Type Specific: ${data.loan_type_specific}`,
+                `Proposed Loan Amount: ${data.calculatorLoanAmmount || "N/A"}`,
+                `Calculator Interest Rate: ${data.calculatorInterestRate}`,
+                `Installment Duration: ${data.calculatorMonthsToPay || "N/A"}`,
+                // `Loan Security: ${data.loan_security}`
+              ]
+            },
+            {
+              title: "Financial Information", fields: [
+                `Disbursement Type: ${data.disbursement_type}`,
+                `Business Address: ${data.business_address}`,
+                `Income Flow: ${data.income_flow}`,
+                `Income Amount: ${data.income_amount}`,
+                `Monthly Pension Amount: ${data.monthly_pension_amount}`
+              ]
+            },
+            {
+              title: "Guarantor Details", fields: [
+                `Relationship to Loan Guarantor: ${data.relationship_to_loan_guarantor}`,
+                `Loan Guarantor: ${data.loan_guarantor}`
+              ]
+            },
+
+          ];
+
+          let yPosition = 40;
+
+          sections.forEach(section => {
+            doc.setFontSize(14);
+            doc.text(section.title, 10, yPosition);
+            yPosition += 8;
+
+            doc.setFontSize(12);
+            section.fields.forEach(field => {
+              doc.text(field, 15, yPosition);
+              yPosition += 8;
+            });
+
+            yPosition += 5;
+          });
+
+          // Saving the PDF
+          doc.save("loan_details.pdf");
+
+
+          console.log({ formattedValues })
 
         } catch (error) {
-          //console.log({ error });
-        } finally {
+
+          console.log(error)
+
+
+          toast.error('Something went wrong', {
+            onClose: () => {
+
+            },
+            position: 'top-right',
+            autoClose: 500,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: 'light'
+          });
         }
+
+
+
+
+
       }
     };
   };
@@ -1295,44 +1365,42 @@ function LoanApplication() {
 
                             <div className="mt-4 z-50 grid grid-cols-1 gap-3 md:grid-cols-2 ">
                               <div className='mt-2'>
-                                <Dropdown
-                                  // icons={mdiAccount}
-                                  label="Pensioner"
-                                  name="pensioner"
-                                  placeholder=""
+
+
+                                <Radio
+                                  isRequired
+                                  label="Pensioner?"
+                                  name="pensioner" // This should be "loan_type"
                                   value={values.pensioner}
                                   setFieldValue={setFieldValue}
                                   onBlur={handleBlur}
                                   options={[
-                                    {
-                                      name: 'YES',
-                                      displayName: 'YES'
-                                    }, {
-                                      name: 'NO',
-                                      displayName: 'NO'
-                                    }].map(val => {
-                                      return {
-                                        value: val.name,
-                                        label: val.displayName
-                                      };
-                                    })}
+                                    { value: 'YES', label: 'YES' },
+                                    { value: 'NO', label: 'NO' }
+                                  ]}
+
+
+
 
                                 />
 
                               </div>
 
 
-                              <InputText
+                              {
+                                values.pensioner === 'YES' ? <InputText
 
-                                isRequired
-                                placeholder=""
-                                label="Amount of Monthly Pension"
-                                name="monthly_pension_amount"
-                                type="number"
+                                  isRequired
+                                  placeholder=""
+                                  label="Amount of Monthly Pension"
+                                  name="monthly_pension_amount"
+                                  type="number"
 
-                                value={values.monthly_pension_amount}
-                                onBlur={handleBlur} // This apparently updates `touched`?
-                              />
+                                  value={values.monthly_pension_amount}
+                                  onBlur={handleBlur} // This apparently updates `touched`?
+                                /> : null
+                              }
+
 
                             </div>
                             <div className="mt-4 z-50 grid grid-cols-1 gap-3 md:grid-cols-2 ">
@@ -1380,6 +1448,7 @@ function LoanApplication() {
 
                               <div className='mt-2'>
                                 <Dropdown
+                                  canAddOptions={true}
                                   // icons={mdiAccount}
                                   label="Type of Loan"
                                   name="loan_type_specific"
@@ -1402,6 +1471,14 @@ function LoanApplication() {
                                         label: val.displayName
                                       };
                                     })}
+                                  onChange={(newValue) => {
+
+
+                                    console.log({ newValue })
+                                    // setSelectedOptions(newValue);
+                                    setFieldValue('loan_type_specific', newValue)
+                                    // setSelectedOptions(newValue);
+                                  }}
 
                                 />
 
@@ -1442,20 +1519,7 @@ function LoanApplication() {
                               <h1 class="text-center font-bold text-blue-950">{values.loan_type}</h1>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-3 md:grid-cols-1 ">
-                              <InputText
-                                isRequired
-                                placeholder="Enter your work"
-                                label="Work"
-                                name="work_name"
-                                type="text"
 
-                                value={values.work_name}
-                                onBlur={handleBlur} // This apparently updates `touched`?
-                              />
-
-
-                            </div>
 
 
                             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 ">
@@ -1475,25 +1539,39 @@ function LoanApplication() {
                                 />
                               </div>
 
-
                               <div className='mt-4'>
-                                <Dropdown
-                                  className="z-50"
-                                  label="Type of Business"
-                                  name="type_of_business"
-                                  value={values.type_of_business}
 
-                                  onBlur={handleBlur}
-                                  options={[
-                                    { value: 'Corporation', label: 'Corporation' },
-                                    { value: 'Nonprofit', label: 'Nonprofit' },
-                                    { value: 'Cooperative', label: 'Cooperative' },
-                                    { value: 'Franchise', label: 'Franchise' },
-                                  ]}
-                                  affectedInput=""
-                                  functionToCalled={async code => { }}
-                                  setFieldValue={setFieldValue}
-                                /></div>
+                                {
+                                  values.has_business === 'YES' &&
+                                  <Dropdown
+                                    isMulti={false}
+                                    canAddOptions={true}
+                                    className="z-50"
+                                    label="Type of Business"
+                                    name="type_of_business"
+                                    value={values.type_of_business}
+
+                                    onBlur={handleBlur}
+                                    options={[
+                                      { value: 'Corporation', label: 'Corporation' },
+                                      { value: 'Nonprofit', label: 'Nonprofit' },
+                                      { value: 'Cooperative', label: 'Cooperative' },
+                                      { value: 'Franchise', label: 'Franchise' },
+                                    ]}
+                                    affectedInput=""
+                                    functionToCalled={async code => { }}
+                                    // setFieldValue={setFieldValue}
+                                    onChange={(newValue) => {
+
+
+                                      console.log({ newValue })
+                                      // setSelectedOptions(newValue);
+                                      setFieldValue('type_of_business', newValue)
+                                      // setSelectedOptions(newValue);
+                                    }}
+                                  />
+
+                                }</div>
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 md:grid-cols-1 ">
