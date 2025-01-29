@@ -294,6 +294,16 @@ function LoanApplication() {
         }
       },
       {
+        Header: 'Borrower',
+        accessor: '',
+        Cell: ({ row }) => {
+          let orig = row.original;
+
+          let fullname = `${orig.first_name} ${orig.last_name}`
+          return <span className="">{fullname}</span>;
+        }
+      },
+      {
         Header: 'Type',
         accessor: 'loan_type_value',
         Cell: ({ row, value }) => {

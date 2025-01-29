@@ -31,12 +31,15 @@ function Login() {
         const { token, data: user } = res.data;
         localStorage.setItem('token', token);
         localStorage.setItem('loggedInUser', JSON.stringify(user));
-        window.location.href = '/app/loan_application';
+        window.location.href = '/app/loan_management';
       } catch (error) {
         const errorMessage =
           error.response?.data?.message || 'An unknown error occurred.';
 
-        if (errorMessage === 'Please verify your account first. Check your email to verify.') {
+        console.log({ errorMessage })
+        if (errorMessage === 'Please verify you account first. Check your email to verify.') {
+
+          console.log("1")
           await axios.post('auth/send-verification-email', { email: values.email });
         }
         toast.error(errorMessage, { position: 'top-right', autoClose: 3000 });

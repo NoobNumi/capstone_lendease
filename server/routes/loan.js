@@ -26,7 +26,6 @@ const vonage = new Vonage({
   apiSecret: config.apiSecret
 });
 
-console.log({ vonage });
 const loanCreationMessage = ({
   firstName,
   lastName,
@@ -383,7 +382,11 @@ router.post(
 
             where borrower_id  = ?
         `,
-        [employment_years, employee_monthly_income_amount, borrower_id]
+        [
+          employment_years || 1,
+          employee_monthly_income_amount || income_amount,
+          borrower_id
+        ]
       );
 
       await db.query(

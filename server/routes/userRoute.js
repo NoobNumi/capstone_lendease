@@ -332,7 +332,7 @@ router.post(
                 role_id,
                 ${mappedColumnId[role]}
 
-            ) VALUES (?, ?, ?)
+            ) VALUES (?, ?, ?, ?)
       `;
 
       const valuesInsertAccount = [email, password, role_id, insertedId];

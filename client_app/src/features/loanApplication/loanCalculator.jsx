@@ -1065,7 +1065,7 @@ const LoanCalculator = memo(({
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 ">
 
 
-                      <Radio
+                      {/* <Radio
                         isRequired
                         label="Action"
                         name="action" // This should be "loan_type"
@@ -1076,7 +1076,7 @@ const LoanCalculator = memo(({
                           { value: 'Approved', label: 'Approve' },
                           { value: 'Rejected', label: 'Reject' }
                         ]}
-                      />
+                      /> */}
 
                       {/* <InputText
                       isRequired
