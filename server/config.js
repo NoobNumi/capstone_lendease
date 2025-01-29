@@ -109,5 +109,7 @@ export default {
   defaultDBName: 'neo4j',
   mySqlDriver: mySqlDriver,
   firebaseStorage,
-  REACT_FRONT_END_URL: 'https://capstone-lendeasee.onrender.com'
+  REACT_FRONT_END_URL: 'https://capstone-lendeasee.onrender.com',
+  VONAGE_apiKey: '4bd672c1',
+  VONAGE_apiSecret: 'AfPrKNa0SHzObquW'
 };

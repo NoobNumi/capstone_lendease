@@ -46,25 +46,7 @@ function Login() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
-      {/* Left Section - Hidden on Small Screens */}
-      <div className="hidden md:hidden md:block w-1/2 bg-gradient-to-r from-gray-100 to-blue-900 text-blue-950 relative flex items-center justify-center">
-        <div className="relative w-full h-screen">
-          {/* Triangles */}
-          <div className="absolute top-10 left-10 w-0 h-0 border-l-[50px] border-l-transparent border-b-[100px] border-b-red-500 border-r-[50px] border-r-transparent"></div>
-          <div className="absolute top-1/4 right-20 w-0 h-0 border-l-[60px] border-l-transparent border-b-[120px] border-b-blue-500 border-r-[60px] border-r-transparent"></div>
-          <div className="absolute bottom-16 left-1/3 w-0 h-0 border-l-[70px] border-l-transparent border-b-[140px] border-b-green-500 border-r-[70px] border-r-transparent"></div>
-          <div className="absolute bottom-10 right-10 w-0 h-0 border-l-[40px] border-l-transparent border-b-[80px] border-b-yellow-500 border-r-[40px] border-r-transparent"></div>
 
-          {/* Centered Circle */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-950 text-white w-80 h-100 flex flex-col items-center justify-center text-center p-10 rounded-lg">
-            <div className="bg-white p-2 rounded-full shadow-lg">
-              <img src="/LOGO.png" alt="Logo" className="w-24 h-24 rounded-full border-2 border-blue-950 p-2" />
-            </div>
-            <p className="text-sm mt-2">Get started with your loan application in just a few minutes.</p>
-            <button className="mt-4 bg-white text-blue-950 py-2 px-6 rounded-full font-bold">Apply Now</button>
-          </div>
-        </div>
-      </div>
 
       {/* Login Form - Full Width on Small Screens */}
       <div className="w-full  flex items-center justify-center bg-gray-100 px-6 md:px-0">

@@ -21,6 +21,12 @@ const authToken = 'faa226819bb25872991f707ec4e2d2d2'; // Replace with your Twili
 import twilio from 'twilio'; // Use import statement for Twilio
 import { Vonage } from '@vonage/server-sdk';
 
+const vonage = new Vonage({
+  apiKey: config.VONAGE_apiKey,
+  apiSecret: config.apiSecret
+});
+
+console.log({ vonage });
 const loanCreationMessage = ({
   firstName,
   lastName,
@@ -52,10 +58,6 @@ const sendMessage = async ({
   const to = phoneNumber;
 
   try {
-    const vonage = new Vonage({
-      apiKey: '96c9acc9',
-      apiSecret: 'OR9Ypw0s0EKw58I9'
-    });
     // await vonage.sms.send(
     //   { to, from, text: messageText },
     //   (error, response) => {
@@ -295,7 +297,9 @@ router.post(
       numberField,
       loan_security,
       relationship_to_loan_guarantor,
-      loan_guarantor
+      loan_guarantor,
+      employee_monthly_income_amount,
+      employment_years
     } = data;
 
     let { user_id } = req.user;
@@ -332,10 +336,11 @@ router.post(
        loan_status, 
        purpose, 
        remarks,
-       repayment_schedule_id
+       repayment_schedule_id,
+       employee_monthly_income_amount
        
        ) 
-       VALUES ( ?, ?, ?, ?, ? ,?, ?,?,? )`,
+       VALUES ( ?, ?, ?, ?, ? ,?, ?,?, ?, ? )`,
         [
           loan_application_id,
           borrower_id,
@@ -345,7 +350,8 @@ router.post(
           loan_status,
           purpose,
           remarks,
-          repayment_schedule_id
+          repayment_schedule_id,
+          employee_monthly_income_amount || income_amount
         ]
       );
 
@@ -368,6 +374,17 @@ router.post(
           'non_employee_relationship_to_loan_guarantor',
         loan_guarantor: 'non_employee_loan_guarantor'
       };
+
+      await db.query(
+        `
+        UPDATE borrower_account SET 
+            employment_years = ?,
+            monthly_income = ?
+
+            where borrower_id  = ?
+        `,
+        [employment_years, employee_monthly_income_amount, borrower_id]
+      );
 
       await db.query(
         `

@@ -642,6 +642,8 @@ function LoanApplication() {
           position: Yup.string().required('Position is required'),
           status: Yup.string().required('Status is required'),
           agency_name: Yup.string().required('Agency name is required'),
+          employee_monthly_income_amount: Yup.number().required('Required'),
+          employment_years: Yup.number().required('Required'),
           // school_name: Yup.string().when('position', {
           //   is: 'Teacher', // Conditional validation if position is 'Teacher'
           //   then: Yup.string().required('School name is required for teachers'),
@@ -771,6 +773,8 @@ function LoanApplication() {
         calculatorInterestRate: (loanSettings?.interest_rate || 3),
         calculatorMonthsToPay: 6,
         calculatorTotalAmountToPay: 0,
+        employee_monthly_income_amount: '',
+        employment_years: ''
 
       },
       validationSchema: Yup.object({
@@ -793,6 +797,8 @@ function LoanApplication() {
             ...values,
             loan_type_specific: values.loan_type_specific.value,
             type_of_business: values?.type_of_business?.value || '',
+            employee_monthly_income_amount: values.employee_monthly_income_amount,
+            employment_years: values.employment_years,
 
           }
 
@@ -898,7 +904,8 @@ function LoanApplication() {
               title: "Employment Details", fields: [
                 `Work Type: ${data.work_type}`,
                 `Position: ${data.position}`,
-                `Agency Name: ${data.agency_name}`
+                `Agency Name: ${data.agency_name}`,
+                `Years of Employment: ${data.employment_years}`
               ]
             },
             {
@@ -916,7 +923,7 @@ function LoanApplication() {
                 `Disbursement Type: ${data.disbursement_type}`,
                 `Business Address: ${data.business_address}`,
                 `Income Flow: ${data.income_flow}`,
-                `Income Amount: ${data.income_amount}`,
+                `Income Amount: ${data.income_amount || data.employee_monthly_income_amount}`,
                 `Monthly Pension Amount: ${data.monthly_pension_amount}`
               ]
             },
@@ -1327,6 +1334,31 @@ function LoanApplication() {
                                 value={values.position}
                                 onBlur={handleBlur} // This apparently updates `touched`?
                               />
+                              <InputText
+                                isRequired
+                                placeholder=""
+                                label="Monthly Income"
+                                name="employee_monthly_income_amount"
+                                type="number"
+
+                                value={values.employee_monthly_income_amount}
+                                onBlur={handleBlur} // This apparently updates `touched`?
+                              />
+                              <InputText
+                                isRequired
+                                placeholder=""
+                                label="Years of Employment"
+                                name="employment_years"
+                                type="employment_years"
+
+                                value={values.employment_years}
+                                onBlur={handleBlur} // This apparently updates `touched`?
+                              />
+
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 ">
+
                               <InputText
                                 isRequired
                                 placeholder=""

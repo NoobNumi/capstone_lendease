@@ -117,8 +117,8 @@ const sendMessage = async ({
 
   try {
     const vonage = new Vonage({
-      apiKey: '96c9acc9',
-      apiSecret: 'OR9Ypw0s0EKw58I9'
+      apiKey: config.VONAGE_apiKey,
+      apiSecret: config.apiSecret
     });
     // await vonage.sms.send(
     //   { to, from, text: messageText },
