@@ -87,6 +87,7 @@ const LoanCalculator = memo(({
   const navigate = useNavigate();
 
   const { loanId, rowIndex } = useParams();
+
   let loan_status = values.loan_status || selectedLoan?.loan_status;
 
 
@@ -107,6 +108,11 @@ const LoanCalculator = memo(({
 
   const [loanPaymentList, setloanPaymentList] = useState([]);
 
+  const [isLoaded, setIsLoaded] = useState([]);
+
+
+
+  const [isFromPayNowButton, setisFromPayNowButton] = useState(false);
 
 
   const fetchloanPaymentList = async () => {
@@ -132,6 +138,10 @@ const LoanCalculator = memo(({
 
     if (selectedLoan?.loan_id || loanId) {
       fetchloanPaymentList()
+
+
+
+
     }
 
 
@@ -229,12 +239,19 @@ const LoanCalculator = memo(({
     proofOfPayment: null
 
   });
-  const handlePayNowButtonClick = (payment, selectedIndex) => {
+
+  const handlePayNowButtonClick = (payment, selectedIndex, fromButton) => {
 
     // console.log({ payment, selectedLoan })
     setselectedPayment(payment);
     setselectedIndex(selectedIndex)
-    document.getElementById('addPayment').showModal();
+
+    setIsLoaded(true)
+
+    if (isLoaded) {
+      document.getElementById('addPayment').showModal();
+    }
+
 
   }
 
@@ -297,7 +314,14 @@ const LoanCalculator = memo(({
   const completedPayments = 7; // Example: Payments made so far
   const totalAmounts = 5000; // Example: Total expected amount
   const amountPaid = 3500; // Example: Amount paid so far
-  return (
+
+
+  let checkActivePayment = loanPaymentList.find(lp => lp.selectedTableRowIndex === parseInt(rowIndex))
+
+
+
+  console.log({ checkActivePayment })
+  return isLoaded && (
     <div className="max-w-5xl mx-auto p-8 bg-white rounded-xl shadow-md">
 
 
@@ -509,7 +533,8 @@ const LoanCalculator = memo(({
                         (index === 0 || previousPaymentStatus?.payment_status) && (
                           <div className="flex">
                             <button className="btn btn-outline btn-sm" onClick={async () => {
-                              await handlePayNowButtonClick(payment, index + 1);
+                              setisFromPayNowButton(true)
+                              await handlePayNowButtonClick(payment, index + 1, true);
                             }}>
                               Pay now
                             </button>
@@ -737,6 +762,18 @@ const LoanCalculator = memo(({
                   let hasError1 = errors['proof_of_payment'] && files.proofOfPayment == null;
 
 
+                  // React useEffect to listen to changes in checkActivePayment
+                  useEffect(() => {
+                    if (checkActivePayment?.reference_number && !isFromPayNowButton) {
+                      // Update formik values dynamically when checkActivePayment changes
+                      setFieldValue('reference_number', checkActivePayment.reference_number);
+                      setFieldValue('payment_method', checkActivePayment.payment_method || '');
+                      setFieldValue('paid_amount', checkActivePayment.payment_amount || 0);
+                      setFieldValue('proof_of_payment', checkActivePayment.proof_of_payment || '');
+                    }
+                  }, [checkActivePayment, setFieldValue]);
+
+
                   return <Form onSubmit={handleSubmit}>
 
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 ">
@@ -823,7 +860,7 @@ const LoanCalculator = memo(({
                       <h1 className="font-bold text-lg  mt-4">Upload Proof of Payment</h1>
 
                       <img
-                        src={selectedPayment.proof_of_payment}
+                        src={values.proof_of_payment || selectedPayment.proof_of_payment}
                         alt="Full-Screen"
                         className="w-full h-auto max-h-screen object-contain"
                       />

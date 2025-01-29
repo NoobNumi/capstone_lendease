@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { PrinterIcon } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 
-
+import { QRCodeSVG } from 'qrcode.react';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-PH', {
@@ -194,6 +194,7 @@ const LoanSchedule = ({ selectedLoan, calculatorInterestRate, calculatorLoanAmmo
             <thead>
               <tr className="border-t border-b">
                 <th className="py-2 text-left">No.</th>
+                <th className="py-2 text-left">QR</th>
                 <th className="py-2 text-left">Date</th>
                 <th className="py-2 text-right">PRINCIPAL</th>
                 <th className="py-2 text-right">PRIN AMOUNT</th>
@@ -206,6 +207,21 @@ const LoanSchedule = ({ selectedLoan, calculatorInterestRate, calculatorLoanAmmo
               {payments.map((payment, index) => (
                 <tr key={index} className="border-b">
                   <td className="py-2">{index + 1}</td>
+                  <td className="py-2">
+
+                    <QRCodeSVG
+
+
+                      value={
+
+                        `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${index + 1}`
+
+                      }
+
+                      size={50} />
+
+
+                  </td>
                   <td className="py-2">{payment.transactionDate}</td>
                   <td className="py-2 text-right">{payment.principal.toFixed(2)}</td>
                   <td className="py-2 text-right">{payment.amountPrincipal?.toFixed(2)}</td>
