@@ -31,7 +31,26 @@ function Login() {
         const { token, data: user } = res.data;
         localStorage.setItem('token', token);
         localStorage.setItem('loggedInUser', JSON.stringify(user));
-        window.location.href = '/app/loan_management';
+
+
+        console.log({ user })
+
+        if (user.role === 'Borrower') {
+
+
+          window.location.href = '/app/loan_application';
+
+
+        }
+
+        else {
+
+          window.location.href = '/app/loan_management';
+
+        }
+
+
+
       } catch (error) {
         const errorMessage =
           error.response?.data?.message || 'An unknown error occurred.';
