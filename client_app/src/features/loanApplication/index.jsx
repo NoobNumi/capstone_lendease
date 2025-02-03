@@ -320,7 +320,15 @@ function LoanApplication() {
         Header: 'Date Approved',
         accessor: 'approval_date',
         Cell: ({ row, value }) => {
-          return <span className="">{value}</span>;
+          let loan = row.original;
+
+          console.log({ loan })
+          return <span className="">
+
+            {loan.loan_status === 'Approved' && value &&
+              format(value, 'MMM dd, yyyy hh:mm a')}
+
+          </span>;
         }
       },
 
