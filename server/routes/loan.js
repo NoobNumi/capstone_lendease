@@ -23,7 +23,7 @@ import { Vonage } from '@vonage/server-sdk';
 
 const vonage = new Vonage({
   apiKey: config.VONAGE_apiKey,
-  apiSecret: config.apiSecret
+  apiSecret: config.VONAGE_apiSecret
 });
 
 const loanCreationMessage = ({

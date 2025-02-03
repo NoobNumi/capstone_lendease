@@ -39,6 +39,7 @@ const PersonalInfoForm = ({ selectedLoan,
   addressBarangay,
   setBarangay,
   provincesByCode,
+  isReadOnly = false,
   formikConfig }) => {
 
 
@@ -138,6 +139,8 @@ const PersonalInfoForm = ({ selectedLoan,
             {/* Given Name, Middle Name, Last Name */}
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <InputText
+                disabled={isReadOnly}
+                isReadOnly={isReadOnly}
                 isRequired
                 label="Given Name"
                 name="first_name"
@@ -148,6 +151,8 @@ const PersonalInfoForm = ({ selectedLoan,
               />
               <InputText
                 isRequired
+                disabled={isReadOnly}
+                isReadOnly={isReadOnly}
                 label="Middle Name"
                 name="middle_name"
                 type="text"
@@ -155,6 +160,8 @@ const PersonalInfoForm = ({ selectedLoan,
                 onBlur={handleBlur}
               />
               <InputText
+                disabled={isReadOnly}
+                isReadOnly={isReadOnly}
                 isRequired
                 label="Last Name"
                 name="last_name"
@@ -254,6 +261,8 @@ const PersonalInfoForm = ({ selectedLoan,
             {/* Contact Information */}
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <InputText
+                disabled={isReadOnly}
+                isReadOnly={isReadOnly}
                 isRequired
                 label="Email"
                 name="email"
@@ -263,6 +272,8 @@ const PersonalInfoForm = ({ selectedLoan,
                 onChange={(e) => setFieldValue('email', e.target.value)}
               />
               <InputText
+                disabled={isReadOnly}
+                isReadOnly={isReadOnly}
                 isRequired
                 label="Contact Number"
                 name="contact_number"
@@ -276,6 +287,8 @@ const PersonalInfoForm = ({ selectedLoan,
             {/* Birth Date & Age */}
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <InputText
+                disabled={isReadOnly}
+                isReadOnly={isReadOnly}
                 isRequired
                 label="Birth Date"
                 name="date_of_birth"
@@ -285,6 +298,8 @@ const PersonalInfoForm = ({ selectedLoan,
                 onChange={(e) => setFieldValue('date_of_birth', e.target.value)}
               />
               <InputText
+                disabled={isReadOnly}
+                isReadOnly={isReadOnly}
                 isRequired
                 label="Age"
                 name="age"
@@ -308,6 +323,8 @@ const PersonalInfoForm = ({ selectedLoan,
                 ]}
               />
               <InputText
+                disabled={isReadOnly}
+                isReadOnly={isReadOnly}
                 isRequired
                 label="Nationality"
                 name="nationality"
@@ -324,14 +341,17 @@ const PersonalInfoForm = ({ selectedLoan,
           <div>
             {PersonalInfo}
             <div className="flex justify-between mt-4">
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="btn btn-primary"
-              >
-                {isSubmitting ? 'Submitting...' : 'Submit'}
-              </button>
+              {
+                !isReadOnly && <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="btn btn-primary"
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </button>
+              }
+
             </div>
           </div>
         );

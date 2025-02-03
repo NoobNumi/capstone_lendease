@@ -147,12 +147,20 @@ const Tab1Content = ({
         "address_province": '',
         "address_city": '',
         "address_barangay": '',
-        date_of_birth: ''
+        date_of_birth: '',
+        gender: '',
+        nationality: 'FILIPINO'
       },
       validationSchema: Yup.object({
         // role: Yup.string().required('Required'),
         email: Yup.string().email('Invalid email address').required('Email is required'),
-        password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+        password: Yup.string()
+          .min(8, 'Password must be at least 8 characters long')
+          .matches(/[a-z]/, 'Password must contain at least one lowercase letter')
+          .matches(/[A-Z]/, 'Password must contain at least one uppercase letter')
+          .matches(/[0-9]/, 'Password must contain at least one number')
+          .matches(/[!@#$%^&*(),.?":{}|<>]/, 'Password must contain at least one special character')
+          .required('Password is required'),
         first_name: Yup.string().required('First name is required'),
         last_name: Yup.string().required('Last name is required'),
         date_of_birth: Yup.date().required('Date of birth is required'),
@@ -161,7 +169,8 @@ const Tab1Content = ({
         address_province: Yup.string().required('Province is required'),
         address_city: Yup.string().required('City is required'),
         address_barangay: Yup.string().required('Barangay is required'),
-
+        gender: Yup.string().required('Required'),
+        nationality: Yup.string().required('Required'),
       }),
       // validateOnMount: true,
       // validateOnChange: false,
@@ -467,6 +476,35 @@ const Tab1Content = ({
                   setFieldValue={setFieldValue}
                 />
               </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+
+                <div className='mt-2'>
+                  <Dropdown
+                    label="Gender"
+                    name="gender"
+                    value={values.gender}
+                    onBlur={handleBlur}
+                    setFieldValue={setFieldValue}
+                    options={[
+                      { value: 'MALE', label: 'Male' },
+                      { value: 'FEMALE', label: 'Female' }
+                    ]}
+                  />
+                </div>
+
+                <InputText
+
+                  isRequired
+                  label="Nationality"
+                  name="nationality"
+                  type="text"
+                  value={values.nationality}
+                  onBlur={handleBlur}
+                  onChange={(e) => setFieldValue('nationality', e.target.value)}
+                />
+              </div>
+
               <button
                 type="submit"
                 className={

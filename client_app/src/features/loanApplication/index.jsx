@@ -1568,6 +1568,20 @@ function LoanApplication() {
                                     { value: 'YES', label: 'YES' },
                                     { value: 'NO', label: 'NO' }
                                   ]}
+                                  functionToCalled={(newValue) => {
+
+                                    console.log(newValue)
+
+                                    if (newValue === 'NO') {
+                                      setFieldValue('business_address', 'N/A')
+                                      setFieldTouched('business_address', true)
+
+                                    } else {
+                                      setFieldValue('business_address', '')
+                                    }
+
+                                  }}
+
                                 />
                               </div>
 

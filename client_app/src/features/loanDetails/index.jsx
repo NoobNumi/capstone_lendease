@@ -381,7 +381,63 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
 
 
 
-  console.log({ values: formikProps.values })
+  const [addressRegion, setAddressRegion] = useState('');
+  const [addressProvince, setAddressProvince] = useState('');
+  const [addressCity, setAddressCity] = useState('');
+  const [addressBaragay, setAddressBarangay] = useState('');
+
+
+
+  let region = loanDetails.address_region;
+  let province = loanDetails.address_province;
+  let address_city = loanDetails.address_city;
+  let address_barangay = loanDetails.address_barangay;
+
+
+
+
+  useEffect(() => {
+
+    async function fetchRegion() {
+      let availableRegions = await regions()
+
+      let data = availableRegions.find(p => p.region_code === region);
+      setAddressRegion(data ? data.region_name : '');
+    }
+
+
+    async function fetchProvinceName() {
+      let provinces = await provincesByCode(region);
+      let data = provinces.find(p => p.province_code === province);
+      setAddressProvince(data ? data.province_name : '');
+    }
+
+    async function fetchCities() {
+      let citiesAvailable = await cities(province);
+      let data = citiesAvailable.find(p => p.city_code === address_city);
+      setAddressCity(data ? data.city_name : '');
+    }
+
+
+    async function fetchBrgy() {
+      let brgyAvailable = await barangays(address_city);
+
+
+      let data = brgyAvailable.find(p => p.brgy_code === address_barangay);
+      setAddressBarangay(data ? data.brgy_name : '');
+    }
+
+    fetchRegion()
+    fetchProvinceName();
+    fetchCities()
+    fetchBrgy();
+  }, [region, province, address_city]); // Dependencies for useEffect
+
+
+
+  console.log({ addressRegion })
+
+
   return (
     <div className="w-full max-w-6xl mx-auto p-4">
       <div className="bg-white shadow-lg rounded-xl overflow-hidden">
@@ -442,10 +498,10 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
               {/* Address Information */}
               <Section title="Address Information" icon={<MapPin className="w-5 h-5 mr-2" />}>
                 <InfoGrid>
-                  <InfoItem label="Street" value={userDetails.street} />
-                  <InfoItem label="Province" value={userDetails.province} />
-                  <InfoItem label="Municipality" value={userDetails.municipality} />
-                  <InfoItem label="Barangay" value={userDetails.barangay} />
+                  <InfoItem label="Street" value={addressRegion} />
+                  <InfoItem label="Province" value={addressProvince} />
+                  <InfoItem label="Municipality" value={addressProvince} />
+                  <InfoItem label="Barangay" value={addressBaragay} />
                   <InfoItem label="Zip Code" value={userDetails.zip_code} />
                 </InfoGrid>
               </Section>
@@ -529,7 +585,9 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
                   selectedLoan={loanDetails}
                   setPaymentList={setPaymentList}
 
-                />}
+                />
+
+              }
             </div>
           )}
         </div>
@@ -930,11 +988,12 @@ function LoanApplication() {
   const formikConfig = (interest_rate) => {
 
 
+    console.log({ loanDetails })
 
     return {
       initialValues: {
 
-        calculatorLoanAmmount: 20000,
+        calculatorLoanAmmount: loanDetails?.loan_amount || 0,
         calculatorInterestRate: (interest_rate || 3) * loanDetails.repayment_schedule_id,
         calculatorMonthsToPay: 6,
         calculatorTotalAmountToPay: 0,
@@ -1028,7 +1087,7 @@ function LoanApplication() {
   };
 
 
-  return isLoaded && !!loanSettings.interest_rate && (
+  return isLoaded && !!loanDetails.loan_id && (
     <Formik {...formikConfig(loanSettings.interest_rate)}>
       {(formikProps) => {
         return <TitleCard

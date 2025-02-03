@@ -230,22 +230,7 @@ export function DateRangeColumnFilter({
   );
 }
 
-function GlobalFilter({
-  preGlobalFilteredRows,
-  globalFilter,
-  setGlobalFilter,
-  searchField = ''
-}) {
-  const count = preGlobalFilteredRows.length;
-  // const [value, setValue] = React.useState(globalFilter);
-  // const onChange = useAsyncDebounce(value => {
-  //   setGlobalFilter(value);
-  // }, 200);
-
-  React.useEffect(() => {
-    // props.dispatch({ type: actions.resetPage })
-  }, [globalFilter]);
-
+function GlobalFilter({ preGlobalFilteredRows, globalFilter, setGlobalFilter, searchField = '' }) {
   return (
     <div className="flex hidden-print">
       <label className="flex gap-x-2 items-baseline p-2">
@@ -254,16 +239,14 @@ function GlobalFilter({
           type="text"
           className="p-2 rounded-md border-slate-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-100 border-2 border-slate-300 h-90"
           value={globalFilter || ''}
-          onChange={e => {
-            setGlobalFilter(e.target.value);
-          }}
-          // placeholder={`${count}`}
+          onChange={e => setGlobalFilter(e.target.value)}
           name={searchField || `Code name`}
         />
       </label>
     </div>
   );
 }
+
 
 // This is a custom filter UI for selecting
 // a unique option from a list

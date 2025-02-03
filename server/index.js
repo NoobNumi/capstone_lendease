@@ -19,6 +19,12 @@ import bodyParser from 'body-parser';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Vonage } from '@vonage/server-sdk';
+
+const vonage = new Vonage({
+  apiKey: config.VONAGE_apiKey,
+  apiSecret: config.VONAGE_apiSecret
+});
 
 import cron from 'node-cron';
 // const { cypherQuerySession } = config;
@@ -77,5 +83,19 @@ app.use(express.static('files'));
 app.use('/static', express.static('public'));
 
 app.listen(config.port, async () => {
+  try {
+    await vonage.sms
+      .send({
+        to: '639275478620',
+        from: '639914762429',
+        text: 'Hi Goodmorning'
+      })
+      .then(resp => {
+        console.log('Message sent successfully');
+        console.log(resp);
+      });
+  } catch (error) {
+    console.log(error);
+  }
   console.log(`Hello Server is live`);
 });

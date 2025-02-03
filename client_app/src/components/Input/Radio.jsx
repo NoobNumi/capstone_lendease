@@ -10,6 +10,7 @@ const MyTextInput = ({
   hasTextareaHeight,
   labelFor,
   options,
+  functionToCalled,
   ...props
 }) => {
   // useField() returns [formik.getFieldProps(), formik.getFieldMeta()]
@@ -59,6 +60,10 @@ const MyTextInput = ({
                   checked={meta.value === value}
                   value={value}
                   onChange={() => {
+
+                    if (!!functionToCalled) {
+                      functionToCalled(value)
+                    }
                     props.setFieldValue(field.name, value);
                   }}
                 />

@@ -234,7 +234,9 @@ router.post(
       password,
       contact_number,
       date_of_birth,
-      role
+      role,
+      gender,
+      nationality
     } = data;
 
     let mapped = {
@@ -294,9 +296,11 @@ router.post(
         address_barangay, 
         email, 
         contact_number, 
-        date_of_birth
+        date_of_birth,
+        gender,
+        nationality
     
-  ) VALUES (?, ?, ?, ?, ? , ?, ?, ?, ?, ?)
+  ) VALUES (?, ?, ?, ?, ? , ?, ?, ?, ?, ? , ? ,? )
 
       `,
         [
@@ -309,7 +313,9 @@ router.post(
           address_barangay,
           email,
           contact_number,
-          date_of_birth
+          date_of_birth,
+          gender,
+          nationality
         ]
       );
 

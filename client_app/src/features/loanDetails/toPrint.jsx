@@ -35,7 +35,7 @@ const LoanSchedule = ({ selectedLoan, calculatorInterestRate, calculatorLoanAmmo
   const [selectedIndex, setselectedIndex] = useState(1);
   const [loanPaymentList, setloanPaymentList] = useState([]);
 
-
+  const [isLoaded, setIsLoaded] = useState(false);
   useEffect(() => {
     // Calculate total payment based on loan amount and interest rate
     const computedTotalPayment = loanAmount * (1 + interestRate / 100);
@@ -75,6 +75,8 @@ const LoanSchedule = ({ selectedLoan, calculatorInterestRate, calculatorLoanAmmo
 
     setPayments(paymentDetails);
     setBalance(remainingBalance);
+
+    setIsLoaded(true);
   }, [loanAmount, interestRate, loanDuration]); // Dependency array to recalculate on these state changes
 
 
@@ -87,7 +89,9 @@ const LoanSchedule = ({ selectedLoan, calculatorInterestRate, calculatorLoanAmmo
   // console.log({ payments })
   const [isHidden, setIsHidden] = useState(true);
 
-  return (
+
+  console.log({ payments })
+  return isLoaded && (
     <div className={`max-w-4xl mx-auto p-1 mb-2 bg-white`}>
       {/* Print Button - Hidden when printing */}
       <div className="print:hidden ">
@@ -223,11 +227,12 @@ const LoanSchedule = ({ selectedLoan, calculatorInterestRate, calculatorLoanAmmo
 
                   </td>
                   <td className="py-2">{payment.transactionDate}</td>
-                  <td className="py-2 text-right">{payment.principal.toFixed(2)}</td>
-                  <td className="py-2 text-right">{payment.amountPrincipal?.toFixed(2)}</td>
-                  <td className="py-2 text-right">{payment.interestAmount.toFixed(2)}</td>
-                  <td className="py-2 text-right">{payment.dueAmount.toFixed(2)}</td>
-                  <td className="py-2 text-right">{payment.remainingBalance?.toFixed(2)}</td>
+                  <td className="py-2 text-right">{Number(payment.principal || 0).toFixed(2)}</td>
+                  <td className="py-2 text-right">{Number(payment.amountPrincipal || 0).toFixed(2)}</td>
+                  <td className="py-2 text-right">{Number(payment.interestAmount || 0).toFixed(2)}</td>
+                  <td className="py-2 text-right">{Number(payment.dueAmount || 0).toFixed(2)}</td>
+                  <td className="py-2 text-right">{Number(payment.remainingBalance || 0).toFixed(2)}</td>
+
                 </tr>
               ))}
             </tbody>

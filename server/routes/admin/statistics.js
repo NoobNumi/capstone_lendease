@@ -21,7 +21,9 @@ router.get('/', async (req, res) => {
     const [borrowerCount] = await db.query(
       `SELECT COUNT(*) AS totalBorrowers 
        FROM borrower_account 
-       WHERE registration_date BETWEEN ? AND ?`,
+
+       
+       `,
       [startDate, endDate]
     );
     stats.totalBorrowers = borrowerCount[0].totalBorrowers;

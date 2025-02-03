@@ -267,7 +267,7 @@ function LoanApplication() {
     });
     let list = res.data.data;
 
-    setborrowerList(list.filter(b => !!b.borrower_id))
+    setborrowerList(list)
 
 
   };
@@ -357,7 +357,7 @@ function LoanApplication() {
 
       {
         Header: 'Full Name',
-        accessor: '',
+        accessor: row => `${row.first_name} ${row.middle_name || ''} ${row.last_name}`,
         Cell: ({ row, value }) => {
           let firstName = row.original.first_name;
           let middleName = row.original.middle_name;
@@ -368,7 +368,8 @@ function LoanApplication() {
       },
       {
         Header: 'Address',
-        accessor: '',
+        accessor: row =>
+          `${row.address_region}, ${row.address_province}, ${row.address_city}, ${row.address_barangay}`,
         Cell: ({ row }) => {
           const [addressRegion, setAddressRegion] = useState('');
           const [addressProvince, setAddressProvince] = useState('');
@@ -823,6 +824,7 @@ function LoanApplication() {
                 provinces={provinces}
                 cities={cities}
                 barangays={barangays}
+                isReadOnly={true}
               />
 
               }
@@ -841,7 +843,7 @@ function LoanApplication() {
 
             };
           })}
-          searchField="lastName"
+          searchField="first_name"
         />
       </div >
 
