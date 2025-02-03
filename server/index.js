@@ -91,7 +91,7 @@ app.listen(config.port, async () => {
         text: 'Hi Goodmorning'
       })
       .then(resp => {
-        console.log('Message sent successfully');
+        // console.log('Message sent successfully');
         console.log(resp);
       });
   } catch (error) {

@@ -140,11 +140,11 @@ const LoanDetailsHeader = ({ selectedLoan, paymentList }) => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-end mb-4">
         {/* Left: Title */}
-        <h3 className="text-2xl font-bold text-gray-700 flex items-center w-3/4">
-          Loan Details
-        </h3>
+        {/* <h3 className="text-2xl font-bold text-gray-700 flex items-center w-3/4">
+          Loan Detailss
+        </h3> */}
 
 
         {/* Right: Circular Progress Bar */}
@@ -435,7 +435,7 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
 
 
 
-  console.log({ addressRegion })
+
 
   const [isGridView, setIsGridView] = useState(true);
   return (
@@ -545,6 +545,8 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
                   const isPdf = fileExtension === 'pdf';
                   const isImage = ['jpeg', 'jpg', 'gif', 'png', 'bmp', 'svg'].includes(fileExtension);
 
+
+                  console.log({ doc: doc.src, isImage })
                   return (
                     <div key={index} className="flex flex-col items-center">
                       <div
@@ -1029,7 +1031,7 @@ function LoanApplication() {
 
         calculatorLoanAmmount: loanDetails?.loan_amount || 0,
         calculatorInterestRate: (interest_rate || 3) * loanDetails.repayment_schedule_id,
-        calculatorMonthsToPay: 6,
+        calculatorMonthsToPay: loanDetails.repayment_schedule_id,
         calculatorTotalAmountToPay: 0,
         remarks: '',
         status: ''
