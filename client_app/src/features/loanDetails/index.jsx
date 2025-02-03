@@ -550,8 +550,16 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
                       <div
                         className="relative aspect-square w-full rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer"
                         onClick={() => {
-                          window.open(doc.src, "_blank");
-                        }}
+
+
+                          if (isPdf) {
+                            window.open(doc.src, "_blank");
+                          } else {
+                            setSelectedImage(doc.src)
+                          }
+
+                        }
+                        }
                       >
                         {isPdf ? (
                           <div className="flex justify-center items-center w-full h-full bg-gray-200 text-gray-600 text-3xl">
