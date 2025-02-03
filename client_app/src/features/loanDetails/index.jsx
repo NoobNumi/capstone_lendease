@@ -538,23 +538,45 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
           {activeTab === "uploaded-documents" && (
             <Section title="Uploaded Documents">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {documents.map((doc, index) => (
-                  <div key={index} className="flex flex-col items-center">
-                    <div
-                      className="relative aspect-square w-full rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer"
-                      onClick={() => setSelectedImage(doc.src)}
-                    >
-                      <img
-                        src={doc.src}
-                        alt={doc.label}
-                        className="object-cover w-full h-full"
-                      />
+                {documents.map((doc, index) => {
+                  // Extract the file extension from the URL by splitting at the last dot
+                  const fileExtension = doc.src.split('.').pop()?.split('?')[0];
+
+                  const isPdf = fileExtension === 'pdf';
+                  const isImage = ['jpeg', 'jpg', 'gif', 'png', 'bmp', 'svg'].includes(fileExtension);
+
+                  return (
+                    <div key={index} className="flex flex-col items-center">
+                      <div
+                        className="relative aspect-square w-full rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer"
+                        onClick={() => {
+                          window.open(doc.src, "_blank");
+                        }}
+                      >
+                        {isPdf ? (
+                          <div className="flex justify-center items-center w-full h-full bg-gray-200 text-gray-600 text-3xl">
+                            📄
+                          </div>
+                        ) : isImage ? (
+                          <img
+                            src={doc.src}
+                            alt={doc.label}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <div className="flex justify-center items-center w-full h-full bg-gray-200 text-gray-600 text-3xl">
+                            Unsupported
+                          </div>
+                        )}
+                      </div>
+                      <span className="mt-2 text-sm text-gray-600">{doc.label}</span>
                     </div>
-                    <span className="mt-2 text-sm text-gray-600">{doc.label}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </Section>
+
+
           )}
           {activeTab === "loan-details" && (
             <div>
