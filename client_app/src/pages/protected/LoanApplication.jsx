@@ -8,7 +8,7 @@ function InternalPage() {
   const dispatch = useDispatch();
   let loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
   useEffect(() => {
-    dispatch(setPageTitle({ title: 'Loan Application' }));
+    dispatch(setPageTitle({ title: 'Loan Applications' }));
   }, []);
 
   return <LoanApplication />;

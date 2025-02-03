@@ -13,7 +13,7 @@ import ViewColumnsIcon from '@heroicons/react/24/outline/EyeIcon';
 import PlusCircleIcon from '@heroicons/react/24/outline/PlusCircleIcon';
 import TrashIcon from '@heroicons/react/24/outline/TrashIcon';
 
-
+import CheckCircleIcon from '@heroicons/react/24/solid/CheckCircleIcon'
 import 'react-tooltip/dist/react-tooltip.css'
 // import Tooltip from 'react-tooltip';
 import { Tooltip } from 'react-tooltip';
@@ -149,6 +149,9 @@ const TopSideButtons = ({ removeFilter, applyFilter, applySearch, myLoanList }) 
 };
 
 function LoanApplication() {
+
+
+  const [successLoanApplication, setSuccessLoanApplication] = useState(false);
 
 
   // Define file handling logic
@@ -401,54 +404,54 @@ function LoanApplication() {
     []
   );
 
-  const handleOnChange = e => {
-    //console.log(e.target.files[0]);
-    setFile(e.target.files[0]);
-  };
+  // const handleOnChange = e => {
+  //   //console.log(e.target.files[0]);
+  //   setFile(e.target.files[0]);
+  // };
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  // const handleSubmit = async e => {
+  //   e.preventDefault();
+  //   setIsSubmitting(true);
 
-    try {
-      const data = new FormData();
-      data.append('file', file);
-      let res = await axios({
-        // headers: {
-        //   'content-type': 'multipart/form-data'
-        // },
-        method: 'POST',
-        url: 'user/uploadFile',
-        data
-      });
+  //   try {
+  //     const data = new FormData();
+  //     data.append('file', file);
+  //     let res = await axios({
+  //       // headers: {
+  //       //   'content-type': 'multipart/form-data'
+  //       // },
+  //       method: 'POST',
+  //       url: 'user/uploadFile',
+  //       data
+  //     });
 
-      setIsSubmitting(false);
-      fetchFaqList();
-      toast.success(`Uploaded Successfully`, {
-        position: 'top-right',
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: 'light'
-      });
-    } catch (error) {
-      toast.error(`Something went wrong`, {
-        position: 'top-right',
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: 'light'
-      });
-    } finally {
-      document.getElementById('my_modal_1').close();
-    }
-  };
+  //     setIsSubmitting(false);
+  //     fetchFaqList();
+  //     toast.success(`Uploaded Successfully`, {
+  //       position: 'top-right',
+  //       autoClose: 3000,
+  //       hideProgressBar: false,
+  //       closeOnClick: true,
+  //       pauseOnHover: true,
+  //       draggable: true,
+  //       progress: undefined,
+  //       theme: 'light'
+  //     });
+  //   } catch (error) {
+  //     toast.error(`Something went wrong`, {
+  //       position: 'top-right',
+  //       autoClose: 3000,
+  //       hideProgressBar: false,
+  //       closeOnClick: true,
+  //       pauseOnHover: true,
+  //       draggable: true,
+  //       progress: undefined,
+  //       theme: 'light'
+  //     });
+  //   } finally {
+  //     document.getElementById('my_modal_1').close();
+  //   }
+  // };
 
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -783,10 +786,11 @@ function LoanApplication() {
       }),
       // validateOnMount: true,
       // validateOnChange: false,
-      onSubmit: async (values, { setFieldError, setSubmitting, resetForm }) => {
+      onSubmit: async (values, { setFieldError, setSubmitting, resetForm, isSubmitting }) => {
         setSubmitting(true);
 
-        console.log({ values })
+
+
 
 
         try {
@@ -832,21 +836,25 @@ function LoanApplication() {
 
           resetForm();
           loanList();
-          document.getElementById('addLoan').close();
 
-          toast.success('Successfully created!', {
-            onClose: () => {
 
-            },
-            position: 'top-right',
-            autoClose: 500,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: 'light'
-          });
+          setSuccessLoanApplication(true)
+
+          // document.getElementById('addLoan').close();
+
+          // toast.success('Successfully created!', {
+          //   onClose: () => {
+
+          //   },
+          //   position: 'top-right',
+          //   autoClose: 500,
+          //   hideProgressBar: false,
+          //   closeOnClick: true,
+          //   pauseOnHover: true,
+          //   draggable: true,
+          //   progress: undefined,
+          //   theme: 'light'
+          // });
 
           const content = [
             `Loan Type: ${data.loan_type}`,
@@ -1070,7 +1078,7 @@ function LoanApplication() {
             {/* <h2 className="text-xl font-bold">APPLY FOR A LOAN</h2> */}
 
             <p className="text-sm text-gray-500 mt-1 font-bold"></p>
-            <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
+            {!successLoanApplication ? <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
               {selectedUser.role &&
                 <Formik {...formikConfig(selectedUser, loanType)}>
                   {({
@@ -2169,7 +2177,25 @@ function LoanApplication() {
                     );
                   }}
                 </Formik>
-              } </div>
+              } </div> : <div>
+              <div className="flex flex-col items-center justify-center h-200 bg-gray-100 p-4">
+                <div className="bg-white shadow-lg rounded-lg p-6 text-center max-w-md w-full">
+                  <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto" />
+                  <h2 className="text-2xl font-bold text-gray-700 mt-4">Application Submitted!</h2>
+                  <p className="text-gray-600 mt-2">Thank you for applying. Your loan application has been successfully submitted.</p>
+                  <p className="text-gray-500 mt-1">We will review your application and contact you soon.</p>
+                  <button
+                    onClick={() => {
+                      document.getElementById("addLoan").close()
+                    }}
+
+                    className="mt-6 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                    Back
+                  </button>
+                </div>
+              </div>
+
+            </div>}
           </div>
         </dialog >
 

@@ -437,7 +437,7 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
 
   console.log({ addressRegion })
 
-
+  const [isGridView, setIsGridView] = useState(true);
   return (
     <div className="w-full max-w-6xl mx-auto p-4">
       <div className="bg-white shadow-lg rounded-xl overflow-hidden">
@@ -564,6 +564,7 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
               />
 
               {loanDetails.loan_id && <ToPrint
+
                 calculatorInterestRate={formikProps.values.calculatorInterestRate}
                 selectedLoan={loanDetails}
                 calculatorLoanAmmount={formikProps.values.calculatorLoanAmmount}
@@ -571,12 +572,15 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
                 calculatorMonthsToPay={formikProps.values.calculatorMonthsToPay}
 
                 setPaymentList={setPaymentList}
+                setIsGridView={setIsGridView}
+                isGridView={isGridView}
               />}
 
               {loanDetails.loan_id &&
 
 
                 <LoanCalculator
+                  isGridView={isGridView}
                   {...formikProps}
                   isReadOnly={true}
                   calculatorLoanAmmount={formikProps.values.calculatorLoanAmmount}

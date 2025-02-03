@@ -13,7 +13,8 @@ const checkAuth = () => {
     'myprofile',
     'reset-password',
     'register',
-    'verify-email'
+    'verify-email',
+    'reset-password'
   ];
 
   // console.log({ PUBLIC_ROUTES });

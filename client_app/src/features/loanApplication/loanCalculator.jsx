@@ -79,7 +79,8 @@ const LoanCalculator = memo(({
   calculatorTotalAmountToPay = 0,
   isReadOnly = false,
   selectedLoan,
-  setPaymentList
+  setPaymentList,
+  isGridView
 }) => {
 
 
@@ -320,7 +321,6 @@ const LoanCalculator = memo(({
 
 
 
-  console.log({ checkActivePayment })
   return isLoaded && (
     <div className="max-w-5xl mx-auto p-8 bg-white rounded-xl shadow-md">
 
@@ -426,7 +426,103 @@ const LoanCalculator = memo(({
         </div>
       </div>
       <div className="overflow-auto">
-        <table className="w-full mt-8 table-auto border-collapse">
+
+        {isGridView && <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          {payments.map((payment, index) => {
+
+
+            let current = loanPaymentList.find(lp => lp.selectedTableRowIndex === index + 1)
+
+            const url = `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${index + 1}`
+
+            // Check if previous row had a payment
+            const previousPayment = payments[index - 1];
+            const previousPaymentStatus = previousPayment ? loanPaymentList.find(lp => lp.selectedTableRowIndex === index) : null;
+
+
+            return <div key={index} className="flex flex-col items-center">
+              <div
+                className="relative 
+              border-2
+              aspect-square w-full rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer"
+              // onClick={() => setSelectedImage(doc.src)}
+              >
+
+
+
+                {
+                  current?.payment_status ?
+                    <div className='relative flex items-center justify-center opacity-20'>
+                      <QRCodeSVG
+                        width="100%"
+                        height="100%"
+                        className=''
+                        value={url}
+                      />
+                      <div className='absolute text-center opacity-100'>
+
+                        <StatusPill value={current?.payment_status} />
+                      </div>
+
+
+                    </div>
+
+
+
+                    :
+                    (loan_status === "Approved" && selectedLoan?.proof_of_disbursement &&
+                      (index === 0 || previousPaymentStatus?.payment_status) ?
+
+                      <div
+                        onClick={async () => {
+                          setisFromPayNowButton(true)
+                          await handlePayNowButtonClick(payment, index + 1, true);
+                        }}
+                      >
+                        <QRCodeSVG
+
+                          width="100%"
+                          height="100%"
+                          className=''
+                          value={
+
+                            url
+
+                          } />
+                      </div>
+                      :
+                      <div className='relative flex items-center justify-center opacity-20'>
+                        <QRCodeSVG
+                          width="100%"
+                          height="100%"
+                          className=''
+                          value={url}
+                        />
+                        <div className='absolute text-center opacity-100'>
+
+                          <StatusPill value={'Soon'} />
+                        </div>
+
+
+                      </div>
+
+                    )
+                }
+
+
+
+              </div>
+              <span className="mt-2 text-sm text-gray-600 font-bold">
+                Payment #{index + 1}:</span>
+
+              <span className="mt-2 text-sm text-gray-600 font-bold">
+
+                {payment.transactionDate}</span>
+            </div>
+          })}
+        </div>}
+
+        {!isGridView && <table className="w-full mt-8 table-auto border-collapse">
           <thead>
             <tr className="bg-gray-100">
               <th className="px-4 py-3 text-left text-sm text-gray-700">No.</th>
@@ -583,6 +679,7 @@ const LoanCalculator = memo(({
             </tr>
           </tbody>
         </table>
+        }
 
       </div>
 
@@ -1065,9 +1162,9 @@ const LoanCalculator = memo(({
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 ">
 
 
-{
-  
-}
+                      {
+
+                      }
 
                       <Radio
                         isRequired
@@ -1236,36 +1333,38 @@ const LoanCalculator = memo(({
 
       </dialog >
       {/* DaisyUI Modal */}
-      {selectedImage && (
-        <dialog
-          open
-          className="modal modal-bottom sm:modal-middle z-[9999] "
-          onClick={() => setSelectedImage(null)}
-        >
-          <div
-            className="modal-box p-0 bg-black bg-opacity-75 relative"
-            onClick={(e) => e.stopPropagation()} // Prevent closing on image click
+      {
+        selectedImage && (
+          <dialog
+            open
+            className="modal modal-bottom sm:modal-middle z-[9999] "
+            onClick={() => setSelectedImage(null)}
           >
-            {/* Close Button */}
-            <button
-              className="absolute top-4 right-4 btn btn-circle bg-white text-black shadow-md"
-              onClick={() => setSelectedImage(null)}
-              aria-label="Close"
+            <div
+              className="modal-box p-0 bg-black bg-opacity-75 relative"
+              onClick={(e) => e.stopPropagation()} // Prevent closing on image click
             >
-              ✕
-            </button>
+              {/* Close Button */}
+              <button
+                className="absolute top-4 right-4 btn btn-circle bg-white text-black shadow-md"
+                onClick={() => setSelectedImage(null)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
 
-            {/* Full-Screen Image */}
-            <img
-              src={selectedImage}
-              alt="Full-Screen"
-              className="w-full h-auto max-h-screen object-contain"
-            />
-          </div>
-        </dialog>
-      )}
+              {/* Full-Screen Image */}
+              <img
+                src={selectedImage}
+                alt="Full-Screen"
+                className="w-full h-auto max-h-screen object-contain"
+              />
+            </div>
+          </dialog>
+        )
+      }
       <ToastContainer />
-    </div>
+    </div >
   );
 });
 

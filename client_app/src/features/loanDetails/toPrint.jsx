@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { PrinterIcon } from "lucide-react";
+import { PrinterIcon, Grid, List } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 
 import { QRCodeSVG } from 'qrcode.react';
@@ -12,7 +12,7 @@ const formatCurrency = (amount) => {
     maximumFractionDigits: 2,
   }).format(amount);
 };
-const LoanSchedule = ({ selectedLoan, calculatorInterestRate, calculatorLoanAmmount, calculatorMonthsToPay }) => {
+const LoanSchedule = ({ isGridView, setIsGridView, selectedLoan, calculatorInterestRate, calculatorLoanAmmount, calculatorMonthsToPay }) => {
   const printableRef = useRef();
 
   const handlePrint = useReactToPrint({
@@ -90,11 +90,29 @@ const LoanSchedule = ({ selectedLoan, calculatorInterestRate, calculatorLoanAmmo
   const [isHidden, setIsHidden] = useState(true);
 
 
-  console.log({ payments })
+
+
   return isLoaded && (
-    <div className={`max-w-4xl mx-auto p-1 mb-2 bg-white`}>
+    <div className={`max-w-4xl mx-auto mb-2 bg-white`}>
+
       {/* Print Button - Hidden when printing */}
-      <div className="print:hidden ">
+      <div className="flex print:hidden justify-end">
+        <button
+          onClick={() => setIsGridView((prev) => !prev)}
+          className="px-4 py-2 bg-gray-500 text-white rounded mr-2 flex items-center"
+        >
+          {isGridView ? (
+            <>
+              <List className="w-5 h-5 mr-2" />
+              List View
+            </>
+          ) : (
+            <>
+              <Grid className="w-5 h-5 mr-2" />
+              QR Grid View
+            </>
+          )}
+        </button>
         <button
           onClick={() => {
 
