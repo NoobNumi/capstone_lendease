@@ -12,7 +12,19 @@ import { v4 as uuidv4 } from 'uuid';
 const router = express.Router();
 
 import multer from 'multer';
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
 let firebaseStorage = config.firebaseStorage;
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -763,5 +775,75 @@ router.post('/:loanId/updatePaymentStatus', async (req, res) => {
     res.status(500).json({ error: 'Error updating payment status' });
   }
 });
+
+// New endpoint to handle payment submission with file upload
+router.post(
+  '/:loanId/submit-payment',
+  upload.single('proof_of_payment'),
+  async (req, res) => {
+    try {
+      const { loanId } = req.params;
+      const {
+        payment_method,
+        reference_number,
+        amount,
+        selectedTableRowIndex
+      } = req.body;
+
+      // Validate required fields
+      if (!req.file || !payment_method || !reference_number || !amount) {
+        return res.status(400).json({
+          error: 'Missing required fields'
+        });
+      }
+
+      // Upload file to Firebase Storage using the existing pattern
+      const storageRef = ref(
+        firebaseStorage,
+        `lendease/loans/${loanId}/payments/${selectedTableRowIndex}/${req.file.originalname}`
+      );
+
+      const metadata = {
+        contentType: req.file.mimetype
+      };
+
+      await uploadBytes(storageRef, req.file.buffer, metadata);
+      const downloadURL = await getDownloadURL(storageRef);
+
+      // Insert payment record
+      await db.query(
+        `INSERT INTO payment (
+          loan_id, 
+          payment_method, 
+          reference_number, 
+          payment_amount,
+          proof_of_payment,
+          payment_status,
+          payment_date,
+          selectedTableRowIndex
+        ) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)`,
+        [
+          loanId,
+          payment_method,
+          reference_number,
+          amount,
+          downloadURL,
+          'Pending',
+          selectedTableRowIndex
+        ]
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Payment submitted successfully'
+      });
+    } catch (error) {
+      console.error('Error submitting payment:', error);
+      res.status(500).json({
+        error: 'Error submitting payment'
+      });
+    }
+  }
+);
 
 export default router;
