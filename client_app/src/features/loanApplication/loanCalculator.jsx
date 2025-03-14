@@ -54,6 +54,25 @@ const LoanCalculator = memo(({
   // Define loan_status based on props or selectedLoan
   const loan_status = values.loan_status || selectedLoan?.loan_status || '';
 
+  const fetchLoanPaymentList = async () => {
+    try {
+      if (!selectedLoan?.loan_id) return;
+
+      const response = await axios.get(`/loan/${selectedLoan.loan_id}/payments`);
+      if (response.data) {
+        setLoanPaymentList(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching loan payment list:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedLoan?.loan_id) {
+      fetchLoanPaymentList();
+    }
+  }, [selectedLoan?.loan_id]);
+
   useEffect(() => {
     // Calculate total payment based on loan amount and interest rate
     const computedTotalPayment = calculatorLoanAmmount * (1 + calculatorInterestRate / 100);
@@ -110,11 +129,11 @@ const LoanCalculator = memo(({
     let currentPaymentIndex = -1;
     let currentAmount = 0;
 
-    // Track paid amounts for each payment index
-    const paidAmounts = {};
+    // Track payment statuses more explicitly
+    const paymentStatuses = {};
     loanPaymentList.forEach(payment => {
-      if (payment.payment_status === 'Approved') {
-        paidAmounts[payment.selectedTableRowIndex] = true;
+      if (payment.payment_status) {
+        paymentStatuses[payment.selectedTableRowIndex] = payment.payment_status;
       }
     });
 
@@ -122,15 +141,16 @@ const LoanCalculator = memo(({
     for (let i = 0; i < payments.length; i++) {
       const payment = payments[i];
       const paymentDueDate = new Date(payment.transactionDate);
-      const isPaid = paidAmounts[i];
+      const status = paymentStatuses[i];
 
-      if (!isPaid) {
-        // If this is the first unpaid payment
+      // Skip if payment is Approved
+      if (status !== 'Approved') {
+        // If this is the first non-approved payment
         if (currentPaymentIndex === -1) {
           currentPaymentIndex = i;
           currentAmount = payment.dueAmount;
         }
-        // If this is a past due payment (before current date)
+        // If this is a past due payment
         else if (paymentDueDate < today) {
           pastDueAmount += payment.dueAmount;
         }
@@ -162,7 +182,8 @@ const LoanCalculator = memo(({
         index: currentPaymentIndex,
         isOverdue: new Date(currentPayment.transactionDate) < today,
         originalAmount: currentAmount,
-        url: qrCodeUrl
+        url: qrCodeUrl,
+        status: paymentStatuses[currentPaymentIndex] // Include the payment status
       };
     }
 
@@ -247,6 +268,8 @@ const LoanCalculator = memo(({
               const paymentStatus = loanPaymentList.find(
                 p => p.selectedTableRowIndex === index
               );
+
+              console.log({ paymentStatus, loanPaymentList })
               const isPaid = paymentStatus?.payment_status === 'Approved';
               const isPending = paymentStatus?.payment_status === 'Pending';
               const isOverdue = new Date(payment.transactionDate) < new Date();
@@ -259,18 +282,18 @@ const LoanCalculator = memo(({
               const shouldShowQR = loan_status === "Approved" &&
                 selectedLoan?.proof_of_disbursement &&
                 !isPaid &&
-                !isPending &&
                 isCurrentPayment;
 
-              // Only render the card if it should show the QR code
-              if (!shouldShowQR) return null;
+              // Only render the card if it's the current payment or has a status
+              if (!shouldShowQR && !paymentStatus) return null;
 
               return (
                 <div
                   key={index}
-                  className={`bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 mb-6 ${isPending ? 'bg-amber-50 border-2 border-amber-200' :
-                    isPaid ? 'bg-emerald-50 border-2 border-emerald-200' :
-                      isOverdue ? 'bg-rose-50 border-2 border-rose-200' : ''
+                  className={`bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 mb-6 
+                    ${isPending ? 'bg-amber-50 border-2 border-amber-200' :
+                      isPaid ? 'bg-emerald-50 border-2 border-emerald-200' :
+                        isOverdue ? 'bg-rose-50 border-2 border-rose-200' : ''
                     }`}
                 >
                   {/* Payment Header */}
@@ -463,7 +486,7 @@ const LoanCalculator = memo(({
                 formData.append('selectedTableRowIndex', selectedPayment?.selectedTableRowIndex);
 
                 await axios.post(
-                  `loan/${selectedLoan?.loan_id}/submit-payment`,
+                  `/api/loan/${selectedLoan?.loan_id}/submit-payment`,
                   formData,
                   {
                     headers: {
@@ -474,11 +497,10 @@ const LoanCalculator = memo(({
 
                 document.getElementById('addPayment').close();
                 toast.success('Payment submitted successfully');
-                await fetchloanPaymentList();
+                await fetchLoanPaymentList();
               } catch (error) {
-
-                console.log({ error })
-                // toast.error('Failed to submit payment');
+                console.error('Payment submission error:', error);
+                toast.error('Failed to submit payment');
               } finally {
                 setSubmitting(false);
               }
