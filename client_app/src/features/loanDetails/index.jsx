@@ -595,7 +595,7 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
                 paymentList={paymentList}
               />
 
-              {loanDetails.loan_id && <ToPrint
+              {/* {loanDetails.loan_id && <ToPrint
 
                 calculatorInterestRate={formikProps.values.calculatorInterestRate}
                 selectedLoan={loanDetails}
@@ -606,7 +606,7 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
                 setPaymentList={setPaymentList}
                 setIsGridView={setIsGridView}
                 isGridView={isGridView}
-              />}
+              />} */}
 
               {loanDetails.loan_id &&
 

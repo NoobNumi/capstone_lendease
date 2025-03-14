@@ -156,6 +156,8 @@ router.post('/login', async (req, res, next) => {
       [email]
     );
 
+    console.log({ rows });
+
     // Check if user exists
     if (rows.length === 0) {
       return res.status(401).json({ message: 'Invalid email or password' });

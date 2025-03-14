@@ -24,6 +24,7 @@ const PaymentOrder = lazy(() => import('./pages/PaymentOrder'));
 const LayawayPaymentOrder = lazy(() => import('./pages/LayAwayPayment'));
 
 const AccountVerification = lazy(() => import('./features/user/components/AccountVerification'));
+const LandingPage = lazy(() => import('./features/homepage/LandingPage'));
 
 // Initializing different libraries
 initializeApp();
@@ -53,6 +54,8 @@ function App() {
     <>
       <Router>
         <Routes>
+          {/* <Route path="/" element={<LandingPage />} /> */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/myprofile/:userId" element={<MyProfile />} />
           <Route path="/myprofile/:userId/order/:transactionId" element={<PaymentOrder />} />
           <Route path="/myprofile/:userId/layaway/:transactionId" element={<LayawayPaymentOrder />} />

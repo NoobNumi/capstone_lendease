@@ -31,6 +31,7 @@
     "easyinvoice": "^3.0.47",
     "formik": "^2.4.6",
     "formik-stepper": "^2.2.1",
+    "framer-motion": "^12.4.7",
     "html-to-image": "^1.11.11",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",

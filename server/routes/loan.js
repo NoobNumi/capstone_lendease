@@ -496,51 +496,31 @@ router.post(
 
 // Route to handle file uploads
 router.post(
-  '/upload-files',
-  upload.fields([
-    { name: 'bankStatement', maxCount: 1 },
-    { name: 'borrowerValidID', maxCount: 1 },
-    { name: 'coMakersValidID', maxCount: 1 }
-  ]),
+  '/payments/upload-files',
+  upload.fields([{ name: 'proofOfPayment', maxCount: 1 }]),
   async (req, res) => {
     try {
       const files = req.files;
+      const loan_id = req.body.loan_id;
+      const selectedTableRowIndex = req.body.selectedTableRowIndex;
 
-      const loan_application_id = req.body.loan_application_id;
-
-      // Upload each file to Firebase Storage
       for (const [key, fileArray] of Object.entries(files)) {
         const file = fileArray[0];
-
         const storageRef = ref(
           firebaseStorage,
-          `lendease/loans/${loan_application_id}/${file.originalname}`
+          `lendease/loans/${loan_id}/payments/${selectedTableRowIndex}/${file.originalname}`
         );
         const metadata = { contentType: file.mimetype };
 
-        // // Upload the file to Firebase Storage
         await uploadBytes(storageRef, file.buffer, metadata);
-
-        // // Get the file's download URL
         const downloadURL = await getDownloadURL(storageRef);
 
-        let mappedKey = {
-          bankStatement: 'bank_statement',
-          borrowerValidID: 'borrowers_valid_id',
-          coMakersValidID: 'co_makers_valid_id'
-        };
-
         await db.query(
-          `
-          UPDATE loan SET ${mappedKey[key]} = ?
-          where loan_application_id = ?
-          
-          `,
-          [downloadURL, loan_application_id]
+          `UPDATE payment 
+           SET proof_of_payment = ?
+           WHERE loan_id = ? AND selectedTableRowIndex = ?`,
+          [downloadURL, loan_id, selectedTableRowIndex]
         );
-
-        // console.log({ downloadURL });
-        console.log(`${key} uploaded successfully.`);
       }
 
       res.status(200).json({ message: 'Files uploaded successfully!' });
@@ -642,19 +622,39 @@ router.post('/:loanId/payment', async (req, res) => {
       payment_status,
       payment_method,
       reference_number,
-      selectedTableRowIndex
+      selectedTableRowIndex,
+      includes_past_due,
+      past_due_amount,
+      original_amount
     } = req.body;
 
+    // Insert payment with additional fields
     const [result] = await db.query(
-      `INSERT INTO payment (loan_id, payment_amount, payment_status, payment_method, reference_number,selectedTableRowIndex) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO payment (
+        loan_id, 
+        payment_amount, 
+        payment_date,
+        payment_status, 
+        payment_method, 
+        reference_number,
+        selectedTableRowIndex,
+        includes_past_due,
+        past_due_amount,
+        original_amount,
+        approval_or_rejected_date
+      ) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         loan_id,
         payment_amount,
+        payment_date,
         payment_status,
         payment_method,
         reference_number,
-        selectedTableRowIndex
+        selectedTableRowIndex,
+        includes_past_due || false,
+        past_due_amount || 0,
+        original_amount || payment_amount
       ]
     );
 
@@ -665,80 +665,103 @@ router.post('/:loanId/payment', async (req, res) => {
   }
 });
 
+// Get payment list with enhanced details
 router.get('/:loanId/paymentList', async (req, res) => {
   try {
     const { loanId } = req.params;
 
     const [rows] = await db.query(
-      `SELECT * FROM payment WHERE loan_id  = ?
-      
-      ORDER BY selectedTableRowIndex ASC
-      `,
+      `SELECT 
+        p.*,
+        CASE 
+          WHEN p.payment_status = 'Approved' THEN true
+          WHEN p.payment_status = 'Pending' THEN true
+          ELSE false
+        END as is_paid,
+        CASE 
+          WHEN p.includes_past_due = 1 THEN true
+          ELSE false
+        END as includes_past_due,
+        COALESCE(p.original_amount, p.payment_amount) as original_amount,
+        COALESCE(p.past_due_amount, 0) as past_due_amount,
+        p.approval_or_rejected_date
+      FROM payment p 
+      WHERE p.loan_id = ?
+      ORDER BY p.selectedTableRowIndex ASC`,
       [loanId]
     );
 
     res.status(200).json({ success: true, data: rows });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error fetching payment' });
+    res.status(500).json({ error: 'Error fetching payment list' });
   }
 });
 
-router.post(
-  '/payment/upload-files',
-  upload.fields([{ name: 'proofOfPayment', maxCount: 1 }]),
-  async (req, res) => {
-    try {
-      const files = req.files;
+// Update payment status route
+router.post('/:loanId/updatePaymentStatus', async (req, res) => {
+  try {
+    const { loanId } = req.params;
+    let { action, remarks, selectedTableRowIndex } = req.body;
+    selectedTableRowIndex = 1;
+    // Update payment status and approval/rejection date
+    await db.query(
+      `UPDATE payment 
+       SET 
+         payment_status = ?,
+         approval_or_rejected_date = NOW(),
+         loan_officer_id = ?,
+         remarks = ?
+       WHERE loan_id = ? AND selectedTableRowIndex = ?`,
+      [action, req.user?.officer_id, remarks, loanId, selectedTableRowIndex]
+    );
 
-      const loan_application_id = req.body.loan_id;
-      const selectedTableRowIndex = req.body.selectedTableRowIndex;
+    // If payment is approved, handle past due updates
+    if (action === 'Approved') {
+      const [paymentRecord] = await db.query(
+        `SELECT * FROM payment 
+         WHERE loan_id = ? AND selectedTableRowIndex = ?`,
+        [loanId, selectedTableRowIndex]
+      );
 
-      console.log({ loan_application_id, selectedTableRowIndex });
-
-      // // Upload each file to Firebase Storage
-      for (const [key, fileArray] of Object.entries(files)) {
-        const file = fileArray[0];
-
-        const storageRef = ref(
-          firebaseStorage,
-          `lendease/loans/${loan_application_id}/proof_of_payment/${file.originalname}`
-        );
-        const metadata = { contentType: file.mimetype };
-
-        // // Upload the file to Firebase Storage
-        await uploadBytes(storageRef, file.buffer, metadata);
-
-        // // Get the file's download URL
-        const downloadURL = await getDownloadURL(storageRef);
-        console.log({ downloadURL });
-        // let mappedKey = {
-        //   bankStatement: 'bank_statement',
-        //   borrowerValidID: 'borrowers_valid_id',
-        //   coMakersValidID: 'co_makers_valid_id'
-        // };
-
+      console.log({ paymentRecord, loanId, selectedTableRowIndex });
+      if (paymentRecord[0]?.includes_past_due) {
         await db.query(
-          `
-          UPDATE payment SET proof_of_payment = ?
-          where loan_id  = ? 
-          AND 
-          selectedTableRowIndex = ? 
-
-          `,
-          [downloadURL, loan_application_id, selectedTableRowIndex]
+          `UPDATE payment 
+           SET past_due_handled = true,
+               past_due_handled_date = NOW()
+           WHERE loan_id = ? AND selectedTableRowIndex = ?`,
+          [loanId, selectedTableRowIndex]
         );
-
-        // console.log({ downloadURL });
-        console.log(`${key} uploaded successfully.`);
       }
 
-      res.status(200).json({ message: 'Files uploaded successfully!' });
-    } catch (error) {
-      console.error('Error uploading files:', error);
-      res.status(500).json({ error: 'Failed to upload files.' });
+      // Send notification to borrower
+      const [loanDetails] = await db.query(
+        `SELECT b.contact_number, b.first_name 
+         FROM loan l 
+         JOIN borrower_account b ON l.borrower_id = b.borrower_id 
+         WHERE l.loan_id = ?`,
+        [loanId]
+      );
+
+      if (loanDetails[0]) {
+        await sendMessage({
+          firstName: loanDetails[0].first_name,
+          phoneNumber: loanDetails[0].contact_number,
+          messageType: 'paymentApproved',
+          additionalData: {
+            paymentAmount: paymentRecord[0].payment_amount,
+            referenceNumber: paymentRecord[0].reference_number
+          }
+        });
+      }
     }
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error updating payment status' });
   }
-);
+});
 
 export default router;

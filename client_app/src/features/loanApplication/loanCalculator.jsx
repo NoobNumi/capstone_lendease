@@ -2,7 +2,7 @@ import React, { useState, useEffect, memo } from 'react';
 
 import InputText from '../../components/Input/InputText';
 import Dropdown from '../../components/Input/Dropdown';
-import { Formik, useField, useFormik, Form } from 'formik';
+import { Formik, useField, useFormik, Form, Field } from 'formik';
 import * as Yup from 'yup';
 import { useDropzone } from "react-dropzone";
 import axios from 'axios';
@@ -117,22 +117,29 @@ const LoanCalculator = memo(({
 
 
   const fetchloanPaymentList = async () => {
+    try {
+      let res = await axios({
+        method: 'get',
+        url: `loan/${selectedLoan?.loan_id || loanId}/paymentList`,
+        data: {}
+      });
+      let list = res.data.data;
+      setloanPaymentList(list);
 
-    // console.log({
-    //   hey: loanId
-    // })
-    let res = await axios({
-      method: 'get',
-      url: `loan/${selectedLoan?.loan_id || loanId}/paymentList`,
-      data: {
-
+      // Force recalculation of QR details after payment list update
+      const qrDetails = getQRCodeDetails(payments, list);
+      if (qrDetails) {
+        setselectedPayment({
+          ...selectedPayment,
+          amount: qrDetails.amount,
+          hasPastDue: qrDetails.hasPastDue,
+          pastDueAmount: qrDetails.pastDueAmount,
+          isOverdue: qrDetails.isOverdue
+        });
       }
-    });
-    let list = res.data.data;
-
-    setloanPaymentList(list)
-
-
+    } catch (error) {
+      console.error('Error fetching payment list:', error);
+    }
   };
 
   useEffect(() => {
@@ -242,19 +249,27 @@ const LoanCalculator = memo(({
   });
 
   const handlePayNowButtonClick = (payment, selectedIndex, fromButton) => {
+    // Get QR details to handle past due amounts
+    const qrDetails = getQRCodeDetails(payments, loanPaymentList);
 
-    // console.log({ payment, selectedLoan })
-    setselectedPayment(payment);
-    setselectedIndex(selectedIndex)
+    // Update the payment object with past due information
+    const updatedPayment = {
+      ...payment,
+      amount: qrDetails.amount, // Total amount including past due
+      originalAmount: payment.amount, // Keep original amount
+      hasPastDue: qrDetails.hasPastDue,
+      pastDueAmount: qrDetails.pastDueAmount,
+      isOverdue: qrDetails.isOverdue
+    };
 
-    setIsLoaded(true)
+    setselectedPayment(updatedPayment);
+    setselectedIndex(selectedIndex);
+    setIsLoaded(true);
 
     if (isLoaded) {
       document.getElementById('addPayment').showModal();
     }
-
-
-  }
+  };
 
   const dropzoneProps = (fieldName) => ({
     onDrop: (files) => onDrop(files, fieldName),
@@ -320,6 +335,86 @@ const LoanCalculator = memo(({
   let checkActivePayment = loanPaymentList.find(lp => lp.selectedTableRowIndex === parseInt(rowIndex))
 
 
+
+  // New function to calculate QR code amount and details
+  const getQRCodeDetails = (payments, loanPaymentList) => {
+    if (!payments.length || !loanPaymentList) return null;
+
+    let pastDueAmount = 0;
+    let currentPaymentIndex = -1;
+    const today = new Date();
+
+    // Track paid amounts for each payment index
+    const paidAmounts = {};
+    loanPaymentList.forEach(payment => {
+      if (payment.payment_status === 'Approved') {
+        paidAmounts[payment.selectedTableRowIndex] = parseFloat(payment.payment_amount);
+      }
+    });
+
+    // First, find the first unpaid payment
+    for (let i = 0; i < payments.length; i++) {
+      const payment = payments[i];
+      const paymentDueDate = new Date(payment.transactionDate);
+      const paidAmount = paidAmounts[i + 1] || 0;
+      const remainingAmount = payment.dueAmount - paidAmount;
+
+      // If this payment is not fully paid
+      if (remainingAmount > 0) {
+        if (currentPaymentIndex === -1) {
+          currentPaymentIndex = i;
+        }
+
+        // If the payment is past due, add to past due amount
+        if (paymentDueDate < today) {
+          pastDueAmount += remainingAmount;
+        }
+      }
+    }
+
+    // If no unpaid payments found
+    if (currentPaymentIndex === -1) return null;
+
+    const currentPayment = payments[currentPaymentIndex];
+    const currentDueDate = new Date(currentPayment.transactionDate);
+    const currentPaidAmount = paidAmounts[currentPaymentIndex + 1] || 0;
+    const currentRemainingAmount = currentPayment.dueAmount - currentPaidAmount;
+
+    // For any payment that is past due (including first payment)
+    if (currentDueDate < today) {
+      return {
+        index: currentPaymentIndex,
+        amount: pastDueAmount, // Return total past due amount
+        dueDate: currentPayment.transactionDate,
+        hasPastDue: true,
+        pastDueAmount: pastDueAmount - currentRemainingAmount, // Past due minus current payment
+        originalAmount: currentPayment.dueAmount,
+        isOverdue: true,
+        totalDue: pastDueAmount // Add total amount for reference
+      };
+    }
+
+    // For current (not overdue) payments
+    return {
+      index: currentPaymentIndex,
+      amount: currentRemainingAmount + pastDueAmount,
+      dueDate: currentPayment.transactionDate,
+      hasPastDue: pastDueAmount > currentRemainingAmount,
+      pastDueAmount: pastDueAmount > currentRemainingAmount ? pastDueAmount - currentRemainingAmount : 0,
+      originalAmount: currentPayment.dueAmount,
+      isOverdue: false,
+      totalDue: currentRemainingAmount + pastDueAmount
+    };
+  };
+
+  // Add this function to format dates consistently
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   return isLoaded && (
     <div className="max-w-5xl mx-auto p-8 bg-white rounded-xl shadow-md">
@@ -427,911 +522,451 @@ const LoanCalculator = memo(({
       </div>
       <div className="overflow-auto">
 
-        {isGridView && <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          {payments.map((payment, index) => {
 
-
-            let current = loanPaymentList.find(lp => lp.selectedTableRowIndex === index + 1)
-
-            const url = `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${index + 1}`
-
-            // Check if previous row had a payment
-            const previousPayment = payments[index - 1];
-            const previousPaymentStatus = previousPayment ? loanPaymentList.find(lp => lp.selectedTableRowIndex === index) : null;
-
-
-            return <div key={index} className="flex flex-col items-center">
-              <div
-                className="relative 
-              border-2
-              aspect-square w-full rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer"
-              // onClick={() => setSelectedImage(doc.src)}
-              >
-
-
-
-                {
-                  current?.payment_status ?
-                    <div className='relative flex items-center justify-center opacity-20'>
-                      <QRCodeSVG
-                        width="100%"
-                        height="100%"
-                        className=''
-                        value={url}
-                      />
-                      <div className='absolute text-center opacity-100'>
-
-                        <StatusPill value={current?.payment_status} />
-                      </div>
-
-
-                    </div>
-
-
-
-                    :
-                    (loan_status === "Approved" && selectedLoan?.proof_of_disbursement &&
-                      (index === 0 || previousPaymentStatus?.payment_status) ?
-
-                      <div
-                        onClick={async () => {
-                          setisFromPayNowButton(true)
-                          await handlePayNowButtonClick(payment, index + 1, true);
-                        }}
-                      >
-                        <QRCodeSVG
-
-                          width="100%"
-                          height="100%"
-                          className=''
-                          value={
-
-                            url
-
-                          } />
-                      </div>
-                      :
-                      <div className='relative flex items-center justify-center opacity-20'>
-                        <QRCodeSVG
-                          width="100%"
-                          height="100%"
-                          className=''
-                          value={url}
-                        />
-                        <div className='absolute text-center opacity-100'>
-
-                          <StatusPill value={'Soon'} />
-                        </div>
-
-
-                      </div>
-
-                    )
-                }
-
-
-
-              </div>
-              <span className="mt-2 text-sm text-gray-600 font-bold">
-                Payment #{index + 1}:</span>
-
-              <span className="mt-2 text-sm text-gray-600 font-bold">
-
-                {payment.transactionDate}</span>
-            </div>
-          })}
-        </div>}
-
-        {!isGridView && <table className="w-full mt-8 table-auto border-collapse">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="px-4 py-3 text-left text-sm text-gray-700">No.</th>
-              <th className="px-4 py-3 text-left text-sm text-gray-700">QR Code</th>
-              <th className="px-4 py-3 text-left text-sm text-gray-700">Transaction Date</th>
-              <th className="px-4 py-3 text-left text-sm text-gray-700">Principal</th>
-              <th className="px-4 py-3 text-left text-sm text-gray-700">Amount</th>
-              <th className="px-4 py-3 text-left text-sm text-gray-700">Interest Amount</th>
-              <th className="px-4 py-3 text-left text-sm text-gray-700">Due Amount</th>
-              <th className="px-4 py-3 text-left text-sm text-gray-700">Date Paid</th>
-              <th className="px-4 py-3 text-left text-sm text-gray-700">Balance</th>
-              <th className="px-4 py-3 text-left text-sm text-gray-700">Proof of Payment</th>
-              <th className="px-4 py-3 text-left text-sm text-gray-700">Status</th>
-              <th className="px-4 py-3 text-left text-sm text-gray-700">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map((payment, index) => {
-
-
-
-
-              let current = loanPaymentList.find(lp => lp.selectedTableRowIndex === index + 1)
-
-              let formattedDate;
-              if (current?.payment_date) {
-                const parsedDate = new Date(current.payment_date);
-                if (!isNaN(parsedDate.getTime())) {
-                  formattedDate = format(parsedDate, 'MMM dd, yyyy hh:mm:a');
-
-                } else {
-                  // console.error('Invalid date format');
-                }
-              } else {
-                //console.error('Payment date is missing');
-              }
-
-
-
-              // Check if previous row had a payment
-              const previousPayment = payments[index - 1];
-              const previousPaymentStatus = previousPayment ? loanPaymentList.find(lp => lp.selectedTableRowIndex === index) : null;
-
-
-
-
-              //   console.log({ urlLink: `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${index + 1}` })
-
-
-              let highlight = parseInt(rowIndex) === index + 1;
-
-              // console.log({ highlight: parseInt(rowIndex) })
-              return <tr key={index}
-
-                className={`${highlight ? 'border border-green-500' : ''}`}>
-
-                <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">
-                  <QRCodeSVG
-
-
-                    value={
-
-                      `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${index + 1}`
-
-                    }
-
-                    size={50} />
-
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-700">{payment.transactionDate}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(payment.principal)}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(payment.amountPrincipal)}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(payment.interestAmount)}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(payment.dueAmount)}</td>
-
-                <td className="px-4 py-3 text-sm text-gray-700">
-                  {
-
-                    formattedDate
-                  }
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(payment.remainingBalance)}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">
-
-                  {current?.proof_of_payment && <img
-                    src={current?.proof_of_payment}
-                    alt="Thumbnail"
-                    className="w-16 h-16 rounded-lg object-cover cursor-pointer"
-                    onClick={() => setSelectedImage(current?.proof_of_payment)}
-                  />
-                  }
-
-
-
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-700">
-
-
-
-                  {
-                    current?.payment_status ? <StatusPill value={current?.payment_status} /> :
-                      loan_status === "Approved" && selectedLoan?.proof_of_disbursement && (
-                        (index === 0 || previousPaymentStatus?.payment_status) && (
-                          <div className="flex">
-                            <button className="btn btn-outline btn-sm" onClick={async () => {
-                              setisFromPayNowButton(true)
-                              await handlePayNowButtonClick(payment, index + 1, true);
-                            }}>
-                              Pay now
-                            </button>
-                          </div>
-                        )
-                      )
-                  }
-
-
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-700">
-
-                  {
-                    current?.payment_status && <div className="flex">
-                      <button className="btn btn-outline btn-sm" onClick={async () => {
-
-
-                        setselectedPayment(current);
-                        document.getElementById('viewPayment').showModal();
-                        // await handlePayNowButtonClick(payment, index + 1);
-                      }}>
-                        View
-                      </button>
-                    </div>
-                  }
-
-
-                </td>
-              </tr>
-            })}
-            {/* Total Row */}
-            <tr className="bg-gray-200 font-semibold">
-              <td colSpan="1" className="px-4 py-3 text-sm text-gray-700">Total</td>
-              <td colSpan="1" className="px-4 py-3 text-sm text-gray-700"></td>
-              <td colSpan="1" className="px-4 py-3 text-sm text-gray-700"></td>
-              <td colSpan="1" className="px-4 py-3 text-sm text-gray-700"></td>
-              <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(totalAmount - totalInterestAmount)}</td>
-              <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(totalInterestAmount)}</td>
-              <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(totalDueAmount)}</td>
-              <td className="px-4 py-3 text-sm text-gray-700"></td>
-              <td className="px-4 py-3 text-sm text-gray-700"></td>
-              <td className="px-4 py-3 text-sm text-gray-700"></td>
-              <td className="px-4 py-3 text-sm text-gray-700"></td>
-              <td className="px-4 py-3 text-sm text-gray-700"></td>
-
-            </tr>
-          </tbody>
-        </table>
+        {
+          console.log({ payments })
         }
+        {isGridView && (
+          <div className="max-w-3xl mx-auto mt-8">
+            {(() => {
+              const qrDetails = getQRCodeDetails(payments, loanPaymentList);
+
+              if (!qrDetails) return (
+                <div className="text-center p-8 bg-gray-50 rounded-lg shadow-sm">
+                  <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="mt-4 text-lg font-medium text-gray-600">No pending payments</p>
+                  <p className="mt-2 text-sm text-gray-500">All payments are up to date</p>
+                </div>
+              );
+
+              const url = `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${qrDetails.index + 1}`;
+
+              return (
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                  <div className="p-8">
+                    {/* Header */}
+                    <div className="text-center mb-6">
+                      <h2 className="text-2xl font-bold text-gray-800">Payment QR Code</h2>
+                      <p className="text-sm text-gray-500 mt-1">Scan to process payment</p>
+                    </div>
+
+                    {/* Status Indicators */}
+                    <div className="space-y-4 mb-6">
+                      {qrDetails.isOverdue && (
+                        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0">
+                              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <div className="ml-3">
+                              <h3 className="text-sm font-medium text-red-800">Payment Overdue!</h3>
+                              <p className="text-sm text-red-700 mt-1">
+                                Total accumulated amount: {formatCurrency(qrDetails.totalDue)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {qrDetails.hasPastDue && (
+                        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-md">
+                          <div className="flex">
+                            <div className="flex-shrink-0">
+                              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <div className="ml-3">
+                              <h3 className="text-sm font-medium text-yellow-800">Past Due Notice</h3>
+                              <div className="mt-2 text-sm text-yellow-700">
+                                <p>Past due amount: {formatCurrency(qrDetails.pastDueAmount)}</p>
+                                <p>Current payment: {formatCurrency(qrDetails.originalAmount)}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Payment Details */}
+                    <div className="bg-gray-50 rounded-lg p-6 mb-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-500">Due Date</p>
+                          <p className="text-lg font-medium text-gray-900">{qrDetails.dueDate}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Total Amount Due</p>
+                          <p className="text-lg font-medium text-gray-900">{formatCurrency(qrDetails.amount)}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* QR Code */}
+                    {loan_status === "Approved" && selectedLoan?.proof_of_disbursement && (
+                      <div className="flex flex-col items-center">
+                        <div
+                          onClick={async () => {
+                            setisFromPayNowButton(true);
+                            await handlePayNowButtonClick(payments[qrDetails.index], qrDetails.index + 1, true);
+                          }}
+                          className="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
+                        >
+                          <QRCodeSVG
+                            value={url}
+                            size={240}
+                            level="H"
+                            className="mx-auto"
+                            includeMargin={true}
+                          />
+                        </div>
+                        <p className="mt-4 text-sm text-gray-500">Click or scan QR code to make payment</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer with Payment Instructions */}
+                  <div className="bg-gray-50 px-8 py-4 border-t border-gray-100">
+                    <h4 className="text-sm font-medium text-gray-900">Payment Instructions:</h4>
+                    <ol className="mt-2 text-sm text-gray-600 list-decimal list-inside space-y-1">
+                      <li>Scan the QR code using your payment app</li>
+                      <li>Verify the payment amount and details</li>
+                      <li>Complete the payment and keep the reference number</li>
+                      <li>Upload proof of payment when prompted</li>
+                    </ol>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {!isGridView && (
+          <table className="w-full mt-8 table-auto border-collapse">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Due Date</th>
+                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Amount</th>
+                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Status</th>
+                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Payment Date</th>
+                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Reference No.</th>
+                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {payments.map((payment, index) => {
+                const paymentStatus = loanPaymentList.find(
+                  (lp) => lp.selectedTableRowIndex === index + 1
+                );
+
+                return (
+                  <tr key={index} className={`border-b ${paymentStatus?.payment_status === 'Pending' ? 'bg-yellow-50' :
+                    paymentStatus?.payment_status === 'Approved' ? 'bg-green-50' :
+                      new Date(payment.transactionDate) < new Date() ? 'bg-red-50' : ''
+                    }`}>
+                    <td className="px-4 py-3 text-sm">{payment.transactionDate}</td>
+                    <td className="px-4 py-3 text-sm">{formatCurrency(payment.dueAmount)}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 text-xs rounded-full ${paymentStatus?.payment_status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                        paymentStatus?.payment_status === 'Approved' ? 'bg-green-100 text-green-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                        {paymentStatus?.payment_status || 'Unpaid'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {paymentStatus?.payment_date ? new Date(paymentStatus.payment_date).toLocaleDateString() : '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {paymentStatus?.reference_number || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {paymentStatus ? (
+                        <button
+                          onClick={() => handleViewPayment(payment, index + 1)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          View Details
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handlePayNowButtonClick(payment, index + 1)}
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          Pay Now
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
 
       </div>
 
       <dialog id="addPayment" className="modal">
-        <div className="modal-box w-11/12 max-w-5xl">
-
-          <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-            onClick={() => {
-
-              document.getElementById("addPayment").close()
-              setselectedPayment({});
-            }}
-
-
-          >✕</button>
-
-          <div className="modal-header flex items-center justify-between p-4 bg-gradient-to-r from-gray-200 to-gray-300
-            z-10 text-blue-950 border bg-white text-blue-950  rounded-t-lg">
-            <h1 className="text-xl font-bold">Payment Details</h1>
-
+        <div className="modal-box w-11/12 max-w-4xl bg-white rounded-lg shadow-xl">
+          <div className="modal-header bg-gradient-to-r from-blue-900 to-blue-950 p-4 text-white rounded-t-lg">
+            <h1 className="text-xl font-bold">Payment Review</h1>
           </div>
 
-          <p className="text-sm text-gray-500 mt-1 font-bold"></p>
-          <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
+          <div className="p-6">
+            {/* Payment Status Banner */}
+            <div className={`mb-6 p-4 rounded-lg ${selectedPayment.isOverdue ? 'bg-red-50 border-l-4 border-red-500' : 'bg-yellow-50 border-l-4 border-yellow-500'
+              }`}>
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  {selectedPayment.isOverdue ? (
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" />
+                    </svg>
+                  )}
+                </div>
+                <div className="ml-3">
+                  <h3 className={`text-sm font-medium ${selectedPayment.isOverdue ? 'text-red-800' : 'text-yellow-800'}`}>
+                    {selectedPayment.isOverdue ? 'Payment Overdue' : 'Payment Pending Review'}
+                  </h3>
+                  <p className={`text-sm ${selectedPayment.isOverdue ? 'text-red-700' : 'text-yellow-700'}`}>
+                    Due Date: {formatDate(selectedPayment.datePaid)}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            {/* {
-              console.log({ selectedPayment })
-            } */}
+            {/* Payment Details Grid */}
+            <div className="grid grid-cols-2 gap-6 mb-8">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-sm font-medium text-gray-500">Regular Payment</h3>
+                <p className="mt-1 text-2xl font-semibold text-gray-900">{formatCurrency(selectedPayment.originalAmount)}</p>
+                <div className="mt-2 space-y-1 text-sm text-gray-500">
+                  <p>Principal: {formatCurrency(selectedPayment.amountPrincipal)}</p>
+                  <p>Interest: {formatCurrency(selectedPayment.interestAmount)}</p>
+                </div>
+              </div>
 
-            {(selectedPayment.amount && selectedLoan.loan_application_id) &&
-              <Formik
-                initialValues={{
-                  payment_amount: selectedPayment.payment_amount || selectedPayment.amount,
-                  payment_method: selectedPayment.payment_method,
-                  reference_number: selectedPayment.reference_number,
-                  proof_of_payment: '',
-                  paid_amount: selectedPayment.amount || selectedPayment.payment_amount
-                }}
-                validationSchema={Yup.object({
-                  payment_amount: Yup.number()
-                    .required('Payment amount is required'),
-                  paid_amount: Yup.number()
-                    .required('Paid amount is required')
-                    .test(
-                      'is-equal',
-                      'Paid amount must be equal to Payment amount',
-                      function (value) {
-                        return value === this.parent.payment_amount;
-                      }
-                    ),
-                  payment_method: Yup.string()
-                    .required('Payment method is required'),
-                  reference_number: Yup.string()
-                    .required('Payment method is required'),
+              {selectedPayment.hasPastDue && (
+                <div className="bg-red-50 p-4 rounded-lg">
+                  <h3 className="text-sm font-medium text-red-800">Past Due Amount</h3>
+                  <p className="mt-1 text-2xl font-semibold text-red-900">{formatCurrency(selectedPayment.pastDueAmount)}</p>
+                  <p className="mt-2 text-sm text-red-600">Remaining Balance: {formatCurrency(selectedPayment.remainingBalance)}</p>
+                </div>
+              )}
+            </div>
 
-                })}
-                validate={(values) => {
-                  const errors = {};
+            {/* Total Amount Section */}
+            <div className="bg-gray-900 text-white p-6 rounded-lg mb-8">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-medium">Total Amount Due</h3>
+                  <p className="text-sm opacity-75">Including all past due amounts</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold">{formatCurrency(selectedPayment.amount)}</p>
+                </div>
+              </div>
+            </div>
 
-                  if (!values.payment_amount) {
-                    errors.payment_amount = 'Payment amount is required';
-                  }
-
-                  if (!values.payment_method) {
-                    errors.payment_method = 'Payment method is required';
-                  }
-
-                  if (!values.reference_number) {
-                    errors.reference_number = 'Reference number is required';
-                  }
-
-                  // Conditionally validate proof_of_payment based on files.proofOfPayment
-                  if (!values.proof_of_payment && !files.proofOfPayment) {
-                    errors.proof_of_payment = 'Proof of Payment is required';
-                  }
-
-                  return errors;
-                }}
-                onSubmit={async (values, { setFieldError, setSubmitting, resetForm }) => {
-                  // Log the form values
-
-
-                  const formattedData = {
-                    loan_id: selectedLoan?.loan_id, // Assuming you have this value available
-                    payment_amount: parseFloat(values.paid_amount).toFixed(2), // Ensure correct decimal format
-                    payment_date: new Date().toISOString().split('T')[0], // Get the current date in 'YYYY-MM-DD' format
-                    payment_status: 'Pending', // Assuming default status or you could map it based on a form field
-                    payment_method: values.payment_method,// Function to map payment method to ID
-
-                    reference_number: values.reference_number,
-                    selectedTableRowIndex: selectedIndex
-                  };
-
-
-                  try {
-
-
-
-                    let res = await axios({
-                      method: 'post',
-                      url: `loan/${selectedLoan.loan_application_id}/payment`,
-                      data: formattedData
-                    })
-
-
-                    const formData = new FormData();
-                    formData.append('loan_id', formattedData.loan_id);
-                    formData.append('selectedTableRowIndex', formattedData.selectedTableRowIndex);
-
-                    formData.append('proofOfPayment', files.proofOfPayment); // Assuming values contains File objects
-                    await axios({
-                      // headers: {
-                      //   'content-type': 'multipart/form-data'
-                      // },
-                      method: 'POST',
-                      url: 'loan/payment/upload-files',
-                      data: formData
-                    });
-
-
-                    toast.success(`Payment Addedd Successfully`, {
-                      position: 'top-right',
-                      autoClose: 3000,
-                      hideProgressBar: false,
-                      closeOnClick: true,
-                      pauseOnHover: true,
-                      draggable: true,
-                      progress: undefined,
-                      theme: 'light'
-                    });
-                    await fetchloanPaymentList()
-
-                    navigate(`/app/loan_details/${loanId}`);
-                    resetForm()
-
-                    document.getElementById('addPayment').close();
-
-
-                  } catch (error) {
-
-                    toast.error(`An error occured.`, {
-                      position: 'top-right',
-                      autoClose: 3000,
-                      hideProgressBar: false,
-                      closeOnClick: true,
-                      pauseOnHover: true,
-                      draggable: true,
-                      progress: undefined,
-                      theme: 'light'
-                    });
-
-                  }
-
-
-
-
-
-                }}
-              >
-                {({
-                  validateForm,
-                  handleSubmit,
-                  handleChange,
-                  handleBlur, // handler for onBlur event of form elements
-                  values,
-                  touched,
-                  errors,
-                  submitForm,
-                  setFieldTouched,
-                  setFieldValue,
-                  setFieldError,
-                  setErrors,
-                  isSubmitting
-                }) => {
-
-                  // console.log({ errors, files })
-                  let hasError1 = errors['proof_of_payment'] && files.proofOfPayment == null;
-
-
-                  // React useEffect to listen to changes in checkActivePayment
-                  useEffect(() => {
-                    if (checkActivePayment?.reference_number && !isFromPayNowButton) {
-                      // Update formik values dynamically when checkActivePayment changes
-                      setFieldValue('reference_number', checkActivePayment.reference_number);
-                      setFieldValue('payment_method', checkActivePayment.payment_method || '');
-                      setFieldValue('paid_amount', checkActivePayment.payment_amount || 0);
-                      setFieldValue('proof_of_payment', checkActivePayment.proof_of_payment || '');
+            {/* Approval Actions */}
+            <Formik
+              initialValues={{
+                action: '',
+                remarks: ''
+              }}
+              onSubmit={async (values, { setSubmitting }) => {
+                try {
+                  await axios.post(
+                    `/loan/${selectedLoan.loan_id}/updatePaymentStatus`,
+                    {
+                      action: values.action,
+                      remarks: values.remarks,
+                      selectedTableRowIndex: selectedIndex
                     }
-                  }, [checkActivePayment, setFieldValue]);
+                  );
 
+                  document.getElementById('addPayment').close();
+                  toast.success(`Payment ${values.action.toLowerCase()} successfully`);
+                  await fetchloanPaymentList();
+                } catch (error) {
+                  toast.error('Failed to update payment status');
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            >
+              {({ values, handleSubmit, isSubmitting }) => (
+                <Form className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Remarks</label>
+                    <Field
+                      as="textarea"
+                      name="remarks"
+                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      rows="3"
+                      placeholder="Enter any additional notes or remarks..."
+                    />
+                  </div>
 
-                  return <Form onSubmit={handleSubmit}>
-
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 ">
-
-                      {/* <InputText
-                      isRequired
-                      placeholder=""
-                      label="Status"
-                      name="status"
-                      type="status"
-
-                      value={values.status}
-                      onBlur={handleBlur} // This apparently updates `touched`?
-                    /> */}
-
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4 ">
-                      <InputText
-
-                        disabled
-                        isRequired
-                        placeholder=""
-                        label="Amount to Pay"
-                        name="payment_amount"
-                        type="text"
-
-                        value={values.payment_amount}
-                        onBlur={handleBlur} // This apparently updates `touched`?
-                      />
-                      <div className='mt-2'>
-                        <Dropdown
-                          // icons={mdiAccount}
-                          label="Payment Method"
-                          name="payment_method"
-                          placeholder=""
-                          value={values.payment_method}
-                          setFieldValue={setFieldValue}
-                          onBlur={handleBlur}
-                          options={[
-                            {
-                              name: 'Cash',
-                              displayName: 'Cash'
-                            }, {
-                              name: 'Gcash',
-                              displayName: 'Gcash'
-                            },
-                            {
-                              name: 'Bank Transfer',
-                              displayName: 'Bank Transfer'
-                            }].map(val => {
-                              return {
-                                value: val.name,
-                                label: val.displayName
-                              };
-                            })}
-
-                        /></div>
-
-                      <InputText
-                        isRequired
-                        placeholder=""
-                        label="Paid Amount"
-                        name="paid_amount"
-                        type="number"
-
-                        value={values.paid_amount}
-                        onBlur={handleBlur} // This apparently updates `touched`?
-                      />
-                      <InputText
-                        isRequired
-                        placeholder=""
-                        label="Reference Number"
-                        name="reference_number"
-                        type="text"
-
-                        value={values.reference_number}
-                        onBlur={handleBlur} // This apparently updates `touched`?
-                      />
-
-                    </div>
-                    <div className="space-y-4">
-                      {/* Borrower's Valid ID */}
-                      <h1 className="font-bold text-lg  mt-4">Upload Proof of Payment</h1>
-
-                      <img
-                        src={values.proof_of_payment || selectedPayment.proof_of_payment}
-                        alt="Full-Screen"
-                        className="w-full h-auto max-h-screen object-contain"
-                      />
-
-                      <div
-
-                        className={`${hasError1 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
-                          }`}>
-
-
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-
-                        </label>
-                        <DropzoneArea
-                          fieldName="proofOfPayment"
-                          files={files}
-                          dropzoneProps={dropzoneProps("proofOfPayment")}
-                          setFieldValue={setFieldValue}
-                          errors={errors}
-                        />
-                        {errors.proofOfPayment && <p className="text-red-500 text-sm mt-2">{errors.proofOfPayment}</p>}
-                      </div>
-
-
-
-                      {/* Submit */}
-                      <button
-                        type="submit"
-                        // disabled={isSubmitting}
-                        className="mt-4 px-4 py-2 bg-blue-950 text-white"
-
-                      >
-                        Submit
-                      </button>
-                    </div>
-                  </Form>
-
-
-                }}</Formik>
-            }
-
+                  <div className="flex justify-end gap-4">
+                    <button
+                      type="button"
+                      className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                      onClick={() => document.getElementById('addPayment').close()}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      onClick={() => {
+                        values.action = 'Approved';
+                        handleSubmit();
+                      }}
+                      disabled={isSubmitting}
+                      className="px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700"
+                    >
+                      Approve Payment
+                    </button>
+                    <button
+                      type="submit"
+                      onClick={() => {
+                        values.action = 'Rejected';
+                        handleSubmit();
+                      }}
+                      disabled={isSubmitting}
+                      className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700"
+                    >
+                      Reject Payment
+                    </button>
+                  </div>
+                </Form>
+              )}
+            </Formik>
           </div>
         </div>
+      </dialog>
 
-      </dialog >
-
-      <dialog id="viewPayment" className="modal">
-        <div className="modal-box w-11/12 max-w-5xl">
-
-          <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-            onClick={() => {
-
-              document.getElementById("viewPayment").close()
-              setselectedPayment({});
-            }}
-
-
-          >✕</button>
-
-          <div className="modal-header flex items-center justify-between p-4 bg-gradient-to-r from-gray-200 to-gray-300
-            z-10 text-blue-950 border bg-white text-blue-950  rounded-t-lg">
+      <dialog id="viewPayment" className="modal rounded-lg shadow-lg">
+        <div className="modal-box w-11/12 max-w-4xl">
+          <div className="modal-header bg-gradient-to-r from-blue-900 to-blue-950 p-4 text-white rounded-t-lg">
             <h1 className="text-xl font-bold">Payment Details</h1>
-
           </div>
 
-          <p className="text-sm text-gray-500 mt-1 font-bold"></p>
-          <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
+          <Formik
+            initialValues={{
+              action: '',
+              remarks: ''
+            }}
+            onSubmit={async (values, { setSubmitting }) => {
+              try {
+                const formattedData = {
+                  action: values.action,
+                  remarks: values.remarks,
+                  loan_id: selectedLoan?.loan_id,
+                  selectedTableRowIndex: selectedPayment.selectedTableRowIndex
+                };
 
+                await axios.post(
+                  `admin/loan/${selectedLoan.loan_id}/updatePaymentStatus`,
+                  formattedData
+                );
 
-
-            {(selectedPayment.loan_id) &&
-              <Formik
-                initialValues={{
-                  action: 'Approved',
-                  payment_method: selectedPayment.payment_method,
-                  reference_number: selectedPayment.reference_number,
-                  proof_of_payment: '',
-                  paid_amount: selectedPayment.amount || selectedPayment.payment_amount,
-                  payment_date: selectedPayment.payment_date || selectedPayment.payment_date
-                }}
-                validationSchema={Yup.object({
-
-                  action: Yup.string()
-                    .required('Required'),
-
-                })}
-                // validate={(values) => {
-                //   const errors = {};
-
-                //   if (!values.payment_amount) {
-                //     errors.payment_amount = 'Payment amount is required';
-                //   }
-
-                //   if (!values.payment_method) {
-                //     errors.payment_method = 'Payment method is required';
-                //   }
-
-                //   if (!values.reference_number) {
-                //     errors.reference_number = 'Reference number is required';
-                //   }
-
-                //   // Conditionally validate proof_of_payment based on files.proofOfPayment
-                //   if (!values.proof_of_payment && !files.proofOfPayment) {
-                //     errors.proof_of_payment = 'Proof of Payment is required';
-                //   }
-
-                //   return errors;
-                // }}
-                onSubmit={async (values, { setFieldError, setSubmitting, resetForm }) => {
-                  // Log the form values
-
-
-                  const formattedData = {
-                    action: values.action,
-                    loan_id: selectedLoan?.loan_id, // Assuming you have this value available
-                    // payment_amount: parseFloat(values.paid_amount).toFixed(2), // Ensure correct decimal format
-                    // payment_date: new Date().toISOString().split('T')[0], // Get the current date in 'YYYY-MM-DD' format
-                    // payment_status: 'Pending', // Assuming default status or you could map it based on a form field
-                    // payment_method: values.payment_method,// Function to map payment method to ID
-
-                    // reference_number: values.reference_number,
-                    selectedTableRowIndex: selectedPayment.selectedTableRowIndex
-                  };
-
-
-
-
-                  try {
-
-
-
-                    let res = await axios({
-                      method: 'post',
-                      url: `admin/loan/${selectedLoan.loan_id}/updatePaymentStatus`,
-                      data: formattedData
-                    })
-
-
-
-                    document.getElementById('viewPayment').close();
-                    toast.success(`Updated Successfully`, {
-                      position: 'top-right',
-                      autoClose: 3000,
-                      hideProgressBar: false,
-                      closeOnClick: true,
-                      pauseOnHover: true,
-                      draggable: true,
-                      progress: undefined,
-                      theme: 'light'
-                    });
-                    await fetchloanPaymentList()
-
-
-
-
-
-                  } catch (error) {
-
-                    toast.error(`An error occured.`, {
-                      position: 'top-right',
-                      autoClose: 3000,
-                      hideProgressBar: false,
-                      closeOnClick: true,
-                      pauseOnHover: true,
-                      draggable: true,
-                      progress: undefined,
-                      theme: 'light'
-                    });
-
-                  }
-
-
-
-
-
-                }}
-              >
-                {({
-                  validateForm,
-                  handleSubmit,
-                  handleChange,
-                  handleBlur, // handler for onBlur event of form elements
-                  values,
-                  touched,
-                  errors,
-                  submitForm,
-                  setFieldTouched,
-                  setFieldValue,
-                  setFieldError,
-                  setErrors,
-                  isSubmitting
-                }) => {
-
-                  // console.log({ errors, files })
-                  let hasError1 = errors['proof_of_payment'] && files.proofOfPayment == null;
-                  // {
-                  //   console.log({ selectedPayment })
-                  // }
-                  let formattedPaymentDate = format(selectedPayment.payment_date, 'MMM dd, yyyy hh:mm:a');
-                  return <Form onSubmit={handleSubmit}>
-
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 ">
-
-
-                      {
-
-                      }
-
-                      <Radio
-                        isRequired
-                        label="Action"
-                        name="action" // This should be "loan_type"
-                        value={values.action}
-                        setFieldValue={setFieldValue}
-                        onBlur={handleBlur}
-                        options={[
-                          { value: 'Approved', label: 'Approve' },
-                          { value: 'Rejected', label: 'Reject' }
-                        ]}
-                      />
-
-                      {/* <InputText
-                      isRequired
-                      placeholder=""
-                      label="Status"
-                      name="status"
-                      type="status"
-
-                      value={values.status}
-                      onBlur={handleBlur} // This apparently updates `touched`?
-                    /> */}
-
+                document.getElementById('viewPayment').close();
+                toast.success(`Payment ${values.action} successfully`);
+                await fetchloanPaymentList();
+              } catch (error) {
+                toast.error('An error occurred while updating payment status');
+              }
+            }}
+          >
+            {({ values, handleSubmit }) => (
+              <Form onSubmit={handleSubmit}>
+                <div className="p-6 space-y-6">
+                  {/* Payment Information */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Payment Date</p>
+                      <p className="font-medium">
+                        {new Date(selectedPayment?.payment_date).toLocaleDateString()}
+                      </p>
                     </div>
-
-                    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 ">
-
-                      <InputText
-                        isReadOnly={true}
-                        disabled
-                        isRequired
-                        placeholder=""
-                        label="Payment Date"
-                        name="payment_date"
-                        type="text"
-
-                        value={formattedPaymentDate}
-                        onBlur={handleBlur} // This apparently updates `touched`?
-                      />
-                      <InputText
-                        isReadOnly={true}
-                        disabled
-                        isRequired
-                        placeholder=""
-                        label="Amount to Pay"
-                        name="payment_amount"
-                        type="text"
-
-                        value={values.paid_amount}
-                        onBlur={handleBlur} // This apparently updates `touched`?
-                      />
-
-
-
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Amount Paid</p>
+                      <p className="font-medium">{formatCurrency(selectedPayment?.payment_amount)}</p>
                     </div>
-
-                    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3 ">
-
-
-                      <div className='mt-2'>
-                        <Dropdown
-                          isDisabled
-                          // icons={mdiAccount}
-                          label="Payment Method"
-                          name="payment_method"
-                          placeholder=""
-                          value={values.payment_method}
-                          setFieldValue={setFieldValue}
-                          onBlur={handleBlur}
-                          options={[
-                            {
-                              name: 'Cash',
-                              displayName: 'Cash'
-                            }, {
-                              name: 'Gcash',
-                              displayName: 'Gcash'
-                            },
-                            {
-                              name: 'Bank Transfer',
-                              displayName: 'Bank Transfer'
-                            }].map(val => {
-                              return {
-                                value: val.name,
-                                label: val.displayName
-                              };
-                            })}
-
-                        /></div>
-
-                      <InputText
-                        isReadOnly={true}
-                        disabled
-                        placeholder=""
-                        label="Paid Amount"
-                        name="paid_amount"
-                        type="number"
-
-                        value={values.paid_amount}
-                        onBlur={handleBlur} // This apparently updates `touched`?
-                      />
-                      <InputText
-                        isReadOnly={true}
-                        disabled
-                        isRequired
-                        placeholder=""
-                        label="Reference Number"
-                        name="reference_number"
-                        type="text"
-
-                        value={values.reference_number}
-                        onBlur={handleBlur} // This apparently updates `touched`?
-                      />
-
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Reference Number</p>
+                      <p className="font-medium">{selectedPayment?.reference_number}</p>
                     </div>
-                    <div className="space-y-4">
-                      {/* Borrower's Valid ID */}
-                      <h1 className="font-bold text-lg  mt-4">Upload Proof of Payment</h1>
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Payment Method</p>
+                      <p className="font-medium">{selectedPayment?.payment_method}</p>
+                    </div>
+                  </div>
 
-                      <img
-                        src={selectedPayment.proof_of_payment}
-                        alt="Full-Screen"
-                        className="w-full h-auto max-h-screen object-contain"
-                      />
+                  {/* Proof of Payment */}
+                  <div className="space-y-4">
+                    <h2 className="font-semibold text-lg">Proof of Payment</h2>
+                    <img
+                      src={selectedPayment?.proof_of_payment}
+                      alt="Proof of Payment"
+                      className="w-full max-h-96 object-contain border rounded-lg"
+                    />
+                  </div>
 
-                      {/* <div
-
-                        className={`${hasError1 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
-                          }`}>
-
-
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-
+                  {/* Approval Section */}
+                  {selectedPayment?.payment_status === 'Pending' && (
+                    <div className="space-y-4 border-t pt-4">
+                      <h2 className="font-semibold text-lg">Payment Approval</h2>
+                      <div className="flex gap-4">
+                        <button
+                          type="submit"
+                          onClick={() => {
+                            values.action = 'Approved';
+                            handleSubmit();
+                          }}
+                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                        >
+                          Approve Payment
+                        </button>
+                        <button
+                          type="submit"
+                          onClick={() => {
+                            values.action = 'Rejected';
+                            handleSubmit();
+                          }}
+                          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                        >
+                          Reject Payment
+                        </button>
+                      </div>
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Remarks
                         </label>
-                        <DropzoneArea
-                          fieldName="proofOfPayment"
-                          files={files}
-                          dropzoneProps={dropzoneProps("proofOfPayment")}
-                          setFieldValue={setFieldValue}
-                          errors={errors}
+                        <Field
+                          as="textarea"
+                          name="remarks"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                          rows="3"
                         />
-                        {errors.proofOfPayment && <p className="text-red-500 text-sm mt-2">{errors.proofOfPayment}</p>}
-                      </div> */}
-
-
-
-                      {/* Submit */}
-                      <button
-                        type="submit"
-                        // disabled={isSubmitting}
-                        className="mt-4 px-4 py-2 bg-blue-950 text-white"
-
-                      >
-                        Submit
-                      </button>
+                      </div>
                     </div>
-                  </Form>
-
-
-                }}</Formik>
-            }
-
-          </div>
+                  )}
+                </div>
+              </Form>
+            )}
+          </Formik>
         </div>
-
-      </dialog >
+      </dialog>
       {/* DaisyUI Modal */}
       {
         selectedImage && (
