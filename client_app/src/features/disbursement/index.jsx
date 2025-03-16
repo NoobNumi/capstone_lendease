@@ -182,12 +182,19 @@ function LoanApplication() {
   };
 
   const dropzoneProps = (fieldName) => ({
-    onDrop: (files) => onDrop(files, fieldName),
-    accept: {
-      "image/*": [".jpeg", ".png", ".jpg"],
-      "application/pdf": [".pdf"],
+    onDrop: (acceptedFiles) => {
+      if (acceptedFiles.length > 0) {
+        setFiles(prev => ({
+          ...prev,
+          [fieldName]: acceptedFiles[0]
+        }));
+        setFieldValue(fieldName, acceptedFiles[0]);
+      }
     },
-    multiple: false,
+    accept: {
+      'image/*': ['.jpeg', '.png', '.jpg']
+    },
+    maxSize: 5 * 1024 * 1024 // 5MB
   });
 
   const [file, setFile] = useState(null);
@@ -936,44 +943,77 @@ function LoanApplication() {
 
 
   const DropzoneArea = ({ fieldName, files, dropzoneProps, setFieldValue, errors }) => {
+    const [preview, setPreview] = useState(null);
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
       ...dropzoneProps,
       onDrop: (acceptedFiles) => {
-
-        setFieldValue(fieldName, acceptedFiles[0]);
         if (acceptedFiles.length > 0) {
-          // Update files state with the new file
-          setFiles((prevFiles) => ({
-            ...prevFiles,
-            [fieldName]: acceptedFiles[0],
+          const file = acceptedFiles[0];
+          setFiles(prev => ({
+            ...prev,
+            [fieldName]: file
           }));
+          setFieldValue(fieldName, file);
+
+          // Create preview URL
+          const previewUrl = URL.createObjectURL(file);
+          setPreview(previewUrl);
         }
       },
     });
 
+    // Cleanup preview URL when component unmounts
+    useEffect(() => {
+      return () => {
+        if (preview) {
+          URL.revokeObjectURL(preview);
+        }
+      };
+    }, [preview]);
 
-    let hasError = errors[fieldName];
     return (
-      <div
-        {...getRootProps()}
-        className={`flex justify-center items-center w-full h-32 p-4 border-2 
-       
-          ${isDragActive ? "border-blue-500" : "border-gray-300"
-          } border-dashed rounded-md text-sm cursor-pointer`}
-      >
-        <input {...getInputProps()} />
-        <div>
-          {files[fieldName] ? (
-            <p className="text-gray-700">
-              {files[fieldName].name} <span className="text-green-500">(Selected)</span>
-            </p>
-          ) : (
-            <p className="text-gray-500">
-              Drag and drop a file here, or click to select a file.
-            </p>
-          )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        {/* File Preview */}
+        {(preview || files[fieldName]) && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-600">New Upload Preview:</p>
+            <div className="relative h-48 rounded-lg border border-gray-300 overflow-hidden bg-gray-100 flex justify-center items-center">
+              <img
+                src={preview || URL.createObjectURL(files[fieldName])}
+                alt="Upload preview"
+                className="w-full h-full object-contain"
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-2">
+                <p className="text-white text-xs truncate text-center">
+                  {files[fieldName]?.name}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Drop Zone */}
+        <div
+          {...getRootProps()}
+          className={`mt-6 flex flex-col justify-center items-center w-full h-48 p-6 border-2 
+          ${isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-gray-50"}
+          border-dashed rounded-lg text-sm cursor-pointer transition hover:bg-gray-100`}
+        >
+          <input {...getInputProps()} />
+          <div className="text-center space-y-2">
+            {files[fieldName] ? (
+              <p className="text-gray-700 font-medium">Click or drag to change file</p>
+            ) : (
+              <>
+                <p className="text-gray-500">Drag & drop a file here</p>
+                <p className="text-gray-500">or click to select a file</p>
+              </>
+            )}
+          </div>
         </div>
       </div>
+
     );
   };
 
@@ -1636,78 +1676,45 @@ function LoanApplication() {
                       let hasError2 = errors['bankStatement'];
                       let hasError3 = errors['coMakersValidID'];
                       return (
-                        <div className="space-y-4">
-                          {/* Borrower's Valid ID */}
-                          <h1 className="font-bold text-lg text-center">Upload Supporting Documents</h1>
-                          <div
+                        <div className="space-y-4 mt-4">
+                          <h1 className="font-bold text-lg text-center">Upload Proof of Disbursement</h1>
 
-                            className={`${hasError1 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
-                              }`}>
+                          {/* Current Proof Display */}
+                          {selectedLoan.proof_of_disbursement && (
+                            <div className="mb-4">
+                              <p className="text-sm font-medium text-gray-600 mb-2">Current Proof:</p>
+                              <div className="h-40 rounded-lg border border-gray-200 overflow-hidden">
+                                <img
+                                  src={selectedLoan.proof_of_disbursement}
+                                  alt="Current proof"
+                                  className="w-full h-full object-contain"
+                                />
+                              </div>
+                            </div>
+                          )}
 
-
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Borrower's Valid ID
-                            </label>
+                          {/* Upload Area with Preview */}
+                          <div className={`${hasError1 ? "border-2 border-red-500 p-4" : ""} rounded-lg`}>
                             <DropzoneArea
                               fieldName="borrowerValidID"
                               files={files}
-                              dropzoneProps={dropzoneProps("borrowerValidID")}
+                              dropzoneProps={{
+                                ...dropzoneProps("borrowerValidID"),
+                                accept: {
+                                  'image/*': ['.jpeg', '.png', '.jpg']
+                                }
+                              }}
                               setFieldValue={setFieldValue}
                               errors={errors}
                             />
-                            {errors.borrowerValidID && <p className="text-red-500 text-sm mt-2">{errors.borrowerValidID}</p>}
+                            {errors.borrowerValidID && (
+                              <p className="text-red-500 text-xs mt-2">{errors.borrowerValidID}</p>
+                            )}
                           </div>
 
-                          {/* Bank Statement */}
-                          <div
-
-                            className={`${hasError2 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
-                              }`}>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Bank Statement
-                            </label>
-                            <DropzoneArea
-                              fieldName="bankStatement"
-                              files={files}
-                              dropzoneProps={dropzoneProps("bankStatement")}
-                              setFieldValue={setFieldValue}
-                              errors={errors}
-                            />
-                            {errors.bankStatement && <p className="text-red-500 text-sm mt-2">{errors.bankStatement}</p>}
-                          </div>
-
-                          {/* Co-maker's Valid ID */}
-                          <div
-
-                            className={`${hasError2 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
-                              }`}>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Co-maker's Valid ID
-                            </label>
-                            <DropzoneArea
-                              fieldName="coMakersValidID"
-                              files={files}
-                              dropzoneProps={dropzoneProps("coMakersValidID")}
-                              setFieldValue={setFieldValue}
-                              errors={errors}
-                            />
-
-                            {errors.coMakersValidID && <p className="text-red-500 text-sm mt-2">{errors.coMakersValidID}</p>}
-                          </div>
-
-                          {/* Submit */}
-                          {/* <button
-                          type="button"
-                          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                          onClick={() => {
-                            //console.log({ files })
-
-
-
-                          }}
-                        >
-                          Submit
-                        </button> */}
+                          <p className="text-xs text-gray-500 text-center">
+                            Accepted formats: JPG, PNG (Max size: 5MB)
+                          </p>
                         </div>
                       );
 
@@ -1779,6 +1786,7 @@ function LoanApplication() {
                                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                                   <div className='mt-2'>
                                     <Dropdown
+
                                       // icons={mdiAccount}
                                       label="Bank/E-Wallet Name"
                                       name="disbursement_bank_or_wallet_name"
@@ -1811,18 +1819,11 @@ function LoanApplication() {
 
                                     />
                                   </div>
-                                  {/* <InputText
-                                    isRequired
-                                    placeholder="Bank/E-Wallet Name"
-                                    label="Bank/E-Wallet Name"
-                                    name="disbursement_bank_or_wallet_name"
-                                    type="text"
-                                    value={values.disbursement_bank_or_wallet_name}
-                                    onBlur={handleBlur}
-                                  // onChange={(e) => setFieldValue('disbursement_bank_or_wallet_name', e.target.value)}
-                                  /> */}
+
 
                                   <InputText
+                                    isReadOnly
+                                    disabled
                                     isRequired
                                     placeholder="Account Name"
                                     label="Account Name"
@@ -1833,6 +1834,8 @@ function LoanApplication() {
                                   // onChange={(e) => setFieldValue('disbursement_account_name', e.target.value)}
                                   />
                                   <InputText
+                                    isReadOnly
+                                    disabled
                                     isRequired
                                     placeholder="Account Number"
                                     label="Account Number"
@@ -1895,7 +1898,7 @@ function LoanApplication() {
                             className="h-5 w-5 text-blue-500"
                           />
                           <label htmlFor="terms" className="ml-2 text-smf text-gray-700">
-                            I further certify that the cited information’s are the best of my knowledge tru, correct, and voluntary
+                            I further certify that the cited information's are the best of my knowledge tru, correct, and voluntary
                           </label>
                         </div>
                       </div>
@@ -2075,13 +2078,9 @@ function LoanApplication() {
 
 
             >✕</button>
-            <div className="bg-white p-1 rounded-full shadow-lg bg-gradient-to-r from-gray-200 to-gray-300 z-10 text-blue-950 border bg-white rounded flex items-center space-x-4">
-              <img
-                src="/LOGO.png"
-                alt="Logo"
-                className="w-20 h-20 rounded-full border-2 border-blue-950"
-              />
-              <p className="font-bold text-lg">Loan Disbursement</p>
+            <div className="bg-white p-4 rounded-full shadow-lg bg-gradient-to-r from-gray-200 to-gray-300 z-10 text-blue-950 border bg-white rounded flex items-center space-x-4">
+
+              <p className="font-bold text-lg">Loan Disbursements</p>
             </div>
             {
               console.log({ selectedLoan })
@@ -2094,11 +2093,11 @@ function LoanApplication() {
                 disbursement_account_name: selectedLoan.disbursement_account_name,
                 disbursement_account_number: selectedLoan.disbursement_account_number,
                 borrowerValidID: null,
-                amount: selectedLoan.amount
+                amount: selectedLoan.loan_amount
               }}
               validationSchema={Yup.object({
-                amount: Yup.number()
-                  .required('Required'),
+                // amount: Yup.number()
+                //   .required('Required'),
                 // .test('amount-equal-loan', 'Amount must be equal to loan amount', function (value) {
                 //   const { loan_amount } = this.parent;
                 //   return selectedLoan.loan_amount === value;
@@ -2300,7 +2299,7 @@ function LoanApplication() {
                             label="Disbursed Amount"
                             name="amount"
                             type="text"
-                            value={values.amount}
+                            value={values.loan_amount}
                             onBlur={handleBlur}
                           // onChange={(e) => setFieldValue('disbursement_account_name', e.target.value)}
                           />    </div>
@@ -2310,23 +2309,27 @@ function LoanApplication() {
 
                     <div className="space-y-4 mt-4">
                       {/* Borrower's Valid ID */}
-                      <h1 className="font-bold text-lg text-center">Upload Proof of Disbursement</h1>
-                      {selectedLoan.proof_of_disbursement && <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                        <div key={1} className="flex flex-col items-center">
-                          <div
-                            className="relative aspect-square w-full rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer"
-                          // onClick={() => setSelectedImage(doc.src)}
-                          >
-                            <img
-                              src={selectedLoan.proof_of_disbursement}
-                              alt={''}
-                              className="object-cover w-full h-full"
-                            />
+                      <h1 className="font-bold text-lg text-center">Upload Proof of Disbursements</h1>
+                      {/* {selectedLoan.proof_of_disbursement && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+                          <div key={1} className="flex flex-col items-center">
+                            <div
+                              className="relative aspect-square w-full max-w-sm rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 hover:scale-105 cursor-pointer border border-gray-300"
+                            // onClick={() => setSelectedImage(doc.src)}
+                            >
+                              <img
+                                src={selectedLoan.proof_of_disbursement}
+                                alt="Proof of Disbursement"
+                                className="object-cover w-full h-full"
+                              />
+                            </div>
+                            <span className="mt-3 text-sm text-gray-600 font-medium">
+                              Proof of Disbursement
+                            </span>
                           </div>
-                          {/* <span className="mt-2 text-sm text-gray-600">{doc.label}</span> */}
                         </div>
-                      </div>
-                      }
+                      )} */}
+
                       <div
 
                         className={`${hasError1 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
@@ -2337,7 +2340,12 @@ function LoanApplication() {
                         <DropzoneArea
                           fieldName="borrowerValidID"
                           files={files}
-                          dropzoneProps={dropzoneProps("borrowerValidID")}
+                          dropzoneProps={{
+                            ...dropzoneProps("borrowerValidID"),
+                            accept: {
+                              'image/*': ['.jpeg', '.png', '.jpg']
+                            }
+                          }}
                           setFieldValue={setFieldValue}
                           errors={errors}
                         />

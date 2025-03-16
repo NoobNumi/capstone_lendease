@@ -986,7 +986,7 @@ function LoanApplication() {
                   alt="Logo"
                   className="w-20 h-20 rounded-full border-2 border-blue-950"
                 />
-                <p className="font-bold text-lg">New Loan Application</p>
+                <p className="font-bold text-lg">sNew Loan Application</p>
               </div>
 
             </div>

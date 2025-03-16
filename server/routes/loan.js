@@ -203,81 +203,179 @@ SELECT borrower_id  FROM user_account WHERE user_id = ?
   return rows[0].borrower_id;
 };
 
+// Enhanced loan evaluation endpoint
 router.post('/checkLoanApplicationApprovalRate', async (req, res) => {
-  let loan_application_id = req.body.loan_application_id; // User loan application details
-  let application = req.body.application; // User loan application details
-  const loanType = req.body.loanType; // Example: "personal", "business", "mortgage"
-
   try {
-    const [rows] = await db.query(
-      `
-  
- SELECT b.*, l.loan_amount
-  FROM borrower_account b JOIN loan l ON b.borrower_id = l.borrower_id 
- WHERE l.loan_id = ?;
-        
-         
-         `,
+    const { loan_application_id } = req.body;
+
+    // Fetch loan application details
+    const [loanDetails] = await db.query(
+      `SELECT l.*, b.monthly_income, b.credit_score, b.employment_years 
+       FROM loan l 
+       JOIN borrower_account b ON l.borrower_id = b.borrower_id 
+       WHERE l.loan_id = ?`,
       [loan_application_id]
     );
 
-    // Default parameters for loan evaluation
-    const loanParameters = {
-      personal: {
-        minCreditScore: 700,
-        minMonthlyIncome: 15000,
-        maxLoanToIncomeRatio: 0.5,
-        minEmploymentYears: 2
-      }
-    };
-
-    // Select parameters based on loan type
-    const selectedParameters =
-      loanParameters[loanType] || loanParameters['personal'];
-
-    // // Validate application input
-    // if (
-    //   !application ||
-    //   !application.creditScore ||
-    //   !application.monthlyIncome ||
-    //   !application.loanAmount ||
-    //   application.employmentYears === undefined
-    // ) {
-    //   return res.status(400).json({
-    //     error:
-    //       'Provide all required fields: creditScore, monthlyIncome, loanAmount, employmentYears.'
-    //   });
-    // }
-
-    // Evaluate the loan application with detailed breakdown
-
-    let borrowerInfo = rows[0];
-
-    application = {
-      creditScore: borrowerInfo.credit_score,
-      monthlyIncome: borrowerInfo.monthly_income,
-      loanAmount: borrowerInfo.loan_amount,
-      employmentYears: borrowerInfo.employment_years
-    };
-    const result = evaluateLoanApplicationWithDetailedBreakdown(
-      application,
-      selectedParameters
+    // Fetch loan parameters
+    const [parameters] = await db.query(
+      `SELECT * FROM loan_setting_parameters WHERE loan_type = ?`,
+      ['personal']
     );
 
-    res.status(201).json({
-      success: true,
-      data: {
-        result
+    const param = parameters[0];
+    const loan = loanDetails[0];
+
+    // Detailed calculations with explanations
+    const creditScoreCalc = {
+      actual: loan.credit_score,
+      required: param.min_credit_score,
+      percentage: Number(
+        Math.min(
+          (loan.credit_score / param.min_credit_score) * 100,
+          100
+        ).toFixed(2)
+      ),
+      formula: 'Credit Score / Required Credit Score × 100',
+      explanation: `${loan.credit_score} / ${param.min_credit_score} × 100 = ${(
+        (loan.credit_score / param.min_credit_score) *
+        100
+      ).toFixed(2)}%`
+    };
+
+    const incomeCalc = {
+      actual: Number(loan.monthly_income.toFixed(2)),
+      required: Number(param.min_monthly_income.toFixed(2)),
+      percentage: Number(
+        Math.min(
+          (loan.monthly_income / param.min_monthly_income) * 100,
+          100
+        ).toFixed(2)
+      ),
+      formula: 'Monthly Income / Required Monthly Income × 100',
+      explanation: `₱${loan.monthly_income.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })} / ₱${param.min_monthly_income.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })} × 100 = ${(
+        (loan.monthly_income / param.min_monthly_income) *
+        100
+      ).toFixed(2)}%`
+    };
+
+    const loanToIncomeRatio = Number(
+      ((loan.loan_amount / (loan.monthly_income * 12)) * 100).toFixed(2)
+    );
+    const maxAllowedRatio = Number(param.loan_to_income_ratio.toFixed(2));
+
+    console.log({ maxAllowedRatio });
+    const loanToIncomeCalc = {
+      required: Number(param.loan_to_income_ratio.toFixed(2)),
+      actual: loanToIncomeRatio,
+      maximum: maxAllowedRatio,
+      percentage: Number(
+        Math.min(
+          ((maxAllowedRatio - loanToIncomeRatio) / maxAllowedRatio) * 100,
+          100
+        ).toFixed(2)
+      ),
+      formula: '((Maximum Ratio - Actual Ratio) / Maximum Ratio) × 100',
+      explanation: `Loan Amount: ₱${loan.loan_amount.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })}\nAnnual Income: ₱${(loan.monthly_income * 12).toLocaleString(
+        'en-US',
+        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+      )}\nActual Ratio: ${loanToIncomeRatio.toFixed(
+        2
+      )}%\nMax Allowed: ${maxAllowedRatio.toFixed(2)}%`
+    };
+
+    const employmentCalc = {
+      actual: Number(loan.employment_years.toFixed(2)),
+      required: Number(param.employment_years.toFixed(2)),
+      percentage: Number(
+        Math.min(
+          (loan.employment_years / param.employment_years) * 100,
+          100
+        ).toFixed(2)
+      ),
+      formula: 'Employment Years / Required Years × 100',
+      explanation: `${loan.employment_years.toFixed(
+        2
+      )} years / ${param.employment_years.toFixed(2)} years × 100 = ${(
+        (loan.employment_years / param.employment_years) *
+        100
+      ).toFixed(2)}%`
+    };
+
+    // Calculate overall percentage with weightage
+    const weights = {
+      creditScore: 0.3,
+      income: 0.25,
+      loanToIncome: 0.25,
+      employment: 0.2
+    };
+
+    const overallPercentage =
+      creditScoreCalc.percentage * weights.creditScore +
+      incomeCalc.percentage * weights.income +
+      loanToIncomeCalc.percentage * weights.loanToIncome +
+      employmentCalc.percentage * weights.employment;
+
+    const approved = overallPercentage >= 70;
+
+    const response = {
+      approved,
+      overallApprovalPercentage: overallPercentage,
+      message: approved
+        ? 'Loan application meets all required criteria'
+        : 'Loan application needs improvement in some areas',
+      breakdown: {
+        creditScore: {
+          ...creditScoreCalc,
+          weight: `${weights.creditScore * 100}%`,
+          weightedScore: (
+            creditScoreCalc.percentage * weights.creditScore
+          ).toFixed(2)
+        },
+        income: {
+          ...incomeCalc,
+          weight: `${weights.income * 100}%`,
+          weightedScore: (incomeCalc.percentage * weights.income).toFixed(2)
+        },
+        loanToIncome: {
+          ...loanToIncomeCalc,
+          weight: `${weights.loanToIncome * 100}%`,
+          weightedScore: (
+            loanToIncomeCalc.percentage * weights.loanToIncome
+          ).toFixed(2)
+        },
+        employment: {
+          ...employmentCalc,
+          weight: `${weights.employment * 100}%`,
+          weightedScore: (
+            employmentCalc.percentage * weights.employment
+          ).toFixed(2)
+        }
       }
+    };
+
+    res.json({
+      success: true,
+      data: { result: response }
     });
-  } catch (err) {
-    console.error(err); // Log the error for debugging
+  } catch (error) {
+    console.error('Error in loan evaluation:', error);
     res.status(500).json({
       success: false,
-      message: 'An error occurred. Please try again later.'
+      error: 'Failed to evaluate loan application'
     });
   }
 });
+
 router.post(
   '/create',
   authenticateUserMiddleware,
@@ -842,6 +940,99 @@ router.post(
       res.status(500).json({
         error: 'Error submitting payment'
       });
+    }
+  }
+);
+
+// Get all payments for a loan
+router.get('/:loanId/payments', async (req, res) => {
+  try {
+    const { loanId } = req.params;
+
+    const query = `
+      SELECT * FROM payment 
+      WHERE loan_id = ? 
+      ORDER BY selectedTableRowIndex ASC
+    `;
+
+    const [rows] = await db.query(query, [loanId]);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error in GET /payments:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get payment details
+router.get('/:loanId/payments/:paymentId', async (req, res) => {
+  try {
+    const { loanId, paymentId } = req.params;
+
+    const query = `
+      SELECT 
+        p.*,
+        DATE_FORMAT(p.payment_date, '%Y-%m-%d %H:%i:%s') as formatted_payment_date
+      FROM payment p
+      WHERE p.loan_id = ? AND p.payment_id = ?
+    `;
+
+    const [rows] = await db.query(query, [loanId, paymentId]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error in GET /payments/:paymentId:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update payment status (for admin/officer approval)
+router.patch(
+  '/payments/:paymentId/status',
+  authenticateUserMiddleware,
+  async (req, res) => {
+    try {
+      const { paymentId } = req.params;
+      const { status, remarks, loanId } = req.body;
+      const userId = req.user.id; // From auth middleware
+
+      // Validate status
+      if (!['Approved', 'Rejected'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+      }
+
+      const query = `
+      UPDATE payment 
+      SET 
+        payment_status = ?,
+        loan_officer_id = ?,
+        remarks = ?,
+        approval_or_rejected_date = NOW()
+      WHERE payment_id = ? AND loan_id = ?
+    `;
+
+      const [result] = await db.query(query, [
+        status,
+        userId,
+        remarks,
+        paymentId,
+        loanId
+      ]);
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Payment not found' });
+      }
+
+      res.json({
+        message: `Payment ${status.toLowerCase()} successfully`,
+        status: status
+      });
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   }
 );

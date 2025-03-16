@@ -105,6 +105,12 @@ const TopSideButtons = ({ removeFilter, applyFilter, applySearch, faqList }) => 
     }
   }, [searchText]);
   let loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+
+
+
+  let isCollector = loggedInUser.role === 'Collector';
+
+
   return (
     <div className="inline-block float-right">
       {/* <SearchBar
@@ -122,10 +128,14 @@ const TopSideButtons = ({ removeFilter, applyFilter, applySearch, faqList }) => 
       )} */}
       {/* <div className="badge badge-neutral mr-2 px-2 p-4 text-blue-950 px-2 py-4 bg-white">Total : {faqList.length}</div> */}
 
-      <button className="btn btn-outline bg-customBlue text-white" onClick={() => document.getElementById('addLoan').showModal()}>
-        Add
-        <PlusCircleIcon className="h-6 w-6 text-white-500" />
-      </button>
+      {
+        !isCollector && <button className="btn btn-outline bg-customBlue text-white" onClick={() => document.getElementById('addLoan').showModal()}>
+          Add
+          <PlusCircleIcon className="h-6 w-6 text-white-500" />
+        </button>
+      }
+
+
 
       {/* 
       <button

@@ -49,6 +49,7 @@ import { FaCheckCircle } from "react-icons/fa"; // Font Awesome icon
 
 
 import LoanCalculator from "./../loanApplication/loanCalculator";
+import PaymentsLogicView from "./../loanApplication/PaymentsLogicView";
 import { format, formatDistance, formatRelative, subDays } from 'date-fns';
 
 import { formatAmount } from '../dashboard/helpers/currencyFormat';
@@ -273,78 +274,132 @@ const LoanEvaluationResult = ({ result, loanDetails }) => {
 
 
   return isLoaded && (
-    <div className="max-w-3xl mx-auto p-8 bg-white shadow-lg rounded-xl">
-      <h2 className="text-2xl font-semibold text-center mb-6 text-gray-800">
-
-        Overall Approval Percentage: {overallApprovalPercentage.toFixed(1)}%
-
-      </h2>
-
-      {/* Overall Approval Status */}
-      <div className="mb-4">
-        {/* <h3
-          className={`text-2xl font-bold ${approved ? 'text-green-600' : 'text-red-600'
-            }`}
-        >
-          {message}
-        </h3> */}
-
-        <Alert
-          type={
-            approved ? 'success' : 'error'
-          } // Can be "success", "error", "info", "warning"
-          title={
-            approved ? 'APPROVED' : 'DENIED'
-          }
-          description={message}
-
-        />
-
-
-        {/* Overall Progress Bar */}
-        {/* <div className="mt-4">
-          <div
-            className={`w-full h-2 rounded-full ${progressBarClass(
-              overallApprovalPercentage
-            )}`}
-            style={{ width: `${overallApprovalPercentage}%` }}
-          ></div>
-        </div> */}
+    <div className="max-w-4xl mx-auto p-8 bg-white shadow-lg rounded-xl">
+      {/* Overall Score Section */}
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">
+          Loan Evaluation Score
+        </h2>
+        <div className="relative w-40 h-40 mx-auto">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-3xl font-bold text-gray-800">
+              {Number(overallApprovalPercentage).toFixed(2)}%
+            </div>
+          </div>
+          <svg className="transform -rotate-90 w-40 h-40">
+            <circle
+              className="text-gray-200"
+              strokeWidth="8"
+              stroke="currentColor"
+              fill="transparent"
+              r="70"
+              cx="80"
+              cy="80"
+            />
+            <circle
+              className={`${approved ? 'text-green-500' : 'text-orange-500'}`}
+              strokeWidth="8"
+              strokeDasharray={440}
+              strokeDashoffset={440 - (440 * overallApprovalPercentage) / 100}
+              strokeLinecap="round"
+              stroke="currentColor"
+              fill="transparent"
+              r="70"
+              cx="80"
+              cy="80"
+            />
+          </svg>
+        </div>
       </div>
 
-      {/* Breakdown Sections */}
-      <div className="space-y-6">
-        {Object.keys(breakdown).map((key) => {
-          const item = breakdown[key];
-          // console.log(item.percentage); // Debug: check if percentage is correct
-          return (
-            <div key={key}>
-              <p className="text-lg font-semibold text-gray-700 capitalize">{key.replace(/([A-Z])/g, ' $1')}</p>
-              <div className="relative pt-1">
-                <div className="flex mb-2 items-center justify-between">
-                  <span className="text-sm text-gray-500">{item.message}</span>
-                  <span className="font-medium">{item.percentage}%</span>
-                </div>
-                <div className="flex mb-4">
+      {/* Approval Status */}
+      <Alert
+        type={approved ? 'success' : 'warning'}
+        title={approved ? 'APPROVED' : 'NEEDS REVIEW'}
+        description={message}
+      />
 
+      {/* Detailed Breakdown */}
+      <div className="mt-8 space-y-6">
+        {Object.entries(breakdown).map(([key, item]) => (
+          <div key={key} className="bg-gray-50 rounded-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800 capitalize">
+                {key.replace(/([A-Z])/g, ' $1')}
+              </h3>
+              <span className="text-sm text-gray-500">
+                Weight: {item.weight}
+              </span>
+            </div>
 
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={` rounded-full h-2 ${progressBarClass(item.percentage)}`}
-                      style={{ width: `${item.percentage}%` }} // Dynamic width based on percentage
-                    ></div>
-                  </div>
-
-                </div>
+            {/* Progress Bar */}
+            <div className="relative pt-1">
+              <div className="flex mb-2 items-center justify-between">
+                <span className="text-sm font-medium text-gray-600">
+                  Score: {Number(item.percentage).toFixed(2)}%
+                </span>
+                <span className="text-sm font-medium text-blue-600">
+                  Weighted: {Number(item.weightedScore).toFixed(2)}%
+                </span>
+              </div>
+              <div className="overflow-hidden h-2 bg-gray-200 rounded">
+                <div
+                  className={`h-full rounded ${item.percentage >= 80 ? 'bg-green-500' :
+                    item.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                  style={{ width: `${item.percentage}%` }}
+                />
               </div>
             </div>
-          );
-        })}
+
+            {/* Calculation Details */}
+            <div className="mt-4 bg-white rounded p-4 border border-gray-200">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600">Actual Value:</p>
+                  <p className="font-medium">
+                    {typeof item.actual === 'number'
+                      ? item.actual.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      })
+                      : item.actual}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Required Value:</p>
+                  <p className="font-medium">
+                    {typeof item.required === 'number'
+                      ? item.required.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      })
+                      : item.required}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t">
+                <p className="text-gray-600 text-sm">Formula:</p>
+                <p className="font-mono text-sm bg-gray-50 p-2 rounded mt-1">
+                  {item.formula}
+                </p>
+                <p className="text-gray-600 text-sm mt-2">Calculation:</p>
+                <p className="font-mono text-sm bg-gray-50 p-2 rounded mt-1 whitespace-pre-line">
+                  {item.explanation}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="mt-8">
-        <p className="text-center text-sm text-gray-500">
-          Note: The loan application is evaluated based on credit score, monthly income, loan-to-income ratio, and employment years.
+      {/* Summary Footer */}
+      <div className="mt-8 bg-blue-50 p-4 rounded-lg">
+        <h4 className="font-semibold text-blue-800 mb-2">How is the score calculated?</h4>
+        <p className="text-sm text-blue-600">
+          The overall score is a weighted average of four key factors:
+          Credit Score (30%), Monthly Income (25%), Loan-to-Income Ratio (25%), and Employment History (20%).
+          A minimum score of 70% is required for automatic approval.
         </p>
       </div>
     </div>
@@ -442,14 +497,22 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
     <div className="w-full max-w-6xl mx-auto p-4">
       <div className="bg-white shadow-lg rounded-xl overflow-hidden">
 
+
         {
-          !loanDetails.proof_of_disbursement && <div className="mt-4 col-span-2 mb-2">
+          console.log({ loanDetails: loanDetails.loan_status })
+        }
+
+        {/* {
+          (loanDetails.loan_status !== 'Rejected' || loanDetails.loan_status !== 'Pending') &&
+
+          <div className="mt-4 col-span-2 mb-2">
             <div className="bg-yellow-100 border border-yellow-500 text-yellow-700 p-4 rounded">
               <p className="font-semibold">Info:</p>
               <p>Please wait while we process the disbursement.</p>
             </div>
           </div>
-        }
+        } */}
+
 
         {
           loanDetails.proof_of_disbursement && <div className="mt-4 col-span-2 mb-2">
@@ -595,7 +658,7 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
                 paymentList={paymentList}
               />
 
-              {/* {loanDetails.loan_id && <ToPrint
+              {loanDetails.loan_id && <ToPrint
 
                 calculatorInterestRate={formikProps.values.calculatorInterestRate}
                 selectedLoan={loanDetails}
@@ -606,13 +669,13 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
                 setPaymentList={setPaymentList}
                 setIsGridView={setIsGridView}
                 isGridView={isGridView}
-              />} */}
+              />}
 
               {loanDetails.loan_id &&
 
 
-                <LoanCalculator
-                  isGridView={isGridView}
+                <PaymentsLogicView
+                  isGridView={true}
                   {...formikProps}
                   isReadOnly={true}
                   calculatorLoanAmmount={formikProps.values.calculatorLoanAmmount}

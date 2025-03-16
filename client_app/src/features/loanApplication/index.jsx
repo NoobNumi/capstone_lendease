@@ -1072,14 +1072,7 @@ function LoanApplication() {
             </form>
             <div>
 
-              <div className="bg-white p-1 rounded-full shadow-lg bg-gradient-to-r from-gray-200 to-gray-300 z-10 text-blue-950 border bg-white rounded flex items-center space-x-4">
-                <img
-                  src="/LOGO.png"
-                  alt="Logo"
-                  className="w-20 h-20 rounded-full border-2 border-blue-950"
-                />
-                <p className="font-bold text-lg">New Loan Application</p>
-              </div>
+              <h2 className="font-bold text-2xl text-blue-950">New Loan Application</h2>
 
             </div>
 
@@ -2040,7 +2033,7 @@ function LoanApplication() {
                         }
                       },
                       {
-                        label: 'Supporting Documents', content: () => {
+                        label: 'Supporting Documents Here', content: () => {
                           return <SupportingDocuments />
                         }
                       },

@@ -561,205 +561,141 @@ function Table({ columns, data, searchField }) {
       {/* table */}
       <div className="mt-2 flex flex-col p-0">
         <div className="-my-2 overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8">
-          <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8 ">
-            <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-              <table
-                {...getTableProps()}
-                className="w-full divide-y divide-gray-200 table-sm z-10">
-                <thead className="bg-gray-50">
+          <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+            <div className="shadow-lg rounded-xl border border-gray-200 bg-white overflow-hidden">
+              <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 table-sm">
+                <thead>
                   {headerGroups.map(headerGroup => (
-                    <tr {...headerGroup.getHeaderGroupProps()}>
-                      {headerGroup.headers.map(column => {
-                        // Add the sorting props to control sorting. For this example
-                        // we can add them into the header props
-
-                        // let columnsArray = [
-                        //   'Requested Amount',
-                        //   'Total Deduction',
-                        //   'Withdrawable Amount'
-                        // ];
-
-                        // let hasCheck = columnsArray.includes(column.Header);
-
-                        // if (hasCheck) {
-                        //   {
-                        //     column.render('Footer');
-                        //   }
-                        // }
-                        return (
-                          <th
-                            scope="col"
-                            className="group px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            <div
-                              className="flex items-center justify-between"
-                              {...column.getHeaderProps(
-                                column.getSortByToggleProps()
-                              )}>
+                    <tr {...headerGroup.getHeaderGroupProps()} className="bg-gradient-to-r from-gray-50 to-gray-100">
+                      {headerGroup.headers.map(column => (
+                        <th
+                          scope="col"
+                          className="group px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2">
                               {column.render('Header')}
-                              {/* {column.render('Footer')} */}
-                              {/* Add a sort direction indicator */}
-                              <span>
-                                {column.isSorted ? (
-                                  column.isSortedDesc ? (
-                                    <SortDownIcon className="w-4 h-4 text-gray-400" />
+                              {column.isSorted && (
+                                <span className={`transition-colors duration-200 ${column.isSorted ? 'text-blue-500' : 'text-gray-400'
+                                  }`}>
+                                  {column.isSortedDesc ? (
+                                    <SortDownIcon className="w-4 h-4" />
                                   ) : (
-                                    <SortUpIcon className="w-4 h-4 text-gray-400" />
-                                  )
-                                ) : (
-                                  <SortIcon className="w-4 h-4 text-gray-400 " />
-                                )}
-                              </span>
-
-                              {/* <span>
-                              <SortIcon className="w-4 h-4 text-gray-400 " />
-                            </span> */}
-                            </div>
-                            <div className="">
-                              <div>
-
-                                {column.canFilter && column.Filter
-                                  ? column.render('Filter')
-                                  : null}
-                              </div>
-                              {/* <span>
-                              <SortIcon className="w-4 h-4 text-gray-400 " />
-                            </span> */}
-                            </div>
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody
-                  {...getTableBodyProps()}
-                  className="bg-white divide-y divide-gray-200">
-
-                  {
-                    page.length === 0 && <tr>
-                      <td colSpan="5" className="text-center py-4">
-                        <span>
-                          No data available
-                        </span>
-
-                      </td>
-                    </tr>
-                  }
-                  {page.map((row, i) => {
-                    // new
-                    prepareRow(row);
-                    return (
-                      <tr {...row.getRowProps()}>
-                        {row.cells.map(cell => {
-                          return (
-                            <td
-                              {...cell.getCellProps()}
-                              className="px-6 py-4 whitespace-nowrap"
-                              role="cell">
-                              {cell.column.Cell.name === 'defaultRenderer' ? (
-                                <div className="text-sm text-gray-500">
-                                  {cell.render('Cell')}
-                                </div>
-                              ) : (
-                                cell.render('Cell')
+                                    <SortUpIcon className="w-4 h-4" />
+                                  )}
+                                </span>
                               )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-
-                <tfoot>
-                  {footerGroups.map(group => (
-                    <tr {...group.getFooterGroupProps()}>
-                      {group.headers.map(column => (
-                        <td {...column.getFooterProps()}>
-                          {column.render('Footer')}
-                        </td>
+                            </span>
+                          </div>
+                          {column.canFilter && column.Filter && (
+                            <div className="mt-2">{column.render('Filter')}</div>
+                          )}
+                        </th>
                       ))}
                     </tr>
                   ))}
-                </tfoot>
+                </thead>
+
+                <tbody {...getTableBodyProps()} className="divide-y divide-gray-200 bg-white">
+                  {page.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="5"
+                        className="px-6 py-8 text-center text-gray-500 bg-gray-50"
+                      >
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <svg
+                            className="w-12 h-12 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1}
+                              d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                            />
+                          </svg>
+                          <span className="font-medium">No data available</span>
+                          <span className="text-sm">Try adjusting your search or filters</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    page.map((row, i) => {
+                      prepareRow(row);
+                      return (
+                        <tr
+                          {...row.getRowProps()}
+                          className="odd:bg-white even:bg-gray-50 hover:bg-blue-50/50 transition-colors duration-150"
+                        >
+                          {row.cells.map(cell => (
+                            <td
+                              {...cell.getCellProps()}
+                              className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap"
+                            >
+                              <div className="flex items-center">
+                                {cell.column.Cell.name === 'defaultRenderer' ? (
+                                  <span className="font-medium">{cell.render('Cell')}</span>
+                                ) : (
+                                  cell.render('Cell')
+                                )}
+                              </div>
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
               </table>
             </div>
           </div>
         </div>
       </div>
       {/* Pagination */}
-      <div className="py-3 flex items-center justify-between ">
-        <div className="flex-1 flex justify-between sm:hidden hidden-print">
-          <Button onClick={() => previousPage()} disabled={!canPreviousPage}>
-            Previous
-          </Button>
-          <Button onClick={() => nextPage()} disabled={!canNextPage}>
-            Next
-          </Button>
-        </div>
-        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between hidden-print">
-          <div className="flex gap-x-2 items-baseline hidden-print">
+      <div className="py-4 flex items-center justify-between bg-white border-t border-gray-200">
+        <div className="flex-1 flex justify-between items-center px-4 sm:px-6">
+          <div className="flex items-center gap-2">
             <span className="text-sm text-gray-700">
-              Page <span className="font-medium">{state.pageIndex + 1}</span> of{' '}
-              <span className="font-medium">{pageOptions.length}</span>
+              Showing <span className="font-medium">{page.length}</span> of{' '}
+              <span className="font-medium">{data.length}</span> results
             </span>
-            <label>
-              <span className="sr-only">Items Per Page</span>
-              <select
-                className="p-3 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                value={state.pageSize}
-                onChange={e => {
-                  setPageSize(Number(e.target.value));
-                }}>
-                {[5, 10, 20].map(pageSize => (
-                  <option key={pageSize} value={pageSize}>
-                    Show {pageSize}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <select
+              className="ml-2 px-3 py-1 text-sm border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              value={state.pageSize}
+              onChange={e => setPageSize(Number(e.target.value))}
+            >
+              {[5, 10, 20, 30, 40, 50].map(pageSize => (
+                <option key={pageSize} value={pageSize}>
+                  Show {pageSize}
+                </option>
+              ))}
+            </select>
           </div>
-          <div>
-            <nav
-              className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px hidden-print"
-              aria-label="Pagination">
-              <PageButton
-                className="rounded-l-md"
-                onClick={() => gotoPage(0)}
-                disabled={!canPreviousPage}>
-                <span className="sr-only">First</span>
-                <ChevronDoubleLeftIcon
-                  className="h-5 w-5 text-gray-400"
-                  aria-hidden="true"
-                />
-              </PageButton>
-              <PageButton
-                onClick={() => previousPage()}
-                disabled={!canPreviousPage}>
-                <span className="sr-only">Previous</span>
-                <ChevronLeftIcon
-                  className="h-5 w-5 text-gray-400"
-                  aria-hidden="true"
-                />
-              </PageButton>
-              <PageButton onClick={() => nextPage()} disabled={!canNextPage}>
-                <span className="sr-only">Next</span>
-                <ChevronRightIcon
-                  className="h-5 w-5 text-gray-400"
-                  aria-hidden="true"
-                />
-              </PageButton>
-              <PageButton
-                className="rounded-r-md"
-                onClick={() => gotoPage(pageCount - 1)}
-                disabled={!canNextPage}>
-                <span className="sr-only">Last</span>
-                <ChevronDoubleRightIcon
-                  className="h-5 w-5 text-gray-400"
-                  aria-hidden="true"
-                />
-              </PageButton>
-            </nav>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => previousPage()}
+              disabled={!canPreviousPage}
+              className={`px-3 py-1 text-sm font-medium rounded-md ${!canPreviousPage
+                  ? 'text-gray-400 bg-gray-100'
+                  : 'text-gray-700 bg-white hover:bg-gray-50 border border-gray-300'
+                }`}
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => nextPage()}
+              disabled={!canNextPage}
+              className={`px-3 py-1 text-sm font-medium rounded-md ${!canNextPage
+                  ? 'text-gray-400 bg-gray-100'
+                  : 'text-gray-700 bg-white hover:bg-gray-50 border border-gray-300'
+                }`}
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
