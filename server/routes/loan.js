@@ -880,66 +880,76 @@ router.post(
   upload.single('proof_of_payment'),
   async (req, res) => {
     try {
-      const { loanId } = req.params;
       const {
+        payment_amount,
         payment_method,
         reference_number,
-        amount,
-        selectedTableRowIndex
+        selectedTableRowIndex,
+        includes_past_due,
+        past_due_amount,
+        original_amount,
+        remarks
       } = req.body;
 
-      // Validate required fields
-      if (!req.file || !payment_method || !reference_number || !amount) {
-        return res.status(400).json({
-          error: 'Missing required fields'
-        });
-      }
-
-      // Upload file to Firebase Storage using the existing pattern
-      const storageRef = ref(
-        firebaseStorage,
-        `lendease/loans/${loanId}/payments/${selectedTableRowIndex}/${req.file.originalname}`
-      );
-
-      const metadata = {
-        contentType: req.file.mimetype
-      };
-
-      await uploadBytes(storageRef, req.file.buffer, metadata);
-      const downloadURL = await getDownloadURL(storageRef);
-
       // Insert payment record
-      await db.query(
+      const [result] = await db.query(
         `INSERT INTO payment (
-          loan_id, 
-          payment_method, 
-          reference_number, 
-          payment_amount,
-          proof_of_payment,
-          payment_status,
-          payment_date,
-          selectedTableRowIndex
-        ) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)`,
+        loan_id,
+        payment_amount,
+        payment_method,
+        reference_number,
+        selectedTableRowIndex,
+        proof_of_payment,
+        payment_status,
+        includes_past_due,
+        past_due_amount,
+        original_amount,
+        remarks,
+        past_due_handled
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          loanId,
+          req.params.loanId,
+          payment_amount,
           payment_method,
           reference_number,
-          amount,
-          downloadURL,
+          selectedTableRowIndex,
+          req.file?.filename || null,
           'Pending',
-          selectedTableRowIndex
+          includes_past_due === '1',
+          past_due_amount || 0,
+          original_amount,
+          remarks,
+          includes_past_due === '1' // Mark as handled if it includes past due
         ]
       );
 
-      res.status(200).json({
+      // If payment includes past due, update previous unpaid payments
+      if (includes_past_due === '1') {
+        await db.query(
+          `UPDATE payment   
+         SET past_due_handled = 1,
+             past_due_handled_date = CURRENT_TIMESTAMP,
+             remarks = CONCAT(remarks, ' (Handled in payment ID: ${result.insertId})')
+         WHERE loan_id = ? 
+         AND payment_status = 'Pending'
+         AND selectedTableRowIndex < ?`,
+          [req.params.loanId, selectedTableRowIndex]
+        );
+      }
+
+      res.json({
         success: true,
-        message: 'Payment submitted successfully'
+        message: 'Payment submitted successfully',
+        paymentId: result.insertId
       });
     } catch (error) {
-      console.error('Error submitting payment:', error);
+      console.error('Payment submission error:', error);
       res.status(500).json({
-        error: 'Error submitting payment'
+        success: false,
+        message: 'Failed to submit payment',
+        error: error.message
       });
+    } finally {
     }
   }
 );

@@ -63,11 +63,23 @@ const LoanCalculator = memo(({
       if (!selectedLoan?.loan_id) return;
 
       const response = await axios.get(`/loan/${selectedLoan.loan_id}/payments`);
+      // Check if response has data property and it's an array
+
+      console.log({ response })
       if (response.data) {
         setLoanPaymentList(response.data);
+
+
+        console.log({ dexx: response.data })
+        // Refresh the payments display after updating payment list
+        const updatedPayments = getCombinedPayments(payments, response.data);
+
+
+        setPayments(updatedPayments);
       }
     } catch (error) {
       console.error('Error fetching loan payment list:', error);
+      toast.error('Failed to fetch payment list');
     }
   };
 
@@ -99,11 +111,9 @@ const LoanCalculator = memo(({
 
       // Generate payment schedule
       for (let i = 0; i < calculatorMonthsToPay; i++) {
-        // Calculate payment date - same day each month
         const paymentDate = new Date(startDate);
         paymentDate.setMonth(startDate.getMonth() + i);
 
-        // Calculate amounts
         const payment = {
           transactionDate: paymentDate.toISOString(),
           principal: remainingPrincipal,
@@ -115,14 +125,11 @@ const LoanCalculator = memo(({
           amountPrincipal: monthlyPrincipal
         };
 
-        // Update remaining amounts
         remainingBalance -= monthlyPayment;
         remainingPrincipal -= monthlyPrincipal;
-
         paymentDetails.push(payment);
       }
 
-      // Set payments state
       setPayments(paymentDetails);
       if (setPaymentList) {
         setPaymentList(paymentDetails);
@@ -145,12 +152,12 @@ const LoanCalculator = memo(({
     let pastDueMonths = [];
     let firstUnpaidIndex = -1;
 
-    // Map payment statuses
+    // Map payment statuses considering is_paid flag
     const paymentHistory = payments.map((_, index) => {
       const payment = loanPaymentList.find(p => p.selectedTableRowIndex === index + 1);
       const dueDate = new Date(payments[index].transactionDate);
 
-      if (payment?.payment_status === 'Approved') {
+      if (payment?.payment_status === 'Approved' || payment?.is_paid === 1) {
         return 'paid';
       } else if (dueDate < today) {
         if (firstUnpaidIndex === -1) firstUnpaidIndex = index;
@@ -216,32 +223,35 @@ const LoanCalculator = memo(({
 
   const handlePayNowButtonClick = async (payment, index, isQRCode = false) => {
     try {
-      setSelectedPayment({
-        ...payment,
-        selectedTableRowIndex: index
-      });
-      setSelectedIndex(index);
+      // Get QR code details to ensure correct amount calculation
+      const qrDetails = getQRCodeDetails(payments, loanPaymentList);
 
-      // If it's from QR code, handle QR-specific logic
-      if (isQRCode) {
-        const qrDetails = getQRCodeDetails(payments, loanPaymentList);
+      let paymentAmount = payment.dueAmount;
+      let hasPastDue = false;
+      let pastDueAmount = 0;
 
-        console.log({ qrDetails })
-        if (qrDetails) {
-          setSelectedPayment(prev => ({
-            ...prev,
-            amount: qrDetails.amount,
-            hasPastDue: qrDetails.hasPastDue,
-            pastDueAmount: qrDetails.pastDueAmount,
-            isOverdue: qrDetails.isOverdue
-          }));
-        }
+      // If this is a past due payment or has past due amounts
+      if (payment.status === 'past_due' || qrDetails?.hasPastDue) {
+        hasPastDue = true;
+        pastDueAmount = qrDetails?.pastDueAmount || 0;
+        paymentAmount = qrDetails?.amount || payment.dueAmount; // Use combined amount for past due
       }
 
-      // Open payment dialog
+      setSelectedPayment({
+        ...payment,
+        selectedTableRowIndex: index + 1,
+        amount: paymentAmount,
+        hasPastDue,
+        pastDueAmount,
+        isOverdue: payment.status === 'past_due',
+        currentAmount: payment.dueAmount
+      });
+
+      setSelectedIndex(index);
       document.getElementById('addPayment')?.showModal();
     } catch (error) {
       console.error('Error handling pay now click:', error);
+      toast.error('Error processing payment amount');
     }
   };
 
@@ -261,9 +271,15 @@ const LoanCalculator = memo(({
   };
 
   const getPaymentStatus = (payment, paymentStatus, today) => {
-    if (paymentStatus?.payment_status === 'Approved') return 'paid';
-    if (paymentStatus?.payment_status === 'Pending') return 'pending';
-    if (new Date(payment.transactionDate) < today) return 'past_due';
+    if (paymentStatus?.payment_status === 'Approved' || paymentStatus?.is_paid === 1) {
+      return 'paid';
+    }
+    if (paymentStatus?.payment_status === 'Pending') {
+      return 'pending';
+    }
+    if (new Date(payment.transactionDate) < today) {
+      return 'past_due';
+    }
     return 'due';
   };
 
@@ -284,72 +300,89 @@ const LoanCalculator = memo(({
 
   // First, calculate combined payments at the top level
   const getCombinedPayments = (payments, loanPaymentList) => {
+    console.log('getCombinedPayments inputs:', { payments, loanPaymentList });
+
+    // If no payments, generate initial payment schedule
+    if (!payments?.length) {
+      // Generate initial payment schedule based on loan details
+      if (!calculatorLoanAmmount || !calculatorInterestRate || !calculatorMonthsToPay) {
+        return [];
+      }
+
+      // Calculate monthly payment
+      const monthlyPayment = (calculatorLoanAmmount * (1 + calculatorInterestRate / 100)) / calculatorMonthsToPay;
+      const startDate = selectedLoan?.approval_date ? new Date(selectedLoan.approval_date) : new Date();
+
+      // Generate initial payments array
+      const initialPayments = Array.from({ length: calculatorMonthsToPay }, (_, i) => {
+        const paymentDate = new Date(startDate);
+        paymentDate.setMonth(startDate.getMonth() + i + 1); // Start from next month after approval
+
+        return {
+          transactionDate: paymentDate.toISOString(),
+          dueAmount: monthlyPayment,
+          amount: monthlyPayment,
+          index: i + 1,
+          status: 'due',
+          showQR: i === 0, // Only first payment gets QR
+          url: `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${i + 1}`
+        };
+      });
+
+      return initialPayments;
+    }
+
     const today = new Date();
     let pastDuePayments = [];
     let currentPayment = null;
     let futurePayments = [];
-    let lastPaidIndex = -1;
 
-    // First determine the last paid payment
+    // Process existing payments
     payments.forEach((payment, index) => {
-      const paymentStatus = loanPaymentList.find(p => p.selectedTableRowIndex === index + 1);
-      if (paymentStatus?.payment_status === 'Approved') {
-        lastPaidIndex = index;
-      }
-    });
-
-    // Then categorize remaining payments
-    payments.forEach((payment, index) => {
-      const paymentStatus = loanPaymentList.find(p => p.selectedTableRowIndex === index + 1);
       const dueDate = new Date(payment.transactionDate);
+      const paymentStatus = loanPaymentList?.find(p => p.selectedTableRowIndex === index + 1);
 
-      // Skip if already paid
+      // Skip if payment is approved
       if (paymentStatus?.payment_status === 'Approved') {
         return;
       }
 
-      // Scenario handling
-      if (dueDate < today) {
-        // Past due payment
+      const formattedPayment = {
+        ...payment,
+        index: index + 1,
+        status: 'due',
+        showQR: false,
+        url: `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${index + 1}`
+      };
+
+      // Compare dates properly
+      const isPastDue = dueDate < today;
+      const isDueToday = dueDate.getDate() === today.getDate() &&
+        dueDate.getMonth() === today.getMonth() &&
+        dueDate.getFullYear() === today.getFullYear();
+
+      if (isPastDue) {
         pastDuePayments.push({
-          ...payment,
-          index: index + 1,
+          ...formattedPayment,
           status: 'past_due'
         });
-      } else if (!currentPayment) {
-        // First non-past-due payment becomes current
+      } else if (isDueToday) {
         currentPayment = {
-          ...payment,
-          index: index + 1,
-          status: 'due'
+          ...formattedPayment,
+          status: 'due',
+          showQR: true
         };
       } else {
-        // Future payments
         futurePayments.push({
-          ...payment,
-          index: index + 1,
-          status: 'due',
-          showQR: false
+          ...formattedPayment,
+          status: 'future'
         });
       }
     });
 
     let paymentList = [];
 
-    // Scenario 1: All payments up to date
-    if (lastPaidIndex === payments.length - 1) {
-      // Show next month's amount
-      const nextMonthPayment = {
-        ...payments[payments.length - 1],
-        index: payments.length + 1,
-        status: 'due',
-        showQR: true,
-        dueAmount: payments[payments.length - 1]?.dueAmount
-      };
-      return [nextMonthPayment];
-    }
-
-    // Scenario 2: Past due + current month
+    // Handle past due + current month
     if (pastDuePayments.length > 0) {
       const totalPastDue = pastDuePayments.reduce((sum, p) => sum + p.dueAmount, 0);
       const combinedPayment = {
@@ -359,30 +392,90 @@ const LoanCalculator = memo(({
         status: 'past_due',
         isMultipleMonths: true,
         showQR: true,
-        includesCurrentPayment: !!currentPayment,
-        url: `${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${pastDuePayments[0].index}`
+        includesCurrentPayment: !!currentPayment
       };
       paymentList.push(combinedPayment);
+    } else if (currentPayment) {
+      paymentList.push(currentPayment);
     }
 
-    // Scenario 3: First month paid, current month due
-    if (lastPaidIndex === 0 && currentPayment && pastDuePayments.length === 0) {
-      paymentList.push({
-        ...currentPayment,
-        showQR: true
-      });
-    }
-
-    // Scenario 4: Multiple past due months
-    // (Already handled in Scenario 2)
-
-    // Add remaining payments without QR
-    if (currentPayment && pastDuePayments.length > 0) {
-      paymentList.push({ ...currentPayment, showQR: false });
-    }
+    // Add future payments
     paymentList = [...paymentList, ...futurePayments];
 
     return paymentList;
+  };
+
+  // Add this function to handle payment submission
+  const handlePaymentSubmit = async (values, { setSubmitting, resetForm }) => {
+    try {
+      if (!selectedPayment || !selectedLoan?.loan_id) {
+        toast.error('Invalid payment details');
+        return;
+      }
+
+      const formData = new FormData();
+
+      // Basic payment details
+      formData.append('loan_id', selectedLoan.loan_id);
+      formData.append('payment_amount', selectedPayment.amount);
+      formData.append('payment_method', values.payment_method);
+      formData.append('reference_number', values.reference_number);
+      formData.append('selectedTableRowIndex', selectedPayment.selectedTableRowIndex);
+      formData.append('proof_of_payment', values.proof_of_payment);
+
+      // Handle past due scenarios
+      if (selectedPayment.hasPastDue) {
+        formData.append('includes_past_due', '1');
+        formData.append('past_due_amount', selectedPayment.pastDueAmount);
+        formData.append('original_amount', selectedPayment.currentAmount || selectedPayment.dueAmount);
+      } else {
+        formData.append('includes_past_due', '0');
+        formData.append('past_due_amount', '0');
+        formData.append('original_amount', selectedPayment.amount);
+      }
+
+      // Add remarks based on payment scenario
+      let remarks = '';
+      if (selectedPayment.hasPastDue) {
+        remarks = `Combined payment - Past due: ${selectedPayment.pastDueMonths?.join(', ')}`;
+        if (selectedPayment.includesCurrentPayment) {
+          remarks += ` & Current month`;
+        }
+      } else {
+        remarks = `Regular payment - Month ${selectedPayment.selectedTableRowIndex}`;
+      }
+      formData.append('remarks', remarks);
+
+      // Submit payment
+      const response = await axios.post(
+        `/loan/${selectedLoan.loan_id}/submit-payment`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success('Payment submitted successfully');
+        document.getElementById('addPayment').close();
+        resetForm();
+
+        // Immediately fetch updated payment list
+        await fetchLoanPaymentList();
+
+        // Clear selected payment
+        setSelectedPayment(null);
+      } else {
+        throw new Error(response.data.message || 'Failed to submit payment');
+      }
+    } catch (error) {
+      console.error('Payment submission error:', error);
+      toast.error(error.message || 'Failed to submit payment');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -561,7 +654,16 @@ const LoanCalculator = memo(({
                 <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-lg">
                   <span className="text-white/80">Amount Due:</span>
                   <span className="text-xl font-bold">
-                    {formatCurrency(selectedPayment?.amount || selectedPayment?.dueAmount)}
+                    {selectedPayment?.hasPastDue ? (
+                      <>
+                        {formatCurrency(selectedPayment.amount)}
+                        <span className="text-sm ml-2">
+                          (Includes {selectedPayment.pastDueAmount > 0 ? 'Past Due' : 'Current'} Amount)
+                        </span>
+                      </>
+                    ) : (
+                      formatCurrency(selectedPayment?.amount || 0)
+                    )}
                   </span>
                 </div>
               </div>
@@ -586,35 +688,7 @@ const LoanCalculator = memo(({
               reference_number: Yup.string().required('Reference number is required'),
               proof_of_payment: Yup.mixed().required('Proof of payment is required')
             })}
-            onSubmit={async (values, { setSubmitting }) => {
-              try {
-                const formData = new FormData();
-                formData.append('payment_method', values.payment_method);
-                formData.append('reference_number', values.reference_number);
-                formData.append('proof_of_payment', values.proof_of_payment);
-                formData.append('amount', selectedPayment?.amount || selectedPayment?.dueAmount);
-                formData.append('selectedTableRowIndex', selectedPayment?.selectedTableRowIndex);
-
-                await axios.post(
-                  `/loan/${selectedLoan?.loan_id}/submit-payment`,
-                  formData,
-                  {
-                    headers: {
-                      'Content-Type': 'multipart/form-data'
-                    }
-                  }
-                );
-
-                document.getElementById('addPayment').close();
-                toast.success('Payment submitted successfully');
-                await fetchLoanPaymentList();
-              } catch (error) {
-                console.error('Payment submission error:', error);
-                //toast.error('Failed to submit payment');
-              } finally {
-                setSubmitting(false);
-              }
-            }}
+            onSubmit={handlePaymentSubmit}
           >
             {({ isSubmitting, setFieldValue, values, errors, touched }) => (
               <Form className="p-8">
