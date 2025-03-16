@@ -1000,7 +1000,7 @@ router.get('/:loanId/payments/:paymentId', async (req, res) => {
 });
 
 // Update payment status (for admin/officer approval)
-router.patch(
+router.post(
   '/payments/:paymentId/status',
   authenticateUserMiddleware,
   async (req, res) => {

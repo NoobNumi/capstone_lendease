@@ -45,6 +45,7 @@ const LoanCalculator = memo(({
   setPaymentList,
   isGridView
 }) => {
+  let userRole = 'loan_officer';
   const [payments, setPayments] = useState([]);
   const [loanPaymentList, setLoanPaymentList] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
@@ -326,52 +327,51 @@ const LoanCalculator = memo(({
 
     if (!payments?.length) return [];
 
-    // First check for pending combined payment
+    // First check for any pending payment (including regular payments)
     const pendingPayment = loanPaymentList?.find(payment =>
-      payment.payment_status === 'Pending' &&
-      payment.includes_past_due === 1
+      payment.payment_status === 'Pending'
     );
 
-    // If there's a pending payment, handle it specially
+    // If there's a pending payment, handle it
     if (pendingPayment) {
-      // Extract month numbers from remarks (e.g., "Combined payment - Past due: 1, 2, 3")
-      const monthsMatch = pendingPayment.remarks.match(/Past due: ([\d, ]+)/);
-      const pendingMonths = monthsMatch ?
-        monthsMatch[1].split(',').map(num => parseInt(num.trim())) : [];
-
-      // Create a single payment entry for the pending payment
+      // Get the payment that corresponds to the pending payment
       const pendingPaymentEntry = {
         ...payments[pendingPayment.selectedTableRowIndex - 1],
+        payment_id: pendingPayment.payment_id,
         dueAmount: parseFloat(pendingPayment.payment_amount),
         status: 'pending',
-        isMultipleMonths: true,
         showQR: false,
-        pastDueMonths: pendingMonths,
-        includesCurrentPayment: pendingPayment.remarks.includes('& Current'),
         paymentStatus: 'Pending',
         pendingAmount: parseFloat(pendingPayment.payment_amount),
         referenceNumber: pendingPayment.reference_number,
         paymentMethod: pendingPayment.payment_method,
-        paymentDate: pendingPayment.payment_date
+        paymentDate: pendingPayment.payment_date,
+        isRegularPayment: !pendingPayment.includes_past_due
       };
 
-      // Return only the pending payment and future payments
+      // Return pending payment and future payments
       const futurePayments = payments
-        .filter((_, index) => !pendingMonths.includes(index + 1))
+        .filter((_, index) => index + 1 > pendingPayment.selectedTableRowIndex)
         .map(payment => ({
           ...payment,
-          status: 'due',
+          status: 'future',
           showQR: false
         }));
 
       return [pendingPaymentEntry, ...futurePayments];
     }
 
-    // If no pending payment, process normally
     const today = new Date();
     let pastDuePayments = [];
     let currentPayment = null;
     let futurePayments = [];
+
+    // Check if all previous payments are approved
+    const hasUnapprovedPastPayments = payments.some((payment, index) => {
+      const dueDate = new Date(payment.transactionDate);
+      const paymentStatus = loanPaymentList?.find(p => p.selectedTableRowIndex === index + 1);
+      return dueDate < today && paymentStatus?.payment_status !== 'Approved';
+    });
 
     // Process existing payments
     payments.forEach((payment, index) => {
@@ -402,7 +402,10 @@ const LoanCalculator = memo(({
           ...formattedPayment,
           status: 'past_due'
         });
-      } else if (isDueToday) {
+      } else if (isDueToday || (!hasUnapprovedPastPayments && !currentPayment)) {
+        // Show QR for current payment if:
+        // 1. It's due today, OR
+        // 2. All past payments are approved and this is the next payment
         currentPayment = {
           ...formattedPayment,
           status: 'due',
@@ -420,6 +423,7 @@ const LoanCalculator = memo(({
 
     // Handle past due + current month
     if (pastDuePayments.length > 0) {
+      // If there are past due payments, combine them
       const totalPastDue = pastDuePayments.reduce((sum, p) => sum + p.dueAmount, 0);
       const combinedPayment = {
         ...pastDuePayments[0],
@@ -432,6 +436,7 @@ const LoanCalculator = memo(({
       };
       paymentList.push(combinedPayment);
     } else if (currentPayment) {
+      // If no past due, show current payment with QR
       paymentList.push(currentPayment);
     }
 
@@ -478,7 +483,7 @@ const LoanCalculator = memo(({
           remarks += ` & Current month`;
         }
       } else {
-        remarks = `Regular payment - Month ${selectedPayment.selectedTableRowIndex}`;
+        remarks = `Regular payment - Month ${selectedPayment.index}`;
       }
       formData.append('remarks', remarks);
 
@@ -511,6 +516,27 @@ const LoanCalculator = memo(({
       toast.error(error.message || 'Failed to submit payment');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Add new function to handle payment approval/rejection
+  const handlePaymentAction = async (paymentId, action) => {
+    try {
+
+      console.log({ paymentId })
+      const response = await axios.post(`/loan/payments/${paymentId}/status`, {
+        status: action === 'approve' ? 'Approved' : 'Rejected',
+        loanId: selectedLoan?.loan_id,
+        status: action === 'approve' ? 'Approved' : 'Rejected',
+      });
+
+      toast.success(`Payment ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+      // Refresh payment list to update UI
+      fetchLoanPaymentList();
+
+    } catch (error) {
+      console.error(`Error ${action}ing payment:`, error);
+      toast.error(`Failed to ${action} payment`);
     }
   };
 
@@ -548,8 +574,14 @@ const LoanCalculator = memo(({
               const isMultipleMonths = payment.isMultipleMonths;
               const isPastDue = payment.status === 'past_due';
               const showQR = payment.showQR;
-              const isFuturePayment = payment.status === 'due' && !showQR;
 
+              const isFuturePayment =
+
+                (payment.status === 'future' ||
+                  payment.status === 'due') && !showQR;
+
+
+              console.log({ payment, isFuturePayment })
               return (
                 <div key={index} className={`bg-white rounded-xl shadow-md p-6 mb-4 ${isFuturePayment ? 'opacity-60' : ''}`}>
                   {/* Payment Header */}
@@ -619,16 +651,74 @@ const LoanCalculator = memo(({
 
                     {/* Show pending payment info */}
                     {payment.status === 'pending' && (
-                      <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
                         <div className="flex items-start gap-3">
                           <Clock className="w-5 h-5 text-yellow-600 mt-0.5" />
-                          <div>
+                          <div className="flex-1">
                             <p className="font-medium text-yellow-600">Payment Pending Approval</p>
-                            <p className="text-sm text-yellow-600">
-                              Reference: {payment.referenceNumber}<br />
-                              Method: {payment.paymentMethod}<br />
-                              Date: {format(new Date(payment.paymentDate), 'MMM dd, yyyy HH:mm')}
-                            </p>
+                            <div className="mt-3 space-y-2">
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <p className="text-gray-600">Reference Number:</p>
+                                  <p className="font-medium">{payment.referenceNumber}</p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-600">Payment Method:</p>
+                                  <p className="font-medium">{payment.paymentMethod}</p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-600">Payment Date:</p>
+                                  <p className="font-medium">
+                                    {format(new Date(payment.paymentDate), 'MMM dd, yyyy HH:mm')}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-600">Amount:</p>
+                                  <p className="font-medium">{formatCurrency(payment.pendingAmount)}</p>
+                                </div>
+                              </div>
+
+                              {/* Only show breakdown for combined payments */}
+                              {!payment.isRegularPayment && (
+                                <div className="mt-4 bg-white/50 rounded-lg p-4">
+                                  <h4 className="font-medium mb-2">Payment Breakdown:</h4>
+                                  <div className="space-y-2">
+                                    {payment.pastDueMonths?.map((month) => (
+                                      <div key={month} className="flex justify-between text-sm">
+                                        <span>Month {month} Payment:</span>
+                                        <span>{formatCurrency(3933.33)}</span>
+                                      </div>
+                                    ))}
+                                    <div className="border-t pt-2 font-medium">
+                                      <div className="flex justify-between">
+                                        <span>Total Amount:</span>
+                                        <span>{formatCurrency(payment.pendingAmount)}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Approval Actions */}
+                              {userRole === 'loan_officer' && (
+                                <div className="mt-4 flex gap-2">
+                                  <button
+                                    onClick={() => handlePaymentAction(payment.payment_id, 'approve')}
+                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2"
+                                  >
+                                    <ThumbsUp className="w-4 h-4" />
+                                    Approve Payment
+                                  </button>
+                                  <button
+                                    onClick={() => handlePaymentAction(payment.payment_id, 'reject')}
+                                    className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2"
+                                  >
+                                    <ThumbsDown className="w-4 h-4" />
+                                    Reject Payment
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
