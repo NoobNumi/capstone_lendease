@@ -45,7 +45,12 @@ const LoanCalculator = memo(({
   setPaymentList,
   isGridView
 }) => {
-  let userRole = 'loan_officer';
+
+  let loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+
+  let userRole = loggedInUser?.role;
+
+  console.log({ loggedInUser })
   const [payments, setPayments] = useState([]);
   const [loanPaymentList, setLoanPaymentList] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
@@ -583,7 +588,7 @@ const LoanCalculator = memo(({
 
               console.log({ payment, isFuturePayment })
               return (
-                <div key={index} className={`bg-white rounded-xl shadow-md p-6 mb-4 ${isFuturePayment ? 'opacity-60' : ''}`}>
+                <div key={index} className={`bg-white rounded-xl shadow-md p-6 mb-4 ${isFuturePayment ? 'opacity-0' : ''}`}>
                   {/* Payment Header */}
                   <div className={`w-full h-2 ${payment.status === 'pending' ? 'bg-yellow-500' :
                     isPastDue ? 'bg-red-500' : 'bg-blue-500'
@@ -700,7 +705,7 @@ const LoanCalculator = memo(({
                               )}
 
                               {/* Approval Actions */}
-                              {userRole === 'loan_officer' && (
+                              {(userRole === 'loan_officer' || userRole === 'Loan Officer') && (
                                 <div className="mt-4 flex gap-2">
                                   <button
                                     onClick={() => handlePaymentAction(payment.payment_id, 'approve')}
