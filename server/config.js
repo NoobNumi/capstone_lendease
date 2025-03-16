@@ -36,15 +36,25 @@ let firebaseStorage;
 
 try {
   getDbConnection = async () => {
+    // $hostname = 'aiks1r.stackhero-network.com';
+    // $port = '3934';
+    // $user = 'root';
+    // $password = 'de5Jtt5OaQr5QY0mS5Cfb1jRQUDddlPD';
+    // $database = 'root'; //
+
     const pool = await mysql.createPool({
-      host: 'localhost', // Database host
-      user: 'root', // Database user
-      password: '', // Database password
-      database: 'bu_final_leand_ease', // Database name
-      connectTimeout: 10000, // 10 seconds
+      port: 3934,
+      host: 'aiks1r.stackhero-network.com',
+      user: 'root',
+      password: 'de5Jtt5OaQr5QY0mS5Cfb1jRQUDddlPD',
+      database: 'sample',
+      connectTimeout: 10000,
       waitForConnections: true,
-      connectionLimit: 10, // Max number of connections in the pool
-      queueLimit: 0 // No limit on queue
+      connectionLimit: 10,
+      queueLimit: 0,
+      ssl: {
+        rejectUnauthorized: true // Ensure it's a secure connection
+      }
     });
 
     // const pool = await mysql.createPool({

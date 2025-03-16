@@ -82,20 +82,24 @@ app.use(express.static('files'));
 
 app.use('/static', express.static('public'));
 
+app.get('/', (req, res) => {
+  res.send('Hello World');
+});
+
 app.listen(config.port, async () => {
-  try {
-    await vonage.sms
-      .send({
-        to: '639275478620',
-        from: '639914762429',
-        text: 'Hi Goodmorning'
-      })
-      .then(resp => {
-        // console.log('Message sent successfully');
-        console.log(resp);
-      });
-  } catch (error) {
-    console.log(error);
-  }
+  // try {
+  //   await vonage.sms
+  //     .send({
+  //       to: '639275478620',
+  //       from: '639914762429',
+  //       text: 'Hi Goodmorning'
+  //     })
+  //     .then(resp => {
+  //       // console.log('Message sent successfully');
+  //       console.log(resp);
+  //     });
+  // } catch (error) {
+  //   console.log(error);
+  // }
   console.log(`Hello Server is live`);
 });
