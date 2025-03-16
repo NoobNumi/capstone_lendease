@@ -234,7 +234,7 @@ router.post(
 
 // Route to handle file uploads
 router.post(
-  '/upload-files',
+  '/upload-files/uploadSupportingDocuments',
   upload.fields([
     { name: 'bankStatement', maxCount: 1 },
     { name: 'borrowerValidID', maxCount: 1 },

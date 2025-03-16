@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '../../features/common/headerSlice';
 
-import LoanManagement from '../../features/loanManagement';
+import LoanApplication from '../../features/loanApplication';
 
 function InternalPage() {
   const dispatch = useDispatch();
@@ -11,7 +11,7 @@ function InternalPage() {
     dispatch(setPageTitle({ title: 'Loan Management' }));
   }, []);
 
-  return <LoanManagement />;
+  return <LoanApplication />;
 }
 
 export default InternalPage;

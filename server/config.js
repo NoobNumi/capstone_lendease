@@ -50,7 +50,7 @@ try {
       database: 'sample',
       connectTimeout: 10000,
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 100000, // Adjust this number based on your needs
       queueLimit: 0,
       ssl: {
         rejectUnauthorized: true // Ensure it's a secure connection

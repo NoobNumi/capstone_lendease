@@ -631,7 +631,7 @@ function LoanApplication() {
           //   'content-type': 'multipart/form-data'
           // },
           method: 'POST',
-          url: 'loan/upload-files',
+          url: 'admin/loan/upload-files/uploadSupportingDocuments',
           data: formData
         });
 

@@ -64,6 +64,14 @@ const LoanCalculator = memo(({
   // Define loan_status based on props or selectedLoan
   const loan_status = values.loan_status || selectedLoan?.loan_status || '';
 
+
+  console.log({ selectedLoan })
+
+  let payNowButtonDisabled = false;
+  if (selectedLoan?.loan_status === 'Approved' || selectedLoan?.loan_status === 'Disbursed') {
+    payNowButtonDisabled = true;
+  }
+
   const fetchLoanPaymentList = async () => {
     try {
       if (!selectedLoan?.loan_id) return;
@@ -574,202 +582,204 @@ const LoanCalculator = memo(({
           </div>
 
           {/* Current Payment Card */}
-          <div className="w-full max-w-2xl space-y-6">
-            {getCombinedPayments(payments, loanPaymentList).map((payment, index) => {
-              const isMultipleMonths = payment.isMultipleMonths;
-              const isPastDue = payment.status === 'past_due';
-              const showQR = payment.showQR;
+          {payNowButtonDisabled &&
+            <div className="w-full max-w-2xl space-y-6">
+              {getCombinedPayments(payments, loanPaymentList).map((payment, index) => {
+                const isMultipleMonths = payment.isMultipleMonths;
+                const isPastDue = payment.status === 'past_due';
+                const showQR = payment.showQR;
 
-              const isFuturePayment =
+                const isFuturePayment =
 
-                (payment.status === 'future' ||
-                  payment.status === 'due') && !showQR;
+                  (payment.status === 'future' ||
+                    payment.status === 'due') && !showQR;
 
 
-              console.log({ payment, isFuturePayment })
-              return (
-                <div key={index} className={`bg-white rounded-xl shadow-md p-6 mb-4 ${isFuturePayment ? 'opacity-0' : ''}`}>
-                  {/* Payment Header */}
-                  <div className={`w-full h-2 ${payment.status === 'pending' ? 'bg-yellow-500' :
-                    isPastDue ? 'bg-red-500' : 'bg-blue-500'
-                    }`} />
+                console.log({ payment, isFuturePayment })
+                return (
+                  <div key={index} className={`bg-white rounded-xl shadow-md p-6 mb-4 ${isFuturePayment ? 'opacity-0' : ''}`}>
+                    {/* Payment Header */}
+                    <div className={`w-full h-2 ${payment.status === 'pending' ? 'bg-yellow-500' :
+                      isPastDue ? 'bg-red-500' : 'bg-blue-500'
+                      }`} />
 
-                  <div className="p-6">
-                    <div className="flex justify-between items-start">
-                      {/* Left side content */}
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
-                          {isPastDue ? (
-                            <AlertCircle className="w-5 h-5 text-red-500" />
-                          ) : (
-                            <Calendar className="w-5 h-5 text-blue-500" />
-                          )}
-                          {isMultipleMonths ? (
-                            <span className="text-red-600">
-                              Past Due + Current Payment
-                              <span className="block text-sm font-normal text-gray-600">
-                                Months {payment.pastDueMonths.join(', ')} {payment.includesCurrentPayment && '& Current'}
+                    <div className="p-6">
+                      <div className="flex justify-between items-start">
+                        {/* Left side content */}
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+                            {isPastDue ? (
+                              <AlertCircle className="w-5 h-5 text-red-500" />
+                            ) : (
+                              <Calendar className="w-5 h-5 text-blue-500" />
+                            )}
+                            {isMultipleMonths ? (
+                              <span className="text-red-600">
+                                Past Due + Current Payment
+                                <span className="block text-sm font-normal text-gray-600">
+                                  Months {payment.pastDueMonths.join(', ')} {payment.includesCurrentPayment && '& Current'}
+                                </span>
                               </span>
+                            ) : (
+                              <span>Payment {payment.index}</span>
+                            )}
+                          </h3>
+
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {payment?.transactionDate && format(new Date(payment?.transactionDate), 'MMM dd, yyyy')}
                             </span>
-                          ) : (
-                            <span>Payment {payment.index}</span>
-                          )}
-                        </h3>
-
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {payment?.transactionDate && format(new Date(payment?.transactionDate), 'MMM dd, yyyy')}
-                          </span>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Right side content */}
-                      <div className="flex flex-col items-end gap-3">
-                        {/* Status badge */}
-                        <span className={`
+                        {/* Right side content */}
+                        <div className="flex flex-col items-end gap-3">
+                          {/* Status badge */}
+                          <span className={`
                           px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2
                           ${isPastDue ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}
                         `}>
-                          {isPastDue ? (
-                            <>
-                              <AlertCircle className="w-4 h-4" />
-                              Past Due
-                            </>
-                          ) : (
-                            <>
-                              <Calendar className="w-4 h-4" />
-                              Due
-                            </>
-                          )}
-                        </span>
+                            {isPastDue ? (
+                              <>
+                                <AlertCircle className="w-4 h-4" />
+                                Past Due
+                              </>
+                            ) : (
+                              <>
+                                <Calendar className="w-4 h-4" />
+                                Due
+                              </>
+                            )}
+                          </span>
 
-                        {/* Amount display */}
-                        <div className="text-right">
-                          <p className="text-sm text-gray-500">Amount Due:</p>
-                          <p className="text-2xl font-bold text-gray-900">
-                            {formatCurrency(payment.dueAmount)}
-                          </p>
+                          {/* Amount display */}
+                          <div className="text-right">
+                            <p className="text-sm text-gray-500">Amount Due:</p>
+                            <p className="text-2xl font-bold text-gray-900">
+                              {formatCurrency(payment.dueAmount)}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Show pending payment info */}
-                    {payment.status === 'pending' && (
-                      <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-                        <div className="flex items-start gap-3">
-                          <Clock className="w-5 h-5 text-yellow-600 mt-0.5" />
-                          <div className="flex-1">
-                            <p className="font-medium text-yellow-600">Payment Pending Approval</p>
-                            <div className="mt-3 space-y-2">
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <p className="text-gray-600">Reference Number:</p>
-                                  <p className="font-medium">{payment.referenceNumber}</p>
+                      {/* Show pending payment info */}
+                      {payment.status === 'pending' && (
+                        <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                          <div className="flex items-start gap-3">
+                            <Clock className="w-5 h-5 text-yellow-600 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="font-medium text-yellow-600">Payment Pending Approval</p>
+                              <div className="mt-3 space-y-2">
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <p className="text-gray-600">Reference Number:</p>
+                                    <p className="font-medium">{payment.referenceNumber}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-600">Payment Method:</p>
+                                    <p className="font-medium">{payment.paymentMethod}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-600">Payment Date:</p>
+                                    <p className="font-medium">
+                                      {format(new Date(payment.paymentDate), 'MMM dd, yyyy HH:mm')}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-600">Amount:</p>
+                                    <p className="font-medium">{formatCurrency(payment.pendingAmount)}</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="text-gray-600">Payment Method:</p>
-                                  <p className="font-medium">{payment.paymentMethod}</p>
-                                </div>
-                                <div>
-                                  <p className="text-gray-600">Payment Date:</p>
-                                  <p className="font-medium">
-                                    {format(new Date(payment.paymentDate), 'MMM dd, yyyy HH:mm')}
-                                  </p>
-                                </div>
-                                <div>
-                                  <p className="text-gray-600">Amount:</p>
-                                  <p className="font-medium">{formatCurrency(payment.pendingAmount)}</p>
-                                </div>
-                              </div>
 
-                              {/* Only show breakdown for combined payments */}
-                              {!payment.isRegularPayment && (
-                                <div className="mt-4 bg-white/50 rounded-lg p-4">
-                                  <h4 className="font-medium mb-2">Payment Breakdown:</h4>
-                                  <div className="space-y-2">
-                                    {payment.pastDueMonths?.map((month) => (
-                                      <div key={month} className="flex justify-between text-sm">
-                                        <span>Month {month} Payment:</span>
-                                        <span>{formatCurrency(3933.33)}</span>
-                                      </div>
-                                    ))}
-                                    <div className="border-t pt-2 font-medium">
-                                      <div className="flex justify-between">
-                                        <span>Total Amount:</span>
-                                        <span>{formatCurrency(payment.pendingAmount)}</span>
+                                {/* Only show breakdown for combined payments */}
+                                {!payment.isRegularPayment && (
+                                  <div className="mt-4 bg-white/50 rounded-lg p-4">
+                                    <h4 className="font-medium mb-2">Payment Breakdown:</h4>
+                                    <div className="space-y-2">
+                                      {payment.pastDueMonths?.map((month) => (
+                                        <div key={month} className="flex justify-between text-sm">
+                                          <span>Month {month} Payment:</span>
+                                          <span>{formatCurrency(3933.33)}</span>
+                                        </div>
+                                      ))}
+                                      <div className="border-t pt-2 font-medium">
+                                        <div className="flex justify-between">
+                                          <span>Total Amount:</span>
+                                          <span>{formatCurrency(payment.pendingAmount)}</span>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
-                                </div>
-                              )}
+                                )}
 
-                              {/* Approval Actions */}
-                              {(userRole === 'loan_officer' || userRole === 'Loan Officer') && (
-                                <div className="mt-4 flex gap-2">
-                                  <button
-                                    onClick={() => handlePaymentAction(payment.payment_id, 'approve')}
-                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2"
-                                  >
-                                    <ThumbsUp className="w-4 h-4" />
-                                    Approve Payment
-                                  </button>
-                                  <button
-                                    onClick={() => handlePaymentAction(payment.payment_id, 'reject')}
-                                    className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2"
-                                  >
-                                    <ThumbsDown className="w-4 h-4" />
-                                    Reject Payment
-                                  </button>
-                                </div>
-                              )}
+                                {/* Approval Actions */}
+                                {(userRole === 'loan_officer' || userRole === 'Loan Officer') && (
+                                  <div className="mt-4 flex gap-2">
+                                    <button
+                                      onClick={() => handlePaymentAction(payment.payment_id, 'approve')}
+                                      className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2"
+                                    >
+                                      <ThumbsUp className="w-4 h-4" />
+                                      Approve Payment
+                                    </button>
+                                    <button
+                                      onClick={() => handlePaymentAction(payment.payment_id, 'reject')}
+                                      className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2"
+                                    >
+                                      <ThumbsDown className="w-4 h-4" />
+                                      Reject Payment
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Bottom section with QR and actions */}
-                    {!isFuturePayment && (
-                      <div className="mt-6 flex justify-between items-end">
-                        {/* QR Code section */}
-                        {showQR && (
-                          <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-lg">
-                            <QRCodeSVG
-                              value={payment.url || ''}
-                              size={100}
-                              level="H"
-                              includeMargin={true}
-                            />
-                            <div className="text-sm">
-                              <p className="font-medium text-gray-900">Scan to Pay</p>
-                              <p className="text-gray-500">Use your banking app to scan</p>
+                      {/* Bottom section with QR and actions */}
+                      {!isFuturePayment && (
+                        <div className="mt-6 flex justify-between items-end">
+                          {/* QR Code section */}
+                          {showQR && (
+                            <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-lg">
+                              <QRCodeSVG
+                                value={payment.url || ''}
+                                size={100}
+                                level="H"
+                                includeMargin={true}
+                              />
+                              <div className="text-sm">
+                                <p className="font-medium text-gray-900">Scan to Pay</p>
+                                <p className="text-gray-500">Use your banking app to scan</p>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
-                        {/* Action buttons */}
-                        <div className="flex gap-2">
-                          {payment.status !== 'pending' && (
-                            <button
-                              onClick={() => handlePayNowButtonClick(payment, payment.index - 1)}
-                              className={`
+                          {/* Action buttons */}
+                          <div className="flex gap-2">
+                            {payment.status !== 'pending' && (
+                              <button
+                                onClick={() => handlePayNowButtonClick(payment, payment.index - 1)}
+                                className={`
                                 px-6 py-2 rounded-lg font-medium flex items-center gap-2
                                 ${isPastDue ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}
                               `}
-                            >
-                              <Send className="w-4 h-4" />
-                              Pay Now
-                            </button>
-                          )}
+                              >
+                                <Send className="w-4 h-4" />
+                                Pay Now
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          }
         </div>
       )}
 

@@ -200,10 +200,10 @@ SELECT borrower_id  FROM user_account WHERE user_id = ?
     [userId]
   );
 
+  console.log({ userId, rows });
   return rows[0].borrower_id;
 };
 
-// Enhanced loan evaluation endpoint
 router.post('/checkLoanApplicationApprovalRate', async (req, res) => {
   try {
     const { loan_application_id } = req.body;
@@ -225,6 +225,17 @@ router.post('/checkLoanApplicationApprovalRate', async (req, res) => {
 
     const param = parameters[0];
     const loan = loanDetails[0];
+
+    // Ensure the monthly income is a valid number
+    loan.monthly_income = parseFloat(loan.employee_monthly_income_amount) || 0;
+
+    param.min_monthly_income = parseFloat(param.min_monthly_income) || 0;
+    param.loan_to_income_ratio = parseFloat(param.loan_to_income_ratio) || 0;
+    param.employment_years = parseFloat(param.employment_years) || 0;
+    param.min_credit_score = parseFloat(param.min_credit_score) || 0;
+
+    // Ensure employment_years is a valid number
+    const employmentYears = parseFloat(loan.employment_years) || 0;
 
     // Detailed calculations with explanations
     const creditScoreCalc = {
@@ -270,7 +281,6 @@ router.post('/checkLoanApplicationApprovalRate', async (req, res) => {
     );
     const maxAllowedRatio = Number(param.loan_to_income_ratio.toFixed(2));
 
-    console.log({ maxAllowedRatio });
     const loanToIncomeCalc = {
       required: Number(param.loan_to_income_ratio.toFixed(2)),
       actual: loanToIncomeRatio,
@@ -294,19 +304,17 @@ router.post('/checkLoanApplicationApprovalRate', async (req, res) => {
     };
 
     const employmentCalc = {
-      actual: Number(loan.employment_years.toFixed(2)),
-      required: Number(param.employment_years.toFixed(2)),
-      percentage: Number(
-        Math.min(
-          (loan.employment_years / param.employment_years) * 100,
-          100
-        ).toFixed(2)
-      ),
+      actual: employmentYears.toFixed(2), // Use .toFixed() after ensuring it's a number
+      required: param.employment_years.toFixed(2),
+      percentage: Math.min(
+        (employmentYears / param.employment_years) * 100,
+        100
+      ).toFixed(2),
       formula: 'Employment Years / Required Years × 100',
-      explanation: `${loan.employment_years.toFixed(
-        2
-      )} years / ${param.employment_years.toFixed(2)} years × 100 = ${(
-        (loan.employment_years / param.employment_years) *
+      explanation: `${employmentYears} years / ${
+        param.employment_years
+      } years × 100 = ${(
+        (employmentYears / param.employment_years) *
         100
       ).toFixed(2)}%`
     };
@@ -414,6 +422,7 @@ router.post(
     let { user_id } = req.user;
     // console.log({ data });
 
+    console.log({ user_id });
     let borrower_id = await getBorrowerAccountByUserAccountId(user_id);
     // map to db
     let loan_application_id = uuidv4();
@@ -554,8 +563,10 @@ router.post(
         [loanId]
       );
 
+      console.log({ loanId, rows1 });
       let loanDetails = rows1[0];
 
+      console.log({ loanDetails });
       let { first_name, last_name, contact_number, loan_amount } = loanDetails;
 
       function formatPhoneNumber(phoneNumber) {
@@ -685,7 +696,7 @@ router.post('/list', authenticateUserMiddleware, async (req, res) => {
   }
 });
 
-router.get('/:loanId/details', authenticateUserMiddleware, async (req, res) => {
+router.get('/:loanId/details', async (req, res) => {
   try {
     let loanId = req.params.loanId;
     const [rows] = await db.query(
@@ -714,6 +725,7 @@ router.get('/:loanId/details', authenticateUserMiddleware, async (req, res) => {
       res.status(404).json({ message: 'No loans found for this user.' });
     }
   } catch (error) {
+    console.log({ error });
     res
       .status(500)
       .json({ error: 'Error fetching loan list with borrower details' });

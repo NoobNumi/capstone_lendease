@@ -21,6 +21,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Vonage } from '@vonage/server-sdk';
 
+// import config from './config.js';
+
 const vonage = new Vonage({
   apiKey: config.VONAGE_apiKey,
   apiSecret: config.VONAGE_apiSecret
@@ -102,4 +104,14 @@ app.listen(config.port, async () => {
   //   console.log(error);
   // }
   console.log(`Hello Server is live`);
+});
+
+// Gracefully close MySQL connection pool
+process.on('SIGINT', async () => {
+  console.log('Closing MySQL connection pool...');
+  if (config.mySqlDriver) {
+    await config.mySqlDriver.end(); // ✅ Close MySQL pool
+    console.log('MySQL connection pool closed.');
+  }
+  process.exit();
 });
