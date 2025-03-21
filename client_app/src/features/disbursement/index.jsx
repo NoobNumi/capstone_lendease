@@ -1770,7 +1770,7 @@ function LoanApplication() {
                             </div>
 
 
-                            {values.disbursement_type === 'E-WALLET/BANK TRANSFER' && (
+                            {/* {values.disbursement_type === 'E-WALLET/BANK TRANSFER' && (
 
                               <div>
                                 <div className="mt-4 col-span-2">
@@ -1847,7 +1847,7 @@ function LoanApplication() {
                                   />
                                 </div>
                               </div>
-                            )}
+                            )} */}
                           </div>
 
 
@@ -2092,7 +2092,7 @@ function LoanApplication() {
                 disbursement_bank_or_wallet_name: selectedLoan.disbursement_bank_or_wallet_name,
                 disbursement_account_name: selectedLoan.disbursement_account_name,
                 disbursement_account_number: selectedLoan.disbursement_account_number,
-                borrowerValidID: null,
+                borrowerValidID: selectedLoan.proof_of_disbursement,
                 amount: selectedLoan.loan_amount
               }}
               validationSchema={Yup.object({
@@ -2188,7 +2188,20 @@ function LoanApplication() {
                       </div>
 
 
-                      {values.disbursement_type === 'CASH' && (
+
+
+
+                      {
+                        values.borrowerValidID && (
+                          <div className="mt-4 col-span-2">
+                            <div className="bg-green-100 border border-green-500 text-green-700 p-4 rounded">
+                              <p className="font-semibold">Info:</p>
+                              <p> Already disbursed.</p>
+                            </div>
+                          </div>
+                        )
+                      }
+                      {!values.borrowerValidID && values.disbursement_type === 'CASH' && (
                         <div className="mt-4 col-span-2">
                           <div className="bg-yellow-100 border border-yellow-500 text-yellow-700 p-4 rounded">
                             <p className="font-semibold">Info:</p>
@@ -2201,7 +2214,7 @@ function LoanApplication() {
                     </div>
 
 
-                    {values.disbursement_type === 'E-WALLET/BANK TRANSFER' && (
+                    {!values.borrowerValidID && values.disbursement_type === 'E-WALLET/BANK TRANSFER' && (
 
                       <div>
                         <div className="mt-4 col-span-2">
@@ -2307,10 +2320,25 @@ function LoanApplication() {
                     )}
 
 
-                    <div className="space-y-4 mt-4">
-                      {/* Borrower's Valid ID */}
-                      <h1 className="font-bold text-lg text-center">Upload Proof of Disbursements</h1>
-                      {/* {selectedLoan.proof_of_disbursement && (
+                    {
+                      selectedLoan.proof_of_disbursement && (
+                        <div className="space-y-4 mt-4 text-center justify-center items-center">
+                          <h1 className="font-bold text-lg">Proof of Disbursement</h1>
+                          <img
+                            src={selectedLoan.proof_of_disbursement}
+                            alt="Proof of Disbursement"
+                            className="w-48 h-48 mx-auto object-cover"
+                          />
+                        </div>
+                      )
+                    }
+
+
+                    {
+                      !selectedLoan.proof_of_disbursement && <div className="space-y-4 mt-4">
+                        {/* Borrower's Valid ID */}
+                        <h1 className="font-bold text-lg text-center">Upload Proof of Disbursement</h1>
+                        {/* {selectedLoan.proof_of_disbursement && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
                           <div key={1} className="flex flex-col items-center">
                             <div
@@ -2330,45 +2358,54 @@ function LoanApplication() {
                         </div>
                       )} */}
 
-                      <div
+                        <div
 
-                        className={`${hasError1 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
-                          }`}>
+                          className={`${hasError1 ? "space-y-4 p-4 border-2 rounded border-red-500" : ""
+                            }`}>
 
 
 
-                        <DropzoneArea
-                          fieldName="borrowerValidID"
-                          files={files}
-                          dropzoneProps={{
-                            ...dropzoneProps("borrowerValidID"),
-                            accept: {
-                              'image/*': ['.jpeg', '.png', '.jpg']
-                            }
-                          }}
-                          setFieldValue={setFieldValue}
-                          errors={errors}
-                        />
-                        {errors.borrowerValidID && <p className="text-red-500 text-sm mt-2">{errors.borrowerValidID}</p>}
+                          <DropzoneArea
+                            fieldName="borrowerValidID"
+                            files={files}
+                            dropzoneProps={{
+                              ...dropzoneProps("borrowerValidID"),
+                              accept: {
+                                'image/*': ['.jpeg', '.png', '.jpg']
+                              }
+                            }}
+                            setFieldValue={setFieldValue}
+                            errors={errors}
+                          />
+                          {errors.borrowerValidID && <p className="text-red-500 text-sm mt-2">{errors.borrowerValidID}</p>}
+                        </div>
+
+
+
+
                       </div>
 
+                    }
 
 
 
-                    </div>
-                    <div className="flex justify-between mt-4">
-                      <button
-                        type="submit"
-                        className="btn bg-buttonPrimary text-white"
-                        onClick={() => {
-                          //console.log({ files })
 
 
-
-                        }}
-                      >
-                        Submit
-                      </button>                  </div>
+                    {
+                      !selectedLoan.proof_of_disbursement && (
+                        <div className="flex justify-between mt-4">
+                          <button
+                            type="submit"
+                            className="btn bg-buttonPrimary text-white"
+                            onClick={() => {
+                              //console.log({ files })
+                            }}
+                          >
+                            Submit
+                          </button>
+                        </div>
+                      )
+                    }
                   </div>
 
 
