@@ -599,4 +599,55 @@ router.post(
     }
   }
 );
+
+// Add these endpoints for dashboard stats
+router.get('/dashboard-stats', async (req, res) => {
+  try {
+    const [stats] = await db.query(`
+      SELECT 
+        (SELECT COUNT(*) FROM loan) as total_loans,
+        (SELECT COUNT(*) FROM loan WHERE loan_status = 'Pending') as pending_loans,
+        (SELECT COUNT(*) FROM loan WHERE loan_status = 'Approved') as approved_loans,
+        (SELECT COUNT(*) FROM loan WHERE loan_status = 'Disbursed') as disbursed_loans,
+        (SELECT COUNT(*) FROM borrower_account) as total_borrowers,
+        (SELECT SUM(loan_amount) FROM loan WHERE loan_status = 'Disbursed') as total_disbursed_amount,
+        (SELECT SUM(payment_amount) FROM payment WHERE payment_status = 'Approved') as total_collected_amount
+    `);
+
+    // Get monthly disbursement data
+    const [monthlyDisbursements] = await db.query(`
+      SELECT 
+        DATE_FORMAT(disbursement_date, '%Y-%m') as month,
+        COUNT(*) as count,
+        SUM(amount) as total_amount
+      FROM disbursement_details
+      GROUP BY DATE_FORMAT(disbursement_date, '%Y-%m')
+      ORDER BY month DESC
+      LIMIT 12
+    `);
+
+    // Get payment collection stats
+    const [paymentStats] = await db.query(`
+      SELECT 
+        DATE_FORMAT(payment_date, '%Y-%m') as month,
+        COUNT(*) as count,
+        SUM(payment_amount) as total_amount,
+        payment_status
+      FROM payment
+      GROUP BY DATE_FORMAT(payment_date, '%Y-%m'), payment_status
+      ORDER BY month DESC
+      LIMIT 24
+    `);
+
+    res.json({
+      stats: stats[0],
+      monthlyDisbursements,
+      paymentStats
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

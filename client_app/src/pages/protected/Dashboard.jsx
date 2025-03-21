@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '../../features/common/headerSlice';
 import Dashboard from '../../features/dashboard/index';
-import { LineChart, AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 import { FaCheckCircle } from 'react-icons/fa'; // Add any icons you want to use
 import axios from 'axios';
@@ -54,60 +54,175 @@ function InternalPage() {
     // setDropdownVisible(false);
   };
 
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-
+  const fetchDashboardStats = async () => {
+    try {
+      const response = await axios.get('/admin/loan/dashboard-stats');
+      setDashboardStats(response.data);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     dispatch(setPageTitle({ title: 'Dashboard' }));
+    fetchDashboardStats();
   }, []);
 
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  }
 
-  // return <div>
-  //   <div className="flex justify-center items-center min-h-screen bg-gray-100">
-  //     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-4xl px-4">
-  //       {[{
-  //         label: 'APPLY FOR NEW LOAN',
-  //         color: '#98C1D9',
-  //         thumbnail: 'https://img.freepik.com/free-vector/people-protecting-their-cash_74855-5553.jpg?t=st=1730798676~exp=1730802276~hmac=6444e79e04969490ea47f8bba6bad15b02b968e56310cd7d0a95640037b0735c&w=1060'
-  //       },
-  //       {
-  //         label: 'View Payment History',
-  //         thumbnail: 'https://img.freepik.com/free-vector/flat-woman-paying-by-pos-terminal-refund-cashback_88138-785.jpg?t=st=1730798777~exp=1730802377~hmac=7775c8fe89e725c21b7adbd6c6e8349079ff970fc46e13320262235231339d78&w=996'
-  //       },
-  //       {
-  //         label: 'Account History',
-  //         thumbnail: 'https://img.freepik.com/free-vector/e-wallet-money-transfer-concept-mobile-wallet-internet-banking-e-wallet-credit-card-mobile-app-accounting-investments-safe-online-internet-transaction-vector-illustration_1150-55440.jpg?t=st=1730798913~exp=1730802513~hmac=b379287bb875fbc5a65c9e607337be452b1941a19df992be6f137501f69c078f&w=996'
-  //       }].map((item, index) => (
-  //         <div
+  const stats = dashboardStats?.stats || {};
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-  //           onClick={() => {
-  //             navigate("/app/loan_application"); // Navigate to the desired route
-  //           }}
-  //           key={index}
-  //           className={`cursor-pointer max-w-sm mx-auto rounded-lg shadow-md overflow-hidden transform transition-transform duration-300 ease-in-out  hover:scale-105 hover:shadow-lg`}
-  //         >
-  //           <div className="card ">
-  //             <figure>
-  //               <img
-  //                 src={item.thumbnail}
-  //                 alt="Shoes" />
-  //             </figure>
-  //             <div className="card-body">
-  //               <h2 className="card-title uppercase text-slate-900 font-bold">{item.label}</h2>
-  //               <p>If a dog chews shoes whose shoes does he choose?</p>
+  // Create pieData array
+  const pieData = [
+    { name: 'Pending', value: stats.pending_loans || 0 },
+    { name: 'Approved', value: stats.approved_loans || 0 },
+    { name: 'Disbursed', value: stats.disbursed_loans || 0 }
+  ];
 
-  //             </div>
-  //           </div>
-  //         </div>
-  //       ))}
-  //     </div>
-  //   </div>
-  // </div>;
+  return (
+    <div className="p-6 space-y-6 bg-gray-50">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Total Loans"
+          value={stats.total_loans || 0}
+          icon="📊"
+          color="bg-blue-500"
+        />
+        <StatCard
+          title="Total Borrowers"
+          value={stats.total_borrowers || 0}
+          icon="👥"
+          color="bg-green-500"
+        />
+        <StatCard
+          title="Total Disbursed"
+          value={formatAmount(stats.total_disbursed_amount || 0)}
+          icon="💰"
+          color="bg-yellow-500"
+        />
+        <StatCard
+          title="Total Collected"
+          value={formatAmount(stats.total_collected_amount || 0)}
+          icon="💵"
+          color="bg-purple-500"
+        />
+      </div>
 
-  return <div>
-    <SalesAndInventoryDashboard />
+      {/* Loan Status Distribution */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-xl shadow">
+          <h2 className="text-lg font-semibold mb-4">Loan Status Distribution</h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Legend />
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-  </div>
+        {/* Monthly Disbursements Chart */}
+        <div className="bg-white p-6 rounded-xl shadow">
+          <h2 className="text-lg font-semibold mb-4">Monthly Disbursements</h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={dashboardStats.monthlyDisbursements || []}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="month"
+                  tickFormatter={(value) => format(new Date(value), 'MMM yy')}
+                />
+                <YAxis />
+                <Tooltip
+                  formatter={(value) => formatAmount(value)}
+                  labelFormatter={(value) => format(new Date(value), 'MMMM yyyy')}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="total_amount"
+                  stroke="#8884d8"
+                  fill="#8884d8"
+                  fillOpacity={0.3}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Collection Trends */}
+      <div className="bg-white p-6 rounded-xl shadow">
+        <h2 className="text-lg font-semibold mb-4">Payment Collection Trends</h2>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={dashboardStats.paymentStats || []}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="month"
+                tickFormatter={(value) => format(new Date(value), 'MMM yy')}
+              />
+              <YAxis />
+              <Tooltip
+                formatter={(value) => formatAmount(value)}
+                labelFormatter={(value) => format(new Date(value), 'MMMM yyyy')}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="total_amount"
+                name="Collection Amount"
+                stroke="#82ca9d"
+              />
+              <Line
+                type="monotone"
+                dataKey="count"
+                name="Number of Payments"
+                stroke="#8884d8"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
 }
+
+// Stat Card Component
+const StatCard = ({ title, value, icon, color }) => (
+  <div className="bg-white rounded-xl shadow p-6">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm text-gray-500">{title}</p>
+        <p className="text-2xl font-semibold mt-1">{value}</p>
+      </div>
+      <div className={`${color} text-white p-3 rounded-full`}>
+        <span className="text-2xl">{icon}</span>
+      </div>
+    </div>
+  </div>
+);
 
 export default InternalPage;
