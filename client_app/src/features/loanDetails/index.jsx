@@ -418,6 +418,8 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
   const [selectedImage, setSelectedImage] = useState('');
 
   const userDetails = loanDetails;
+
+  console.log({ loanDetails })
   const documents = [
     { src: loanDetails.borrowers_valid_id, label: 'Borrowers Valid ID' },
     {
@@ -600,6 +602,10 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
 
           {activeTab === "uploaded-documents" && (
             <Section title="Uploaded Documents">
+
+              {
+                console.log({ documents })
+              }
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {documents.map((doc, index) => {
                   // Extract the file extension from the URL by splitting at the last dot

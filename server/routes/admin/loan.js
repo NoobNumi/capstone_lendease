@@ -247,6 +247,7 @@ router.post(
       const loan_application_id = req.body.loan_application_id;
       const uploadType = req.body.uploadType;
 
+      console.log({ uploadSupportingDocuments: 'uploadSupportingDocuments' });
       console.log({ loan_application_id, files, uploadType });
 
       let {
@@ -314,7 +315,7 @@ router.post(
         }
       } else {
         // Upload each file to Firebase Storage
-        for (const [key, fileArray] of Object.entries(files)) {
+        for (let [key, fileArray] of Object.entries(files)) {
           const file = fileArray[0];
 
           const storageRef = ref(
@@ -327,8 +328,31 @@ router.post(
           await uploadBytes(storageRef, file.buffer, metadata);
 
           // // Get the file's download URL
-          // const downloadURL = await getDownloadURL(storageRef);
-          // console.log({ downloadURL });
+          const downloadURL = await getDownloadURL(storageRef);
+          console.log({ downloadURL });
+
+          let borrowers_valid_id;
+          let co_makers_valid_id;
+          let bank_statement;
+
+          if (key === 'borrowerValidID') {
+            key = 'borrowers_valid_id';
+            borrowers_valid_id = downloadURL;
+          } else if (key === 'coMakersValidID') {
+            key = 'co_makers_valid_id';
+            co_makers_valid_id = downloadURL;
+          } else if (key === 'bankStatement') {
+            key = 'bank_statement';
+            bank_statement = downloadURL;
+          }
+
+          // update loan_application table
+          await db.query(
+            `UPDATE loan SET
+             ${key} = ? 
+            WHERE loan_application_id  = ?`,
+            [downloadURL, loan_application_id]
+          );
 
           console.log(`${key} uploaded successfully.`);
         }
