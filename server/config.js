@@ -54,7 +54,8 @@ try {
       queueLimit: 0,
       ssl: {
         rejectUnauthorized: true // Ensure it's a secure connection
-      }
+      },
+      timezone: 'Asia/Manila'
     });
 
     // const pool = await mysql.createPool({

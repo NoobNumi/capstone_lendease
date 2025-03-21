@@ -752,7 +752,7 @@ const LoanCalculator = memo(({
                               />
                               <div className="text-sm">
                                 <p className="font-medium text-gray-900">Scan to Pay</p>
-                                <p className="text-gray-500">Use your banking app to scan</p>
+                                <p className="text-gray-500">Use your QR code scanner app to scan</p>
                               </div>
                             </div>
                           )}

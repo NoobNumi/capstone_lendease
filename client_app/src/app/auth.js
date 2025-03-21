@@ -6,6 +6,7 @@ const checkAuth = () => {
   const TOKEN = localStorage.getItem('token');
 
   const PUBLIC_ROUTES = [
+    'home',
     'login',
     'forgot-password',
     'register',
@@ -19,6 +20,7 @@ const checkAuth = () => {
 
   // console.log({ PUBLIC_ROUTES });
 
+  console.log({ hey: window.location.href });
   const isPublicPage = PUBLIC_ROUTES.some(r =>
     window.location.href.includes(r)
   );

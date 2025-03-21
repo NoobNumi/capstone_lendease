@@ -173,7 +173,7 @@ const LandingPage = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Link to="/apply" className="btn btn-primary btn-lg text-lg px-8 bg-blue-950 text-white border-2 border-white">
+                <Link to="/register" className="btn btn-primary btn-lg text-lg px-8 bg-blue-950 text-white border-2 border-white">
                   Apply Now
                 </Link>
               </motion.div>

@@ -423,7 +423,7 @@ router.post(
 
       let loanDetails = rows1[0];
 
-      console.log({ loanDetails });
+      console.log({ here: 'dex' });
 
       const [rows] = await db.query(
         `
@@ -431,7 +431,8 @@ router.post(
         SET 
           loan_status = ?, 
           remarks = ?,
-          loan_officer_id = ? 
+          loan_officer_id = ?,
+         approval_date  = NOW()
         WHERE loan_application_id = ?;
         `,
         [loan_status, remarks, loan_officer_id, loanDetails.loan_application_id]

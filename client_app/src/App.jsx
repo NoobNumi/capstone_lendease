@@ -54,8 +54,8 @@ function App() {
     <>
       <Router>
         <Routes>
-          {/* <Route path="/" element={<LandingPage />} /> */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/home" element={<LandingPage />} />
           <Route path="/myprofile/:userId" element={<MyProfile />} />
           <Route path="/myprofile/:userId/order/:transactionId" element={<PaymentOrder />} />
           <Route path="/myprofile/:userId/layaway/:transactionId" element={<LayawayPaymentOrder />} />
