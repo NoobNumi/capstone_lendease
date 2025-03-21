@@ -162,13 +162,19 @@ const LoanSchedule = ({
 
     if (!payments?.length) return [];
 
-    // First check for pending combined payment
+    const today = new Date();
+    let pastDuePayments = [];
+    let currentPayment = null;
+    let futurePayments = [];
+
+    // Check if loan is approved and disbursed
+    const isLoanActive = selectedLoan?.loan_status === 'Approved' || selectedLoan?.loan_status === 'Disbursed';
+
+    // First check for pending payment
     const pendingPayment = loanPaymentList?.find(payment =>
-      payment.payment_status === 'Pending' &&
-      payment.includes_past_due === 1
+      payment.payment_status === 'Pending'
     );
 
-    // If there's a pending payment, handle it specially
     if (pendingPayment) {
       // Extract month numbers from remarks (e.g., "Combined payment - Past due: 1, 2, 3")
       const monthsMatch = pendingPayment.remarks.match(/Past due: ([\d, ]+)/);
@@ -204,13 +210,7 @@ const LoanSchedule = ({
       return [pendingPaymentEntry, ...futurePayments];
     }
 
-    // If no pending payment, process normally
-    const today = new Date();
-    let pastDuePayments = [];
-    let currentPayment = null;
-    let futurePayments = [];
-
-    // Process existing payments
+    // Process payments
     payments.forEach((payment, index) => {
       const dueDate = new Date(payment.transactionDate);
       const paymentStatus = loanPaymentList?.find(p => p.selectedTableRowIndex === index + 1);
@@ -223,7 +223,8 @@ const LoanSchedule = ({
       const formattedPayment = {
         ...payment,
         index: index + 1,
-        status: dueDate < today ? 'past_due' : 'due',
+        // Only mark as past_due if loan is active and payment date has passed
+        status: isLoanActive && dueDate < today ? 'past_due' : 'due',
         paymentStatus: paymentStatus?.payment_status,
         paymentMethod: paymentStatus?.payment_method,
         referenceNumber: paymentStatus?.reference_number,
@@ -231,13 +232,14 @@ const LoanSchedule = ({
         remarks: paymentStatus?.remarks
       };
 
-      if (dueDate < today) {
+      // Only consider past due if loan is active
+      if (isLoanActive && dueDate < today) {
         pastDuePayments.push(formattedPayment);
       } else if (!currentPayment) {
         currentPayment = {
           ...formattedPayment,
           status: 'due',
-          showQR: true
+          showQR: isLoanActive // Only show QR if loan is active
         };
       } else {
         futurePayments.push({
@@ -249,8 +251,8 @@ const LoanSchedule = ({
 
     let paymentList = [];
 
-    // Handle past due + current month
-    if (pastDuePayments.length > 0) {
+    // Handle past due + current month combination only if loan is active
+    if (isLoanActive && pastDuePayments.length > 0) {
       const totalPastDue = pastDuePayments.reduce((sum, p) => sum + p.dueAmount, 0);
       const combinedPayment = {
         ...pastDuePayments[0],
@@ -411,12 +413,16 @@ const LoanSchedule = ({
 
                 return (
                   <tr key={index} className={`border-b hover:bg-gray-50 
-                    ${isPending ? 'bg-amber-50' : isPastDue ? 'bg-rose-50' : ''}`}>
-                    <td className="py-3 px-4">{
-                      payment.isMultipleMonths ?
-                        `Months ${payment.pastDueMonths.join(', ')}${payment.includesCurrentPayment ? ' & Current' : ''}` :
+                    ${isPending ? 'bg-amber-50' :
+                      selectedLoan?.loan_status === 'Pending' ? 'bg-gray-50' :
+                        isPastDue ? 'bg-rose-50' : ''}`}>
+                    <td className="py-3 px-4">
+                      {payment.isMultipleMonths ? (
+                        `Months ${payment.pastDueMonths.join(', ')}${payment.includesCurrentPayment ? ' & Current' : ''}`
+                      ) : (
                         `Month ${payment.index}`
-                    }</td>
+                      )}
+                    </td>
                     <td className="py-3 px-4">
                       {payment.showQR && (
                         <QRCodeSVG
@@ -457,7 +463,9 @@ const LoanSchedule = ({
                       )}
                     </td>
                     <td className="py-3 px-4 text-center print:hidden">
-                      {payment.paymentStatus ? (
+                      {selectedLoan?.loan_status === 'Pending' ? (
+                        <div className="text-gray-500">Awaiting Loan Approval</div>
+                      ) : payment.paymentStatus ? (
                         <div className={`
                           px-2 py-1 rounded-full text-xs font-medium
                           ${payment.paymentStatus === 'Approved' ? 'bg-green-100 text-green-800' :
@@ -466,14 +474,13 @@ const LoanSchedule = ({
                                 'bg-gray-100 text-gray-800'}
                         `}>
                           {payment.paymentStatus}
-                          {payment.remarks && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              {payment.remarks}
-                            </div>
-                          )}
                         </div>
                       ) : (
-                        <span className="text-gray-400 text-sm">Upcoming</span>
+                        <span className="text-gray-400 text-sm">
+                          {selectedLoan?.loan_status === 'Approved' || selectedLoan?.loan_status === 'Disbursed'
+                            ? 'Upcoming'
+                            : 'Pending Loan Approval'}
+                        </span>
                       )}
                     </td>
                   </tr>
