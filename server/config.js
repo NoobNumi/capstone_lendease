@@ -108,6 +108,80 @@ let cypherQuerySession = `1`;
 //config
 
 let gmailEmailpassword = 'dqeq ukrn hvjg vnyx';
+
+// Update database relationships
+const dbRelationships = {
+  // Loan relationships
+  loan: {
+    belongsTo: ['borrower_account', 'loan_officer', 'loan_setting_parameters'],
+    hasMany: ['payment', 'collateral', 'disbursement_details']
+  },
+
+  // Borrower relationships
+  borrower_account: {
+    hasMany: ['loan', 'notification', 'guarantor'],
+    hasOne: ['user_account', 'address']
+  },
+
+  // Payment relationships
+  payment: {
+    belongsTo: ['loan', 'payment_method', 'loan_officer'],
+    hasOne: ['transaction']
+  },
+
+  // User account relationships
+  user_account: {
+    belongsTo: ['user_role'],
+    hasOne: [
+      'borrower_account',
+      'collector_account',
+      'admin_account',
+      'loan_officer'
+    ],
+    hasMany: ['logs', 'user_log']
+  },
+
+  // Collector relationships
+  collector_account: {
+    hasOne: ['user_account'],
+    hasMany: ['payment']
+  },
+
+  // Loan officer relationships
+  loan_officer: {
+    hasOne: ['user_account'],
+    hasMany: ['loan', 'payment']
+  },
+
+  // Admin relationships
+  admin_account: {
+    hasOne: ['user_account'],
+    hasMany: ['logs']
+  },
+
+  // Notification relationships
+  notification: {
+    belongsTo: ['borrower_account'],
+    hasOne: ['notification_template']
+  },
+
+  // SMS relationships
+  sms: {
+    belongsTo: ['borrower_account', 'loan']
+  },
+
+  // QR Code relationships
+  qr_code: {
+    belongsTo: ['loan_application']
+  },
+
+  // Loan application relationships
+  loan_application: {
+    belongsTo: ['borrower_account'],
+    hasOne: ['loan', 'qr_code']
+  }
+};
+
 export default {
   port: PORT,
   host: HOST,

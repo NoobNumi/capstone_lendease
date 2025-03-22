@@ -6,6 +6,8 @@ const checkAuth = () => {
   const TOKEN = localStorage.getItem('token');
 
   const PUBLIC_ROUTES = [
+    '', // Add empty string for root path
+    '/', // Add slash for root path
     'home',
     'login',
     'forgot-password',
@@ -18,17 +20,27 @@ const checkAuth = () => {
     'reset-password'
   ];
 
-  // console.log({ PUBLIC_ROUTES });
+  // Get the current path
+  const currentPath = window.location.pathname;
 
-  console.log({ hey: window.location.href });
-  const isPublicPage = PUBLIC_ROUTES.some(r =>
-    window.location.href.includes(r)
+  // Check if current path is public
+  const isPublicPage = PUBLIC_ROUTES.some(
+    route =>
+      currentPath === '/' + route ||
+      currentPath === route ||
+      currentPath === '/'
   );
 
+  // Only redirect to login if:
+  // 1. There's no token AND
+  // 2. It's not a public page
   if (!TOKEN && !isPublicPage) {
     window.location.href = '/login';
     return;
-  } else {
+  }
+
+  // Set up axios defaults and interceptors only if token exists
+  if (TOKEN) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${TOKEN}`;
 
     axios.interceptors.request.use(
@@ -53,8 +65,9 @@ const checkAuth = () => {
         return Promise.reject(error);
       }
     );
-    return TOKEN;
   }
+
+  return TOKEN;
 };
 
 export default checkAuth;

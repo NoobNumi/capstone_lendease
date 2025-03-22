@@ -51,35 +51,34 @@ function App() {
   }, []);
 
   return (
-    <>
-      <Router>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/home" element={<LandingPage />} />
-          <Route path="/myprofile/:userId" element={<MyProfile />} />
-          <Route path="/myprofile/:userId/order/:transactionId" element={<PaymentOrder />} />
-          <Route path="/myprofile/:userId/layaway/:transactionId" element={<LayawayPaymentOrder />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/register" element={<Register />} />
+    <Router>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/home" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/verify-email/:token" element={<AccountVerification />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/myprofile/:userId" element={<MyProfile />} />
+        <Route path="/myprofile/:userId/order/:transactionId" element={<PaymentOrder />} />
+        <Route path="/myprofile/:userId/layaway/:transactionId" element={<LayawayPaymentOrder />} />
 
+        {/* Protected Routes */}
+        <Route element={<AuthWrapper />}>
+          <Route path="/app/*" element={<Layout />} />
+        </Route>
 
-          <Route path="/verify-email/:token" element={<AccountVerification />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
-          {/* Place new routes over this */}
-          <Route element={<AuthWrapper />}>
-            <Route path="/app/*" element={<Layout />} />
-          </Route>
-
-          <Route
-            path="*"
-            element={
-              <Navigate to={token ? '/app/dashboard' : '/login'} replace />
-            }
-          />
-        </Routes>
-      </Router>
-    </>
+        {/* Fallback Route */}
+        <Route
+          path="*"
+          element={
+            <Navigate to={token ? '/app/dashboard' : '/'} replace />
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 
