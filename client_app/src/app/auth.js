@@ -17,7 +17,8 @@ const checkAuth = () => {
     'reset-password',
     'register',
     'verify-email',
-    'reset-password'
+    'reset-password',
+    'verify-email'
   ];
 
   // Get the current path
@@ -34,10 +35,10 @@ const checkAuth = () => {
   // Only redirect to login if:
   // 1. There's no token AND
   // 2. It's not a public page
-  if (!TOKEN && !isPublicPage) {
-    window.location.href = '/login';
-    return;
-  }
+  // if (!TOKEN && !isPublicPage) {
+  //   window.location.href = '/login';
+  //   return;
+  // }
 
   // Set up axios defaults and interceptors only if token exists
   if (TOKEN) {

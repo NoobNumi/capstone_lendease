@@ -195,6 +195,10 @@ const Tab1Content = ({
               ...values
             }
           });
+
+
+          await axios.post('auth/send-verification-email', { email: values.email });
+
           toast.success('Account created successfully. Please check your email.', {
             onClose: () => {
               // window.location.reload(); // Reloads the current window
