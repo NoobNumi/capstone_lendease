@@ -28,8 +28,8 @@ const upload = multer({
 let firebaseStorage = config.firebaseStorage;
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-const accountSid = 'ACbe246063583580e176da8274a8071c4a'; // Replace with your Twilio Account SID
-const authToken = 'faa226819bb25872991f707ec4e2d2d2'; // Replace with your Twilio Auth Token
+const accountSid = config.accountSid; // Replace with your Twilio Account SID
+const authToken = config.authToken; // Replace with your Twilio Auth Token
 import twilio from 'twilio'; // Use import statement for Twilio
 import { Vonage } from '@vonage/server-sdk';
 
@@ -65,27 +65,24 @@ const sendMessage = async ({
     ? templates[messageType]({ firstName, lastName, ...additionalData })
     : 'No valid message type provided.';
 
-  const from = 'YourCompany'; // Set your company name or short code as sender
+  const from = '+13806668798'; // Set your company name or short code as sender
   const to = phoneNumber;
 
   try {
-    // await vonage.sms.send(
-    //   { to, from, text: messageText },
-    //   (error, response) => {
-    //     if (error) {
-    //       console.error('Failed to send message:', error);
-    //     } else {
-    //       console.log('Message sent successfully:', response);
-    //     }
-    //   }
-    // );
     console.log({ to, from, text });
-    await vonage.sms.send({ to, from, text }).then(resp => {
-      console.log('Message sent successfully');
-      console.log(resp);
-    });
+    // Replace Vonage implementation with Twilio
+    await client.messages
+      .create({
+        body: text,
+        from: from,
+        to: to
+      })
+      .then(message => {
+        console.log('Message sent successfully with Twilio');
+        console.log('Message SID:', message.sid);
+      });
   } catch (error) {
-    console.error('Error occurred while sending message:', error);
+    console.error('Error occurred while sending message with Twilio:', error);
   }
 };
 

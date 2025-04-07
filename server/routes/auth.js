@@ -174,7 +174,8 @@ router.post('/login', async (req, res, next) => {
     if (user.is_verified === 0) {
       return res.status(401).json({
         success: false,
-        message: 'Please verify you account first. Check your email to verify.'
+        message: 'Please verify you account first. Check your email to verify.',
+        needVerification: true
       });
     }
     // Generate JWT token

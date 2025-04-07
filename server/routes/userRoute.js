@@ -346,7 +346,8 @@ router.post(
       await db.query(queryInsertAccount, valuesInsertAccount);
 
       res.status(200).json({
-        success: true
+        success: true,
+        needVerification: true
       });
     }
   }
