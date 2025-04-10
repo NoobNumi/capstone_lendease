@@ -195,8 +195,8 @@ export default {
   mySqlDriver: mySqlDriver,
   firebaseStorage,
   REACT_FRONT_END_URL: 'http://localhost:5173',
-  VONAGE_apiKey: '4bd672c1',
-  VONAGE_apiSecret: 'AfPrKNa0SHzObquW',
+  VONAGE_apiKey: '863ca4ba',
+  VONAGE_apiSecret: 'ehM0AWozSgvxn71t',
   accountSid: 'ACc2722205466c12991f0f21657440d649',
   authToken: '965d4261fd8f911431dfc5a35174ec6e'
 };

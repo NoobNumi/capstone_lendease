@@ -56,7 +56,6 @@ const sendMessage = async ({
   messageType,
   additionalData = {}
 }) => {
-  const client = twilio(accountSid, authToken);
   const templates = {
     loanCreation: loanCreationMessage
   };
@@ -65,24 +64,32 @@ const sendMessage = async ({
     ? templates[messageType]({ firstName, lastName, ...additionalData })
     : 'No valid message type provided.';
 
-  const from = '+13806668798'; // Set your company name or short code as sender
+  const from = 'LendEase'; // Set your company name or brand name as sender
   const to = phoneNumber;
 
   try {
     console.log({ to, from, text });
-    // Replace Vonage implementation with Twilio
-    await client.messages
-      .create({
-        body: text,
+    // Use Vonage instead of Twilio
+    await vonage.sms
+      .send({
+        to: to,
         from: from,
-        to: to
+        text: text
       })
-      .then(message => {
-        console.log('Message sent successfully with Twilio');
-        console.log('Message SID:', message.sid);
+      .then(response => {
+        const { messages } = response;
+        if (messages && messages[0]?.status === '0') {
+          console.log('Message sent successfully with Vonage');
+          console.log('Message ID:', messages[0].message_id);
+        } else {
+          console.log(
+            'Message failed with error:',
+            messages[0]?.['error-text']
+          );
+        }
       });
   } catch (error) {
-    console.error('Error occurred while sending message with Twilio:', error);
+    console.error('Error occurred while sending message with Vonage:', error);
   }
 };
 
@@ -1056,4 +1063,28 @@ router.post(
   }
 );
 
+// api to test       await sendMessage({
+//   firstName: first_name,
+//   lastName: last_name,
+//   phoneNumber: formatPhoneNumber(contact_number),
+//   messageType: 'loanCreation',
+//   additionalData: { loanId: loanId, loanAmount: loan_amount }
+// });
+
+router.get('/test-message', async (req, res) => {
+  try {
+    await sendMessage({
+      firstName: 'Isaac',
+      lastName: 'Bublo',
+      phoneNumber: '+639178963212',
+      messageType: 'loanCreation',
+      additionalData: { loanId: '123', loanAmount: '1000' }
+    });
+
+    res.json({ success: true, message: 'Message sent successfully' });
+  } catch (error) {
+    console.error('Error sending message:', error);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
 export default router;
