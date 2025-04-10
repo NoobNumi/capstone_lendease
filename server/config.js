@@ -198,5 +198,5 @@ export default {
   VONAGE_apiKey: '863ca4ba',
   VONAGE_apiSecret: 'ehM0AWozSgvxn71t',
   accountSid: 'ACc2722205466c12991f0f21657440d649',
-  authToken: '965d4261fd8f911431dfc5a35174ec6e'
+  authToken: '294c5194409d99f3248594fb1fc151d3'
 };

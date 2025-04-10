@@ -33,6 +33,7 @@ const authToken = config.authToken; // Replace with your Twilio Auth Token
 import twilio from 'twilio'; // Use import statement for Twilio
 import { Vonage } from '@vonage/server-sdk';
 
+console.log({ accountSid, authToken });
 const vonage = new Vonage({
   apiKey: config.VONAGE_apiKey,
   apiSecret: config.VONAGE_apiSecret
@@ -56,6 +57,7 @@ const sendMessage = async ({
   messageType,
   additionalData = {}
 }) => {
+  const client = twilio(accountSid, authToken);
   const templates = {
     loanCreation: loanCreationMessage
   };
@@ -64,32 +66,24 @@ const sendMessage = async ({
     ? templates[messageType]({ firstName, lastName, ...additionalData })
     : 'No valid message type provided.';
 
-  const from = 'LendEase'; // Set your company name or brand name as sender
+  const from = '+639221200298'; // Set your company name or short code as sender
   const to = phoneNumber;
 
   try {
     console.log({ to, from, text });
-    // Use Vonage instead of Twilio
-    await vonage.sms
-      .send({
-        to: to,
+    // Replace Vonage implementation with Twilio
+    await client.messages
+      .create({
+        body: text,
         from: from,
-        text: text
+        to: to
       })
-      .then(response => {
-        const { messages } = response;
-        if (messages && messages[0]?.status === '0') {
-          console.log('Message sent successfully with Vonage');
-          console.log('Message ID:', messages[0].message_id);
-        } else {
-          console.log(
-            'Message failed with error:',
-            messages[0]?.['error-text']
-          );
-        }
+      .then(message => {
+        console.log('Message sent successfully with Twilio');
+        console.log('Message SID:', message.sid);
       });
   } catch (error) {
-    console.error('Error occurred while sending message with Vonage:', error);
+    console.error('Error occurred while sending message with Twilio:', error);
   }
 };
 
@@ -1073,10 +1067,29 @@ router.post(
 
 router.get('/test-message', async (req, res) => {
   try {
+    function formatPhoneNumber(phoneNumber) {
+      // Remove any non-digit characters
+      let cleaned = phoneNumber.replace(/\D/g, '');
+
+      // Check if the number starts with '09' or any other prefix and always convert to '+63'
+      if (cleaned.startsWith('9')) {
+        cleaned = '+63' + cleaned.substring(1); // Replace '0' or '9' with '+63'
+      } else if (cleaned.startsWith('0')) {
+        cleaned = '+63' + cleaned.substring(1); // Replace '0' with '+63'
+      }
+
+      // Ensure the number has the correct length after conversion
+      if (cleaned.length === 13) {
+        return cleaned; // Return the correctly formatted number
+      } else {
+        return 'Invalid phone number length';
+      }
+    }
+
     await sendMessage({
-      firstName: 'Isaac',
-      lastName: 'Bublo',
-      phoneNumber: '+639178963212',
+      firstName: 'Zoren',
+      lastName: 'Zoren',
+      phoneNumber: formatPhoneNumber('09517499230'),
       messageType: 'loanCreation',
       additionalData: { loanId: '123', loanAmount: '1000' }
     });
