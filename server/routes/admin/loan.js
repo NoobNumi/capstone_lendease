@@ -16,11 +16,13 @@ const upload = multer({ storage: multer.memoryStorage() });
 let firebaseStorage = config.firebaseStorage;
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-const accountSid = 'ACbe246063583580e176da8274a8071c4a'; // Replace with your Twilio Account SID
-const authToken = 'faa226819bb25872991f707ec4e2d2d2'; // Replace with your Twilio Auth Token
-import twilio from 'twilio'; // Use import statement for Twilio
 import { Vonage } from '@vonage/server-sdk';
 // twillo YCBPSCDZWYP11Z5JUD89W7DT
+
+const accountSid = config.accountSid; // Replace with your Twilio Account SID
+const authToken = config.authToken; // Replace with your Twilio Auth Token
+import twilio from 'twilio'; // Use import statement for Twilio
+
 const loanApprovalMessage = ({
   firstName,
   lastName,
@@ -100,43 +102,35 @@ const sendMessage = async ({
 }) => {
   const client = twilio(accountSid, authToken);
   const templates = {
+    loanCreation: loanCreationMessage,
     loanApproval: loanApprovalMessage,
     loanRejection: loanRejectionMessage,
-    loanAdvancePayment: loanAdvancePaymentMessage,
     loanPaymentAcceptance: loanPaymentAcceptanceMessage,
-    loanPaymentRejection: loanPaymentRejectionMessage,
-    loanCreation: loanCreationMessage
+    loanPaymentRejection: loanPaymentRejectionMessage
   };
 
   const text = templates[messageType]
     ? templates[messageType]({ firstName, lastName, ...additionalData })
     : 'No valid message type provided.';
 
-  const from = 'YourCompany'; // Set your company name or short code as sender
+  const from = '+639221200298'; // Set your company name or short code as sender
   const to = phoneNumber;
 
   try {
-    const vonage = new Vonage({
-      apiKey: config.VONAGE_apiKey,
-      apiSecret: config.apiSecret
-    });
-    // await vonage.sms.send(
-    //   { to, from, text: messageText },
-    //   (error, response) => {
-    //     if (error) {
-    //       console.error('Failed to send message:', error);
-    //     } else {
-    //       console.log('Message sent successfully:', response);
-    //     }
-    //   }
-    // );
     console.log({ to, from, text });
-    await vonage.sms.send({ to, from, text }).then(resp => {
-      console.log('Message sent successfully');
-      console.log(resp);
-    });
+    // Replace Vonage implementation with Twilio
+    await client.messages
+      .create({
+        body: text,
+        from: from,
+        to: to
+      })
+      .then(message => {
+        console.log('Message sent successfully with Twilio');
+        console.log('Message SID:', message.sid);
+      });
   } catch (error) {
-    console.error('Error occurred while sending message:', error);
+    console.error('Error occurred while sending message with Twilio:', error);
   }
 };
 
@@ -424,7 +418,20 @@ router.post(
       let loanDetails = rows1[0];
 
       console.log({ here: 'dex' });
+      const { first_name, last_name, contact_number, loan_amount } =
+        loanDetails;
 
+      await sendMessage({
+        firstName: first_name,
+        lastName: last_name,
+        phoneNumber: formatPhoneNumber('09923150633'),
+        messageType:
+          loan_status === 'Approved' ? 'loanApproval' : 'loanRejection',
+
+        additionalData: { loanId: loanId, loanAmount: loan_amount }
+      });
+
+      return true;
       const [rows] = await db.query(
         `
         UPDATE loan 
@@ -447,9 +454,6 @@ router.post(
         `,
         [loan_status, loanDetails.loan_application_id]
       );
-
-      const { first_name, last_name, contact_number, loan_amount } =
-        loanDetails;
 
       function formatPhoneNumber(phoneNumber) {
         // Remove any non-digit characters
