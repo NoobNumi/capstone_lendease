@@ -424,7 +424,7 @@ router.post(
       await sendMessage({
         firstName: first_name,
         lastName: last_name,
-        phoneNumber: formatPhoneNumber('09923150633'),
+        phoneNumber: formatPhoneNumber(contact_number),
         messageType:
           loan_status === 'Approved' ? 'loanApproval' : 'loanRejection',
 
