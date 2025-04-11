@@ -417,21 +417,9 @@ router.post(
 
       let loanDetails = rows1[0];
 
-      console.log({ here: 'dex' });
       const { first_name, last_name, contact_number, loan_amount } =
         loanDetails;
 
-      await sendMessage({
-        firstName: first_name,
-        lastName: last_name,
-        phoneNumber: formatPhoneNumber(contact_number),
-        messageType:
-          loan_status === 'Approved' ? 'loanApproval' : 'loanRejection',
-
-        additionalData: { loanId: loanId, loanAmount: loan_amount }
-      });
-
-      return true;
       const [rows] = await db.query(
         `
         UPDATE loan 
@@ -474,7 +462,6 @@ router.post(
         }
       }
 
-      // console.log(formatPhoneNumber(contact_number));
       await sendMessage({
         firstName: first_name,
         lastName: last_name,
@@ -484,6 +471,8 @@ router.post(
 
         additionalData: { loanId: loanId, loanAmount: loan_amount }
       });
+
+      console.log('text message sent successuly');
 
       res.status(200).json({ success: true });
 
