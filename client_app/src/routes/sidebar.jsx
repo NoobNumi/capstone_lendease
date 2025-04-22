@@ -70,6 +70,7 @@ const AppRoutes = () => {
           { path: '/app/collectors', name: 'Collectors' },
           { path: '/app/sms_logs', name: 'SMS Logs' },
           { path: '/app/settings', name: 'Settings' },
+          { path: '/app/financial-management', name: 'Financial Management', icon: <BanknotesIcon className="h-6 w-6" /> },
         ];
       }
 

@@ -344,14 +344,8 @@ function ForgotPassword() {
             <main className="container mx-auto p-4 h-screen">
 
                 <div className="flex flex-col md:flex-row h-[calc(100vh-100px)] bg-white rounded-lg shadow-lg">
-                    <div className="w-full md:w-1/3 p-2 overflow-y-auto border border-gray-300 rounded-lg">
-                        {/* Content for the left div */}
-                        <SmsForm
-                            getSMS={getSMS}
-                            borrowerList={borrowerList}
-                        />
-                    </div>
-                    <div className="w-full md:w-2/3 p-2 overflow-y-auto border border-gray-300 rounded-lg">
+
+                    <div className="w-full p-2 overflow-y-auto border border-gray-300 rounded-lg">
                         <div className="">
                             <Table columns={columns} data={smsList || []} />
                         </div>

@@ -397,6 +397,7 @@ function LoanApplication() {
           let loan = row.original;
 
 
+          let isLoanOfficer = loggedInUser.role === 'Loan Officer';
 
           return (
             (
@@ -418,14 +419,18 @@ function LoanApplication() {
                   <i class="fa-solid fa-credit-card"></i>
                 </button>
 
-                <a
-                  href={`loan_details/${loan.loan_id}`} // Replace with the actual URL for the loan details
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-outline btn-sm"
-                >
-                  <i className="fa-solid fa-eye"></i>
-                </a>
+
+                {
+                  !isLoanOfficer && <a
+                    href={`loan_details/${loan.loan_id}`} // Replace with the actual URL for the loan details
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline btn-sm"
+                  >
+                    <i className="fa-solid fa-eye"></i>
+                  </a>
+                }
+
 
 
 
@@ -2080,7 +2085,7 @@ function LoanApplication() {
             >✕</button>
             <div className="bg-white p-4 rounded-full shadow-lg bg-gradient-to-r from-gray-200 to-gray-300 z-10 text-blue-950 border bg-white rounded flex items-center space-x-4">
 
-              <p className="font-bold text-lg">Loan Disbursements</p>
+              <p className="font-bold text-lg">Loan Disbursement</p>
             </div>
             {
               console.log({ selectedLoan })
@@ -2181,7 +2186,7 @@ function LoanApplication() {
                           setFieldValue={setFieldValue}
                           onBlur={handleBlur}
                           options={[
-                            { value: 'CASH', label: 'CASH' },
+                            { value: 'CASH', label: 'Cash over the counter' },
                             { value: 'E-WALLET/BANK TRANSFER', label: 'E-WALLET/BANK TRANSFER' }
                           ]}
                         />

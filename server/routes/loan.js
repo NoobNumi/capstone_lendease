@@ -50,6 +50,65 @@ Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has b
 
 Thank you for choosing us!`;
 
+const loanApprovalMessage = ({
+  firstName,
+  lastName,
+  loanAmount,
+  loanId
+}) => `Dear ${firstName} ${lastName},
+
+Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been approved. Our team will proceed with the disbursement process.
+
+Thank you for choosing us!`;
+
+const loanRejectionMessage = ({
+  firstName,
+  lastName,
+  loanId
+}) => `Dear ${firstName} ${lastName},
+
+Your loan application (Loan ID: ${loanId}) has been rejected.
+
+Thank you for choosing us!`;
+
+const loanPaymentAcceptanceMessage = ({
+  firstName,
+  lastName,
+  paymentAmount,
+  paymentDate
+}) => `Dear ${firstName} ${lastName},
+
+Your payment of ${paymentAmount} has been successfully processed on ${paymentDate}.
+
+Thank you for your prompt payment!`;
+
+const loanPaymentRejectionMessage = ({
+  firstName,
+  lastName,
+  paymentAmount,
+  reason
+}) => `Dear ${firstName} ${lastName},
+
+Your payment of ${paymentAmount} has been rejected.
+
+Reason: ${reason}
+
+Thank you for your prompt payment!`;
+
+const paymentSubmissionMessage = ({
+  firstName,
+  lastName,
+  paymentAmount,
+  referenceNumber,
+  paymentMethod
+}) => `Dear ${firstName} ${lastName},
+
+Thank you for your payment of ${paymentAmount}. Your payment with reference number ${referenceNumber} via ${paymentMethod} has been received and is now being processed.
+
+You will receive another notification once your payment has been verified and approved.
+
+Thank you for your prompt payment!`;
+
 const sendMessage = async ({
   firstName,
   lastName,
@@ -59,7 +118,12 @@ const sendMessage = async ({
 }) => {
   const client = twilio(accountSid, authToken);
   const templates = {
-    loanCreation: loanCreationMessage
+    loanCreation: loanCreationMessage,
+    loanApproval: loanApprovalMessage,
+    loanRejection: loanRejectionMessage,
+    loanPaymentAcceptance: loanPaymentAcceptanceMessage,
+    loanPaymentRejection: loanPaymentRejectionMessage,
+    paymentSubmission: paymentSubmissionMessage
   };
 
   const text = templates[messageType]
@@ -947,6 +1011,53 @@ router.post(
         );
       }
 
+      // Fetch borrower details to send SMS notification
+      const [loanDetails] = await db.query(
+        `SELECT l.*, b.first_name, b.last_name, b.contact_number 
+         FROM loan l 
+         JOIN borrower_account b ON l.borrower_id = b.borrower_id 
+         WHERE l.loan_id = ?`,
+        [req.params.loanId]
+      );
+
+      if (loanDetails.length > 0) {
+        const { first_name, last_name, contact_number } = loanDetails[0];
+
+        function formatPhoneNumber(phoneNumber) {
+          // Remove any non-digit characters
+          let cleaned = phoneNumber.replace(/\D/g, '');
+
+          // Check if the number starts with '09' or any other prefix and always convert to '+63'
+          if (cleaned.startsWith('9')) {
+            cleaned = '+63' + cleaned.substring(1); // Replace '9' with '+63'
+          } else if (cleaned.startsWith('0')) {
+            cleaned = '+63' + cleaned.substring(1); // Replace '0' with '+63'
+          }
+
+          // Ensure the number has the correct length after conversion
+          if (cleaned.length === 13) {
+            return cleaned; // Return the correctly formatted number
+          } else {
+            return 'Invalid phone number length';
+          }
+        }
+
+        // Send payment submission notification
+        await sendMessage({
+          firstName: first_name,
+          lastName: last_name,
+          phoneNumber: formatPhoneNumber(contact_number),
+          messageType: 'paymentSubmission',
+          additionalData: {
+            paymentAmount: payment_amount,
+            referenceNumber: reference_number,
+            paymentMethod: payment_method
+          }
+        });
+
+        console.log('Payment submission notification sent successfully');
+      }
+
       res.json({
         success: true,
         message: 'Payment submitted successfully',
@@ -1057,15 +1168,8 @@ router.post(
   }
 );
 
-// api to test       await sendMessage({
-//   firstName: first_name,
-//   lastName: last_name,
-//   phoneNumber: formatPhoneNumber(contact_number),
-//   messageType: 'loanCreation',
-//   additionalData: { loanId: loanId, loanAmount: loan_amount }
-// });
-
-router.get('/test-message', async (req, res) => {
+// Update the test endpoint to support testing different message types
+router.get('/test-message/:messageType?', async (req, res) => {
   try {
     function formatPhoneNumber(phoneNumber) {
       // Remove any non-digit characters
@@ -1086,18 +1190,74 @@ router.get('/test-message', async (req, res) => {
       }
     }
 
-    await sendMessage({
-      firstName: 'Zoren',
-      lastName: 'Zoren',
-      phoneNumber: formatPhoneNumber('09517499230'),
-      messageType: 'loanCreation',
-      additionalData: { loanId: '123', loanAmount: '1000' }
-    });
+    // Get the message type from the URL parameter, default to 'loanCreation'
+    const messageType = req.params.messageType || 'loanCreation';
 
-    res.json({ success: true, message: 'Message sent successfully' });
+    // Set up testing data for different message types
+    const testData = {
+      firstName: 'Test',
+      lastName: 'User',
+      phoneNumber: formatPhoneNumber('09923150633'), // Replace with your test phone number
+      messageType: messageType,
+      additionalData: {}
+    };
+
+    // Add specific data for each message type
+    switch (messageType) {
+      case 'loanCreation':
+        testData.additionalData = { loanId: 'TEST123', loanAmount: '10,000' };
+        break;
+      case 'loanApproval':
+        testData.additionalData = { loanId: 'TEST123', loanAmount: '10,000' };
+        break;
+      case 'loanRejection':
+        testData.additionalData = { loanId: 'TEST123' };
+        break;
+      case 'loanDisbursement':
+        testData.additionalData = {
+          loanId: 'TEST123',
+          loanAmount: '10,000',
+          paymentMethod: 'Bank Transfer',
+          paymentChannel: 'BDO'
+        };
+        break;
+      case 'paymentSubmission':
+        testData.additionalData = {
+          paymentAmount: '1,500',
+          referenceNumber: 'REF12345',
+          paymentMethod: 'GCash'
+        };
+        break;
+      case 'loanPaymentAcceptance':
+        testData.additionalData = {
+          loanId: 'TEST123',
+          paymentAmount: '1,500',
+          paymentDate: '2023-07-15'
+        };
+        break;
+      case 'loanPaymentRejection':
+        testData.additionalData = {
+          loanId: 'TEST123',
+          paymentAmount: '1,500',
+          reason: 'Invalid reference number'
+        };
+        break;
+      default:
+        return res.status(400).json({ error: 'Invalid message type' });
+    }
+
+    // Send the test message
+    await sendMessage(testData);
+
+    res.json({
+      success: true,
+      message: `Test ${messageType} message sent successfully`,
+      details: testData
+    });
   } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).json({ error: 'Failed to send message' });
+    console.error('Error sending test message:', error);
+    res.status(500).json({ error: 'Failed to send test message' });
   }
 });
+
 export default router;

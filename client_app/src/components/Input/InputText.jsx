@@ -14,6 +14,7 @@ const MyTextInput = ({
   required, // Add required prop
   isRequired = false,
   isReadOnly = false,
+  endAdornment, // Add endAdornment prop
   ...props
 
 }) => {
@@ -61,7 +62,7 @@ const MyTextInput = ({
 
         <div className="relative">
           <input
-            className={`${controlClassName} ${icons ? 'pl-10' : ''}`}
+            className={`${controlClassName} ${icons ? 'pl-10' : ''} ${endAdornment ? 'pr-10' : ''}`}
             {...field}
             {...props}
           />
@@ -73,6 +74,12 @@ const MyTextInput = ({
               h={hasTextareaHeight ? 'h-full' : 'h-12'}
               className="z-0 absolute top-0 left-0 z-0 pointer-events-none text-gray-500 dark:text-slate-400"
             />
+          )}
+
+          {endAdornment && (
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+              {endAdornment}
+            </div>
           )}
         </div>
         {meta.touched && meta.error ? (

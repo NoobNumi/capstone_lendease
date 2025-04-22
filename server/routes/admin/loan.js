@@ -93,6 +93,23 @@ Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has b
 
 Thank you for choosing us!`;
 
+const loanDisbursementMessage = ({
+  firstName,
+  lastName,
+  loanAmount,
+  loanId,
+  paymentMethod,
+  paymentChannel
+}) => `Dear ${firstName} ${lastName},
+
+Good news! Your loan (ID: ${loanId}) for the amount of ${loanAmount} has been successfully disbursed via ${paymentMethod}${
+  paymentChannel ? ' through ' + paymentChannel : ''
+}.
+
+Please check your account for the funds. If you have any questions, feel free to contact us.
+
+Thank you for choosing our services!`;
+
 const sendMessage = async ({
   firstName,
   lastName,
@@ -106,7 +123,8 @@ const sendMessage = async ({
     loanApproval: loanApprovalMessage,
     loanRejection: loanRejectionMessage,
     loanPaymentAcceptance: loanPaymentAcceptanceMessage,
-    loanPaymentRejection: loanPaymentRejectionMessage
+    loanPaymentRejection: loanPaymentRejectionMessage,
+    loanDisbursement: loanDisbursementMessage
   };
 
   const text = templates[messageType]
@@ -306,6 +324,54 @@ router.post(
             console.log('Loan ID already exists');
           }
           console.log(`${key} uploaded successfully...`);
+        }
+
+        // Fetch loan and borrower details to get contact information
+        const [loanDetails] = await db.query(
+          `SELECT la.*, ba.* FROM loan la 
+           INNER JOIN borrower_account ba ON la.borrower_id = ba.borrower_id 
+           WHERE la.loan_id = ?`,
+          [loan_application_id]
+        );
+
+        if (loanDetails.length > 0) {
+          const { first_name, last_name, contact_number, loan_amount } =
+            loanDetails[0];
+
+          function formatPhoneNumber(phoneNumber) {
+            // Remove any non-digit characters
+            let cleaned = phoneNumber.replace(/\D/g, '');
+
+            // Check if the number starts with '09' or any other prefix and always convert to '+63'
+            if (cleaned.startsWith('9')) {
+              cleaned = '+63' + cleaned.substring(1); // Replace '0' or '9' with '+63'
+            } else if (cleaned.startsWith('0')) {
+              cleaned = '+63' + cleaned.substring(1); // Replace '0' with '+63'
+            }
+
+            // Ensure the number has the correct length after conversion
+            if (cleaned.length === 13) {
+              return cleaned; // Return the correctly formatted number
+            } else {
+              return 'Invalid phone number length';
+            }
+          }
+
+          // Send disbursement notification
+          await sendMessage({
+            firstName: first_name,
+            lastName: last_name,
+            phoneNumber: formatPhoneNumber(contact_number),
+            messageType: 'loanDisbursement',
+            additionalData: {
+              loanId: loan_application_id,
+              loanAmount: loan_amount,
+              paymentMethod: payment_method,
+              paymentChannel: payment_channel
+            }
+          });
+
+          console.log('Disbursement notification sent successfully');
         }
       } else {
         // Upload each file to Firebase Storage

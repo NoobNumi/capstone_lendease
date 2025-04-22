@@ -62,6 +62,8 @@ const Disbursement = lazy(() => import('../pages/protected/Disbursement'));
 
 const Register = lazy(() => import('../pages/Register'));
 
+const FinancialManagement = lazy(() => import('../pages/protected/FinancialManagement'));
+
 const token = checkAuth();
 
 const decoded = jwtDecode(token);
@@ -190,6 +192,11 @@ routes = [
   {
     path: '/register_now',
     component: Register
+  },
+
+  {
+    path: '/financial-management',
+    component: FinancialManagement
   },
 
 ];

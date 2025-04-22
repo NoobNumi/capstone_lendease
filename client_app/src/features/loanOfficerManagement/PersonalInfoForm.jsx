@@ -298,14 +298,15 @@ const PersonalInfoForm = ({ selectedLoan,
                 onChange={(e) => setFieldValue('date_of_birth', e.target.value)}
               />
               <InputText
-                disabled={isReadOnly}
-                isReadOnly={isReadOnly}
+                disabled={true}
+                isReadOnly={true}
                 isRequired
                 label="Age"
                 name="age"
                 type="text"
                 value={values.age}
                 onBlur={handleBlur}
+
               />
             </div>
 
