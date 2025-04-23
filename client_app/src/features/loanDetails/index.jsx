@@ -67,6 +67,7 @@ import {
 
 
 import ToPrint from "./toPrint";
+import PaymentRedirectHandler from './PaymentRedirectHandler';
 
 const LoanDetailsHeader = ({ selectedLoan, paymentList }) => {
   const [progress, setProgress] = useState(75); // Example progress value
@@ -503,18 +504,6 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
         {
           console.log({ loanDetails: loanDetails.loan_status })
         }
-
-        {/* {
-          (loanDetails.loan_status !== 'Rejected' || loanDetails.loan_status !== 'Pending') &&
-
-          <div className="mt-4 col-span-2 mb-2">
-            <div className="bg-yellow-100 border border-yellow-500 text-yellow-700 p-4 rounded">
-              <p className="font-semibold">Info:</p>
-              <p>Please wait while we process the disbursement.</p>
-            </div>
-          </div>
-        } */}
-
 
         {
           loanDetails.proof_of_disbursement && <div className="mt-4 col-span-2 mb-2">
@@ -1192,38 +1181,118 @@ function LoanApplication() {
   };
 
 
-  return isLoaded && !!loanDetails.loan_id && (
-    <Formik {...formikConfig(loanSettings.interest_rate)}>
-      {(formikProps) => {
-        return <TitleCard
-          titleBadge={true}
-          title={loanDetails.loan_status}
-          topMargin="mt-2"
-          TopSideButtons={
-            <TopSideButtons
-              applySearch={applySearch}
-              applyFilter={applyFilter}
-              removeFilter={removeFilter}
-              faqList={faqList}
-              formikProps={formikProps}
-              loanDetails={loanDetails}
-            />
+  const location = useLocation();
+  const [paymentStatus, setPaymentStatus] = useState(null);
+
+
+  const fetchloanPaymentList = async () => {
+
+    let res = await axios({
+      method: 'get',
+      url: `loan/${selectedLoan?.loan_id}/paymentList`,
+      data: {
+      }
+    });
+    let list = res.data.data;
+    setloanPaymentList(list)
+  };
+
+
+  useEffect(() => {
+    // Check for payment status in URL parameters
+    const queryParams = new URLSearchParams(location.search);
+    const payment = queryParams.get('payment');
+
+    if (payment === 'success') {
+      setPaymentStatus('success');
+      toast.success('Payment completed successfully!', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true
+      });
+
+      // Refresh loan data to show updated payment
+      if (loanId) {
+        fetchLoanPaymentList(loanId);
+      }
+
+      // Clear the URL parameter after handling
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (payment === 'failed') {
+      setPaymentStatus('failed');
+      toast.error('Payment was not completed. Please try again or contact support.', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true
+      });
+
+      // Clear the URL parameter after handling
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [location.search]);
+
+  const [refreshData, setRefreshData] = useState(false);
+
+  useEffect(() => {
+    if (loanId) {
+
+      const fetchloanPaymentList = async () => {
+
+        let res = await axios({
+          method: 'get',
+          url: `loan/${loanId}/paymentList`,
+          data: {
           }
-        >
-          <div>
+        });
+        let list = res.data.data;
+        // setloanPaymentList(list)
+      };
+
+
+      fetchloanPaymentList(loanId);
+    }
+  }, [loanId, refreshData]);
+
+  return isLoaded && !!loanDetails.loan_id && (
+    <>
+      <PaymentRedirectHandler setRefreshData={setRefreshData} />
+      <Formik {...formikConfig(loanSettings.interest_rate)}>
+        {(formikProps) => {
+          return <TitleCard
+            titleBadge={true}
+            title={loanDetails.loan_status}
+            topMargin="mt-2"
+            TopSideButtons={
+              <TopSideButtons
+                applySearch={applySearch}
+                applyFilter={applyFilter}
+                removeFilter={removeFilter}
+                faqList={faqList}
+                formikProps={formikProps}
+                loanDetails={loanDetails}
+              />
+            }
+          >
+            <div>
 
 
 
-            <LoanManagementTabs
-              loanDetails={loanDetails}
-              formikProps={formikProps}
-              rowIndex={rowIndex} />
+              <LoanManagementTabs
+                loanDetails={loanDetails}
+                formikProps={formikProps}
+                rowIndex={rowIndex} />
 
 
 
 
-          </div>
-          <ToastContainer />
+            </div>
+            <ToastContainer />
 
 
 
@@ -1231,73 +1300,100 @@ function LoanApplication() {
 
 
 
-          <dialog id="confirmationModal" className="modal">
-            <div className="modal-box w-11/12 max-w-2xl">
+            <dialog id="confirmationModal" className="modal">
+              <div className="modal-box w-11/12 max-w-2xl">
 
-              <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-                onClick={() => {
+                <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+                  onClick={() => {
 
-                  document.getElementById("confirmationModal").close()
-                }}
+                    document.getElementById("confirmationModal").close()
+                  }}
 
 
-              >✕</button>
+                >✕</button>
 
-              {/* <div className="modal-header flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg">
-                <h1 className="text-xl font-semibold">Confirmation</h1>
+                {/* <div className="modal-header flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg">
+                  <h1 className="text-xl font-semibold">Confirmation</h1>
 
-              </div> */}
+                </div> */}
 
-              <p className="text-sm text-gray-500 mt-1 font-bold"></p>
-              <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
+                <p className="text-sm text-gray-500 mt-1 font-bold"></p>
+                <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
 
-                {
-                  loanDetails.loan_id && <LoanEvaluationResult
+                  {
+                    loanDetails.loan_id && <LoanEvaluationResult
 
-                    result={result}
-                    loanDetails={loanDetails}
+                      result={result}
+                      loanDetails={loanDetails}
+                    />
+
+                  }
+
+                  {/* <Alert
+                    type={
+                      formikProps.values.status === 'Approved' ? 'success' : 'warning'
+                    } // Can be "success", "error", "info", "warning"
+                    title="Approval Confirmation"
+                    description="Are you sure you want to approve this loan application?"
+
+                  /> */}
+                  <TextAreaInput
+                    isRequired
+                    label="Remarks"
+                    name="remarks"
+                    type="text"
+                    // hasTextareaHeight={true}
+                    placeholder=""
+                    value={formikProps.values.remarks}
+
                   />
 
-                }
-
-                {/* <Alert
-                  type={
-                    formikProps.values.status === 'Approved' ? 'success' : 'warning'
-                  } // Can be "success", "error", "info", "warning"
-                  title="Approval Confirmation"
-                  description="Are you sure you want to approve this loan application?"
-
-                /> */}
-                <TextAreaInput
-                  isRequired
-                  label="Remarks"
-                  name="remarks"
-                  type="text"
-                  // hasTextareaHeight={true}
-                  placeholder=""
-                  value={formikProps.values.remarks}
-
-                />
-
-                <button
-                  type="submit"
-                  onClick={() => formikProps.handleSubmit()}
-                  className={`btn mt-2 justify-end float-right 
-                    ${formikProps.values.status === 'Approved' ? "bg-customBlue text-white" : "bg-red-500 text-white"
-                    }`}
-                  disabled={isSubmitting}>
-                  {formikProps.values.status === 'Approved' ? "Approve" : "Reject"}
-                </button>
+                  <button
+                    type="submit"
+                    onClick={() => formikProps.handleSubmit()}
+                    className={`btn mt-2 justify-end float-right 
+                      ${formikProps.values.status === 'Approved' ? "bg-customBlue text-white" : "bg-red-500 text-white"
+                      }`}
+                    disabled={isSubmitting}>
+                    {formikProps.values.status === 'Approved' ? "Approve" : "Reject"}
+                  </button>
+                </div>
               </div>
-            </div>
-          </dialog >
+            </dialog >
 
-        </TitleCard >
+            {paymentStatus && (
+              <div className={`alert ${paymentStatus === 'success' ? 'alert-success' : 'alert-error'} mb-4`}>
+                <div>
+                  {paymentStatus === 'success' ? (
+                    <>
+                      <CheckCircle className="w-6 h-6 mr-2" />
+                      <span>Payment completed successfully! Your loan records have been updated.</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="w-6 h-6 mr-2" />
+                      <span>Payment was not completed. Please try again or contact support.</span>
+                    </>
+                  )}
+                </div>
+                <div className="flex-none">
+                  <button
+                    onClick={() => setPaymentStatus(null)}
+                    className="btn btn-sm btn-ghost"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+          </TitleCard >
 
 
-      }}</Formik>
+        }}</Formik>
 
 
+    </>
   );
 }
 

@@ -11,6 +11,7 @@ let db = config.mySqlDriver;
 import { v4 as uuidv4 } from 'uuid';
 const router = express.Router();
 
+import axios from 'axios';
 import multer from 'multer';
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1257,6 +1258,311 @@ router.get('/test-message/:messageType?', async (req, res) => {
   } catch (error) {
     console.error('Error sending test message:', error);
     res.status(500).json({ error: 'Failed to send test message' });
+  }
+});
+
+// Replace Paymongo config with Xendit config
+const XENDIT_SECRET_KEY =
+  'xnd_development_qrIuFbkua0EJg4zLPMMTGmlKRg8Ttu0hyOwfa6if2EiAixv9rTZYXSz4dsQexhF';
+const XENDIT_PUBLIC_KEY =
+  'xnd_public_development_Q_gN2p8xdj6WLTSZwzr5ApG9i0ASvbFVaEluXbxHUs7Ud6l5ScmDXxETSJ80oZuH';
+const XENDIT_API_URL = 'https://api.xendit.co';
+
+// Create a payment using Xendit
+router.post('/create-payment', async (req, res) => {
+  try {
+    const { loanId, paymentAmount, paymentIndex, description } = req.body;
+
+    if (!loanId || !paymentAmount) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required parameters'
+      });
+    }
+
+    // Get loan details to include in payment metadata
+    const [loanDetails] = await db.query(
+      'SELECT loan_application_id, borrower_id FROM loan WHERE loan_id = ?',
+      [loanId]
+    );
+
+    if (!loanDetails.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Loan not found'
+      });
+    }
+
+    // Create unique payment reference
+    const externalId = `LOAN-${
+      loanDetails[0].loan_application_id
+    }-${paymentIndex}-${Date.now()}`;
+
+    console.log({ loanDetails });
+    // Create Xendit invoice
+    const invoice = await axios.post(
+      `${XENDIT_API_URL}/v2/invoices`,
+      {
+        external_id: externalId,
+        amount: paymentAmount,
+        payer_email: 'borrower@email.com', // Ideally fetch this from borrower's details
+        description:
+          description ||
+          `Loan Payment for ${loanDetails[0].loan_application_id}`,
+        invoice_duration: 86400, // 24 hours in seconds
+        success_redirect_url: `${config.REACT_FRONT_END_URL}/app/loan_details/${loanId}?payment=success`,
+        failure_redirect_url: `${config.REACT_FRONT_END_URL}/app/loan_details/${loanId}?payment=failed`,
+        currency: 'PHP',
+        items: [
+          {
+            name: `Loan Payment - Month ${paymentIndex}`,
+            quantity: 1,
+            price: paymentAmount,
+            category: 'Loan Payment'
+          }
+        ],
+        fees: [
+          {
+            type: 'Interest',
+            value: 0 // No additional fees
+          }
+        ],
+        payment_methods: [
+          'CREDIT_CARD',
+          'GCASH',
+          'PAYMAYA',
+          '7ELEVEN',
+          'CEBUANA'
+        ],
+        customer: {
+          given_names: 'Borrower',
+          surname: 'Name',
+          email: 'borrower@email.com',
+          mobile_number: '+639123456789'
+        },
+        customer_notification_preference: {
+          invoice_created: ['email', 'sms'],
+          invoice_reminder: ['email', 'sms'],
+          invoice_paid: ['email', 'sms'],
+          invoice_expired: ['email']
+        }
+      },
+      {
+        headers: {
+          Authorization: `Basic ${Buffer.from(XENDIT_SECRET_KEY + ':').toString(
+            'base64'
+          )}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    // Record payment attempt in database
+    await db.query(
+      `INSERT INTO payment_attempts (loan_id, payment_index, amount, reference, payment_intent_id, status, created_at) 
+       VALUES (?, ?, ?, ?, ?, 'pending', NOW())`,
+      [loanId, paymentIndex, paymentAmount, externalId, invoice.data.id]
+    );
+
+    // Return payment information to client
+    res.json({
+      success: true,
+      invoice: invoice.data,
+      reference: externalId
+    });
+  } catch (error) {
+    console.error(
+      'Error creating Xendit payment:',
+      error.response?.data || error.message
+    );
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create payment',
+      error: error.message
+    });
+  }
+});
+
+// Handle Xendit webhook for payment status updates
+router.post('/xendit-webhook', async (req, res) => {
+  try {
+    console.log('Dex');
+    const xenditHeader = req.headers['x-callback-token'];
+    if (xenditHeader !== config.XENDIT_WEBHOOK_VERIFICATION_TOKEN) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const event = req.body;
+
+    // For paid invoices
+    if (event.status === 'PAID') {
+      // Extract the external_id which contains our reference
+      const externalId = event.external_id;
+
+      // Update payment status in database
+      await db.query(
+        `UPDATE payment_attempts SET status = 'completed', completed_at = NOW() 
+         WHERE reference = ?`,
+        [externalId]
+      );
+
+      // Parse the loan_id and payment_index from the external_id
+      // Format: LOAN-{loan_application_id}-{paymentIndex}-{timestamp}
+      const parts = externalId.split('-');
+      const loanApplicationId = parts[1];
+      const paymentIndex = parts[2];
+
+      // Get loan_id from loan_application_id
+      const [loanInfo] = await db.query(
+        `SELECT loan_id FROM loan WHERE loan_application_id = ?`,
+        [loanApplicationId]
+      );
+
+      if (loanInfo.length > 0) {
+        // Insert payment record
+        await db.query(
+          `INSERT INTO payment 
+           (loan_id, payment_amount, payment_date, payment_method, reference_number, payment_status, payment_index) 
+           VALUES (?, ?, NOW(), ?, ?, 'Approved', ?)`,
+          [
+            loanInfo[0].loan_id,
+            event.amount,
+            event.payment_method || 'Xendit',
+            externalId,
+            paymentIndex
+          ]
+        );
+
+        // Optional: Send notification to borrower about successful payment
+      }
+    }
+
+    // For expired invoices
+    if (event.status === 'EXPIRED') {
+      await db.query(
+        `UPDATE payment_attempts SET status = 'failed', error_message = 'Invoice expired', completed_at = NOW() 
+         WHERE reference = ?`,
+        [event.external_id]
+      );
+    }
+
+    res.status(200).end();
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    res.status(400).end();
+  }
+});
+
+// Check payment status endpoint
+router.get('/payment-status/:reference', async (req, res) => {
+  try {
+    const { reference } = req.params;
+
+    // First check local status
+    const [paymentStatus] = await db.query(
+      `SELECT status, payment_intent_id, error_message FROM payment_attempts WHERE reference = ?`,
+      [reference]
+    );
+
+    if (!paymentStatus.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Payment not found'
+      });
+    }
+
+    // If the status is pending, check with Xendit for the latest status
+    if (paymentStatus[0].status === 'pending') {
+      try {
+        const xenditResponse = await axios.get(
+          `${XENDIT_API_URL}/v2/invoices/${paymentStatus[0].payment_intent_id}`,
+          {
+            headers: {
+              Authorization: `Basic ${Buffer.from(
+                XENDIT_SECRET_KEY + ':'
+              ).toString('base64')}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        // Map Xendit status to our status
+        let newStatus = 'pending';
+        if (xenditResponse.data.status === 'PAID') {
+          newStatus = 'completed';
+
+          // Update our database and create a payment record
+          await db.query(
+            `UPDATE payment_attempts SET status = 'completed', completed_at = NOW() WHERE reference = ?`,
+            [reference]
+          );
+
+          // Parse the loan_id and payment_index from the external_id
+          const parts = xenditResponse.data.external_id.split('-');
+          const loanApplicationId = parts[1];
+          const paymentIndex = parts[2];
+
+          // Get loan_id from loan_application_id
+          const [loanInfo] = await db.query(
+            `SELECT loan_id FROM loan WHERE loan_application_id = ?`,
+            [loanApplicationId]
+          );
+
+          if (loanInfo.length > 0) {
+            // Check if payment record already exists
+            const [existingPayment] = await db.query(
+              `SELECT id FROM payment WHERE loan_id = ? AND reference_number = ?`,
+              [loanInfo[0].loan_id, reference]
+            );
+
+            if (!existingPayment.length) {
+              // Insert payment record
+              await db.query(
+                `INSERT INTO payment 
+                 (loan_id, payment_amount, payment_date, payment_method, reference_number, payment_status, payment_index) 
+                 VALUES (?, ?, NOW(), ?, ?, 'Approved', ?)`,
+                [
+                  loanInfo[0].loan_id,
+                  xenditResponse.data.amount,
+                  xenditResponse.data.payment_method || 'Xendit',
+                  reference,
+                  paymentIndex
+                ]
+              );
+            }
+          }
+        } else if (xenditResponse.data.status === 'EXPIRED') {
+          newStatus = 'failed';
+          await db.query(
+            `UPDATE payment_attempts SET status = 'failed', error_message = 'Invoice expired', completed_at = NOW() WHERE reference = ?`,
+            [reference]
+          );
+        }
+
+        return res.json({
+          success: true,
+          status: newStatus,
+          xenditStatus: xenditResponse.data.status,
+          error: newStatus === 'failed' ? 'Payment expired or canceled' : null
+        });
+      } catch (xenditError) {
+        console.error('Error checking with Xendit:', xenditError);
+        // Continue with local status if Xendit request fails
+      }
+    }
+
+    // Return the local status
+    res.json({
+      success: true,
+      status: paymentStatus[0].status,
+      error: paymentStatus[0].error_message || null
+    });
+  } catch (error) {
+    console.error('Error checking payment status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check payment status'
+    });
   }
 });
 

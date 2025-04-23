@@ -11,6 +11,7 @@ import {
 import { themeChange } from 'theme-change';
 import checkAuth from './app/auth';
 import initializeApp from './app/init';
+import { toast } from 'react-toastify';
 
 // Importing pages
 const Layout = lazy(() => import('./containers/Layout'));
@@ -45,6 +46,9 @@ const AuthWrapper = dex => {
   return <Outlet />;
 };
 
+// Create a component to handle payment redirects at app level
+const PaymentRedirectHandler = React.lazy(() => import('./components/PaymentRedirectHandler'));
+
 function App() {
   useEffect(() => {
     themeChange(false);
@@ -52,6 +56,9 @@ function App() {
 
   return (
     <Router>
+      {/* Payment redirect handler that works across the app */}
+      <PaymentRedirectHandler />
+
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
