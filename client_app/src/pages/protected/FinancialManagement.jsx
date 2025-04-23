@@ -625,14 +625,22 @@ const FinancialManagement = () => {
               <div className="flex justify-center items-center h-64">
                 <span className="loading loading-spinner loading-lg"></span>
               </div>
-            ) : interestData.overTime && interestData.overTime.length > 0 ? (
+            ) : interestData.interestOverTime && interestData.interestOverTime.length > 0 ? (
               <div>
                 {/* Summary Card */}
                 <div className="stats shadow mb-6 w-full">
                   <div className="stat">
                     <div className="stat-title">Total Interest Earned</div>
-                    <div className="stat-value text-success">{formatAmount(interestData.total || 0)}</div>
+                    <div className="stat-value text-success">{formatAmount(interestData.summary?.totalInterestEarned || 0)}</div>
                     <div className="stat-desc">For the selected period</div>
+                  </div>
+                  <div className="stat">
+                    <div className="stat-title">Total Payments Received</div>
+                    <div className="stat-value">{formatAmount(interestData.summary?.totalPaymentsReceived || 0)}</div>
+                  </div>
+                  <div className="stat">
+                    <div className="stat-title">Interest Percentage</div>
+                    <div className="stat-value text-primary">{parseFloat(interestData.summary?.interestPercentage || 0).toFixed(2)}%</div>
                   </div>
                 </div>
 
@@ -645,15 +653,16 @@ const FinancialManagement = () => {
                       <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
-                            data={interestData.overTime}
+                            data={interestData.interestOverTime}
                             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="timePeriod" />
+                            <XAxis dataKey="formattedPeriod" />
                             <YAxis />
                             <Tooltip formatter={(value) => formatAmount(value)} />
                             <Legend />
                             <Bar dataKey="interestEarned" fill="#8884d8" name="Interest Earned" />
+                            <Bar dataKey="totalPayment" fill="#82ca9d" name="Total Payment" />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -668,7 +677,7 @@ const FinancialManagement = () => {
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                             <Pie
-                              data={interestData.byLoanType}
+                              data={interestData.interestByLoanType}
                               cx="50%"
                               cy="50%"
                               labelLine={false}
@@ -678,7 +687,7 @@ const FinancialManagement = () => {
                               dataKey="interestEarned"
                               nameKey="loanType"
                             >
-                              {interestData.byLoanType.map((entry, index) => (
+                              {interestData.interestByLoanType.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                               ))}
                             </Pie>
@@ -700,15 +709,21 @@ const FinancialManagement = () => {
                           <tr>
                             <th>Loan Type</th>
                             <th>Interest Earned</th>
+                            <th>Total Payment</th>
+                            <th>Loan Count</th>
+                            <th>Avg Interest Rate</th>
                             <th>Percentage</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {interestData.byLoanType.map((item, index) => (
+                          {interestData.interestByLoanType.map((item, index) => (
                             <tr key={index}>
                               <td>{item.loanType}</td>
                               <td>{formatAmount(item.interestEarned)}</td>
-                              <td>{((item.interestEarned / interestData.total) * 100).toFixed(2)}%</td>
+                              <td>{formatAmount(item.totalPayment)}</td>
+                              <td>{item.loanCount}</td>
+                              <td>{parseFloat(item.avgInterestRate).toFixed(2)}%</td>
+                              <td>{((item.interestEarned / interestData.summary.totalInterestEarned) * 100).toFixed(2)}%</td>
                             </tr>
                           ))}
                         </tbody>

@@ -17,7 +17,8 @@ import {
   Send,
   ExternalLink,
   CheckCircle,
-  Store
+  Store,
+  PhilippinePesoIcon
 } from "lucide-react";
 import { toast } from 'react-toastify';
 
@@ -34,7 +35,8 @@ const LoanReleaseStatement = ({
   calculatorInterestRate,
   calculatorLoanAmmount,
   calculatorMonthsToPay,
-  printableRef
+  printableRef,
+  fetchLoanPaymentList
 }) => {
   const [payments, setPayments] = useState([]);
   const [loanPaymentList, setLoanPaymentList] = useState([]);
@@ -59,8 +61,8 @@ const LoanReleaseStatement = ({
     { value: 'Cash', label: 'Cash' }
   ];
 
-  // Fetch loan payment list - this matches PaymentsLogicView implementation
-  const fetchLoanPaymentList = async () => {
+  // Rename this local function to loadPaymentData to avoid conflict with the prop
+  const loadPaymentData = async () => {
     if (!selectedLoan?.loan_id) return;
 
     try {
@@ -247,9 +249,9 @@ const LoanReleaseStatement = ({
     return paymentList;
   };
 
-  // Load data on mount
+  // Use the renamed function in the useEffect
   useEffect(() => {
-    fetchLoanPaymentList();
+    loadPaymentData();
   }, [selectedLoan?.loan_id]);
 
   // Calculate payments when loan details or payment list changes
@@ -312,7 +314,7 @@ const LoanReleaseStatement = ({
         setPaymentFormOpen(false);
 
         // Reload payment data after submission
-        fetchLoanPaymentList();
+        loadPaymentData();
 
         // Reset form
         setReferenceNumber('');
@@ -369,9 +371,10 @@ const LoanReleaseStatement = ({
     }
   };
 
-  // Function to check payment status
+  // Use the renamed function in the check payment status function
   const checkPaymentStatus = async () => {
     try {
+      console.log("checkPaymentStatus");
       if (!paymentReference) return;
 
       const response = await axios.get(`/loan/payment-status/${paymentReference}`);
@@ -380,11 +383,25 @@ const LoanReleaseStatement = ({
         if (response.data.status === 'completed') {
           toast.success('Payment completed successfully!');
           document.getElementById('xenditModal').close();
-          fetchLoanPaymentList(); // Refresh payment data
+          fetchLoanPaymentList(); // This now uses the prop function
         } else if (response.data.status === 'failed') {
           toast.error(`Payment failed: ${response.data.error || 'Unknown error'}`);
         } else {
-          toast.info('Payment is still processing. Please check again later.');
+          // If payment is still pending, try to manually process it
+          try {
+            const manualResult = await axios.post(`/loan/manual-process-payment/${paymentReference}`);
+
+            if (manualResult.data.success) {
+              toast.success('Payment has been successfully processed!');
+              document.getElementById('xenditModal').close();
+              fetchLoanPaymentList(); // This now uses the prop function
+            } else {
+              toast.info('Payment is still processing. Please check again later.');
+            }
+          } catch (manualError) {
+            console.error('Error in manual payment processing:', manualError);
+            toast.info('Payment is still processing. Please check again later.');
+          }
         }
       }
     } catch (error) {
@@ -630,12 +647,12 @@ const LoanReleaseStatement = ({
                                     Pay Online
                                   </a>
                                 </li>
-                                <li>
+                                {/* <li>
                                   <a onClick={() => handlePayNowClick(payment)}>
-                                    <DollarSign className="w-4 h-4" />
+                                    <PhilippinePesoIcon className="w-4 h-4" />
                                     Manual Payment
                                   </a>
-                                </li>
+                                </li> */}
                               </ul>
                             </div>
                             <p className="text-xs text-gray-500 mt-2">
@@ -975,42 +992,42 @@ const LoanReleaseStatement = ({
                   </button>
 
                   {/* Option 2: Direct payment methods */}
-                  <button
+                  {/* <button
                     onClick={() => window.open(xenditCheckout.invoice.invoice_url, '_blank')}
                     className="btn btn-outline flex flex-col h-auto py-4"
                   >
                     <img src="/assets/gcash-logo.png" alt="GCash" className="h-6 mb-2" />
                     <span>GCash</span>
                     <span className="text-xs mt-1 text-gray-500">Mobile Wallet</span>
-                  </button>
+                  </button> */}
 
-                  <button
+                  {/* <button
                     onClick={() => window.open(xenditCheckout.invoice.invoice_url, '_blank')}
                     className="btn btn-outline flex flex-col h-auto py-4"
                   >
                     <img src="/assets/maya-logo.png" alt="Maya" className="h-6 mb-2" />
                     <span>Maya</span>
                     <span className="text-xs mt-1 text-gray-500">Mobile Wallet</span>
-                  </button>
+                  </button> */}
 
-                  <button
+                  {/* <button
                     onClick={() => window.open(xenditCheckout.invoice.invoice_url, '_blank')}
                     className="btn btn-outline flex flex-col h-auto py-4"
                   >
                     <img src="/assets/credit-card-logo.png" alt="Credit Card" className="h-6 mb-2" />
                     <span>Credit Card</span>
                     <span className="text-xs mt-1 text-gray-500">Visa/Mastercard/JCB</span>
-                  </button>
+                  </button> */}
 
-                  <button
+                  {/* <button
                     onClick={() => window.open(xenditCheckout.invoice.invoice_url, '_blank')}
                     className="btn btn-outline flex flex-col h-auto py-4"
                   >
                     <Store className="h-6 w-6 mb-2" />
                     <span>Over-the-Counter</span>
                     <span className="text-xs mt-1 text-gray-500">7-Eleven, Cebuana</span>
-                  </button>
-
+                  </button> */}
+                  {/* 
                   <button
                     onClick={() => window.open(xenditCheckout.invoice.invoice_url, '_blank')}
                     className="btn btn-outline flex flex-col h-auto py-4"
@@ -1018,7 +1035,7 @@ const LoanReleaseStatement = ({
                     <ExternalLink className="h-6 w-6 mb-2" />
                     <span>Other Methods</span>
                     <span className="text-xs mt-1 text-gray-500">Bank Transfer & More</span>
-                  </button>
+                  </button> */}
                 </div>
               </div>
 
@@ -1033,14 +1050,41 @@ const LoanReleaseStatement = ({
                 >
                   Cancel
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={checkPaymentStatus}
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Check Payment Status
-                </button>
+                {/* <div className="space-x-2">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      // Force manual processing - useful if you've paid but the status hasn't updated
+                      if (paymentReference) {
+                        axios.post(`/loan/manual-process-payment/${paymentReference}`)
+                          .then(res => {
+                            if (res.data.success) {
+                              toast.success('Payment manually processed successfully!');
+                              document.getElementById('xenditModal').close();
+                              fetchLoanPaymentList(); // This uses the prop function
+                            } else {
+                              toast.warning(res.data.message || 'Manual processing unsuccessful');
+                            }
+                          })
+                          .catch(err => {
+                            console.error('Error in manual processing:', err);
+                            toast.error('Error processing payment manually');
+                          });
+                      }
+                    }}
+                  >
+                    Force Process
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={checkPaymentStatus}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Check Payment Status
+                  </button>
+                </div> */}
               </div>
             </div>
           ) : (

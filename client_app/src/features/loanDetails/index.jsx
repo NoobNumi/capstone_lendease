@@ -666,7 +666,7 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
                 isGridView={isGridView}
               />}
 
-              {loanDetails.loan_id &&
+              {/* {loanDetails.loan_id &&
 
 
                 <PaymentsLogicView
@@ -681,7 +681,7 @@ function LoanManagementTabs({ loanDetails, formikProps, rowIndex }) {
 
                 />
 
-              }
+              } */}
             </div>
           )}
         </div>
@@ -1185,16 +1185,20 @@ function LoanApplication() {
   const [paymentStatus, setPaymentStatus] = useState(null);
 
 
-  const fetchloanPaymentList = async () => {
+  const fetchLoanPaymentList = async () => {
+    try {
+      const res = await axios({
+        method: 'get',
+        url: `loan/${loanId}/paymentList`,
+      });
 
-    let res = await axios({
-      method: 'get',
-      url: `loan/${selectedLoan?.loan_id}/paymentList`,
-      data: {
+      if (res.data.success) {
+        setLoanPaymentList(res.data.data);
       }
-    });
-    let list = res.data.data;
-    setloanPaymentList(list)
+    } catch (error) {
+      console.error("Error fetching loan payment list:", error);
+      toast.error("Failed to fetch payment list");
+    }
   };
 
 
@@ -1216,7 +1220,7 @@ function LoanApplication() {
 
       // Refresh loan data to show updated payment
       if (loanId) {
-        fetchLoanPaymentList(loanId);
+        fetchLoanPaymentList();
       }
 
       // Clear the URL parameter after handling

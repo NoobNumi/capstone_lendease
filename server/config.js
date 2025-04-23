@@ -194,12 +194,15 @@ export default {
   defaultDBName: 'neo4j',
   mySqlDriver: mySqlDriver,
   firebaseStorage,
-  REACT_FRONT_END_URL: 'https://capstone-lendeasee.onrender.com',
-  // REACT_FRONT_END_URL: 'http://localhost:5173',
+  // REACT_FRONT_END_URL: 'https://capstone-lendeasee.onrender.com',
+  REACT_FRONT_END_URL: 'http://localhost:5173',
   VONAGE_apiKey: '863ca4ba',
   VONAGE_apiSecret: 'ehM0AWozSgvxn71t',
   accountSid: 'ACc2722205466c12991f0f21657440d649',
   authToken: '294c5194409d99f3248594fb1fc151d3',
   XENDIT_WEBHOOK_VERIFICATION_TOKEN:
-    'lF6coAL4M8xx78B117L4mapw4CRSuSgjiwGHoliXW0VkmE6k'
+    'lF6coAL4M8xx78B117L4mapw4CRSuSgjiwGHoliXW0VkmE6k',
+  XENDIT_API_URL: 'https://api.xendit.co',
+  XENDIT_SECRET_KEY:
+    'xnd_development_qrIuFbkua0EJg4zLPMMTGmlKRg8Ttu0hyOwfa6if2EiAixv9rTZYXSz4dsQexhF'
 };
