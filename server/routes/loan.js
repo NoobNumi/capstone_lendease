@@ -1386,7 +1386,8 @@ router.post('/create-payment', async (req, res) => {
 // Handle Xendit webhook for payment status updates
 router.post('/xendit-webhook', async (req, res) => {
   try {
-    console.log('Dex');
+    console.log('Xendit webhook received:', req.body);
+
     const xenditHeader = req.headers['x-callback-token'];
     if (xenditHeader !== config.XENDIT_WEBHOOK_VERIFICATION_TOKEN) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -1399,7 +1400,7 @@ router.post('/xendit-webhook', async (req, res) => {
       // Extract the external_id which contains our reference
       const externalId = event.external_id;
 
-      // Update payment status in database
+      // Update payment_attempts status
       await db.query(
         `UPDATE payment_attempts SET status = 'completed', completed_at = NOW() 
          WHERE reference = ?`,
@@ -1410,7 +1411,7 @@ router.post('/xendit-webhook', async (req, res) => {
       // Format: LOAN-{loan_application_id}-{paymentIndex}-{timestamp}
       const parts = externalId.split('-');
       const loanApplicationId = parts[1];
-      const paymentIndex = parts[2];
+      const selectedTableRowIndex = parseInt(parts[2]);
 
       // Get loan_id from loan_application_id
       const [loanInfo] = await db.query(
@@ -1419,21 +1420,87 @@ router.post('/xendit-webhook', async (req, res) => {
       );
 
       if (loanInfo.length > 0) {
-        // Insert payment record
-        await db.query(
-          `INSERT INTO payment 
-           (loan_id, payment_amount, payment_date, payment_method, reference_number, payment_status, payment_index) 
-           VALUES (?, ?, NOW(), ?, ?, 'Approved', ?)`,
-          [
-            loanInfo[0].loan_id,
-            event.amount,
-            event.payment_method || 'Xendit',
-            externalId,
-            paymentIndex
-          ]
+        // Check if payment record already exists
+        const [existingPayment] = await db.query(
+          `SELECT payment_id FROM payment WHERE loan_id = ? AND reference_number = ?`,
+          [loanInfo[0].loan_id, externalId]
         );
 
-        // Optional: Send notification to borrower about successful payment
+        if (!existingPayment.length) {
+          // Get loan payment details to check if this is a past due payment
+          const [paymentDetails] = await db.query(
+            `SELECT 
+              is_past_due, 
+              original_amount,
+              past_due_amount 
+             FROM loan_payment_schedule 
+             WHERE loan_id = ? AND payment_index = ?`,
+            [loanInfo[0].loan_id, selectedTableRowIndex]
+          );
+
+          const isPastDue =
+            paymentDetails.length > 0 && paymentDetails[0].is_past_due === 1;
+          const originalAmount =
+            paymentDetails.length > 0
+              ? paymentDetails[0].original_amount
+              : event.amount;
+          const pastDueAmount =
+            paymentDetails.length > 0 ? paymentDetails[0].past_due_amount : 0;
+
+          // Insert payment record with the correct schema
+          await db.query(
+            `INSERT INTO payment 
+             (loan_id, payment_amount, payment_date, payment_method, reference_number, 
+              payment_status, selectedTableRowIndex, proof_of_payment, includes_past_due,
+              past_due_amount, original_amount, past_due_handled, remarks) 
+             VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              loanInfo[0].loan_id,
+              event.amount,
+              event.payment_method || 'Xendit',
+              externalId,
+              'Approved',
+              selectedTableRowIndex,
+              JSON.stringify(event), // Store the Xendit response as proof
+              isPastDue ? 1 : 0,
+              pastDueAmount,
+              originalAmount,
+              isPastDue ? 1 : 0, // Mark past due as handled if this was a past due payment
+              `Payment received via Xendit (${
+                event.payment_channel || 'Online Payment'
+              })`
+            ]
+          );
+
+          // Send notification to borrower about successful payment
+          try {
+            const [borrowerInfo] = await db.query(
+              `SELECT u.first_name, u.last_name, u.contact_number 
+               FROM users u JOIN loan l ON u.user_id = l.borrower_id 
+               WHERE l.loan_id = ?`,
+              [loanInfo[0].loan_id]
+            );
+
+            if (borrowerInfo.length > 0) {
+              // Send SMS notification
+              await sendMessage({
+                recipient: borrowerInfo[0].contact_number,
+                message: loanPaymentAcceptanceMessage({
+                  firstName: borrowerInfo[0].first_name,
+                  lastName: borrowerInfo[0].last_name,
+                  paymentAmount: event.amount,
+                  paymentDate: new Date().toLocaleDateString()
+                })
+              });
+            }
+          } catch (notificationError) {
+            console.error(
+              'Error sending payment notification:',
+              notificationError
+            );
+            // Continue execution - don't fail the webhook because of notification
+          }
+        }
       }
     }
 
@@ -1458,11 +1525,29 @@ router.get('/payment-status/:reference', async (req, res) => {
   try {
     const { reference } = req.params;
 
-    // First check local status
+    // First check local status in payment_attempts
     const [paymentStatus] = await db.query(
       `SELECT status, payment_intent_id, error_message FROM payment_attempts WHERE reference = ?`,
       [reference]
     );
+
+    // Also check if we already have a payment record
+    const [existingPayment] = await db.query(
+      `SELECT payment_id, payment_status FROM payment WHERE reference_number = ?`,
+      [reference]
+    );
+
+    if (existingPayment.length > 0) {
+      // We already have a payment record, return its status
+      return res.json({
+        success: true,
+        status:
+          existingPayment[0].payment_status === 'Approved'
+            ? 'completed'
+            : 'failed',
+        paymentId: existingPayment[0].payment_id
+      });
+    }
 
     if (!paymentStatus.length) {
       return res.status(404).json({
@@ -1491,7 +1576,7 @@ router.get('/payment-status/:reference', async (req, res) => {
         if (xenditResponse.data.status === 'PAID') {
           newStatus = 'completed';
 
-          // Update our database and create a payment record
+          // Update payment_attempts status
           await db.query(
             `UPDATE payment_attempts SET status = 'completed', completed_at = NOW() WHERE reference = ?`,
             [reference]
@@ -1500,7 +1585,7 @@ router.get('/payment-status/:reference', async (req, res) => {
           // Parse the loan_id and payment_index from the external_id
           const parts = xenditResponse.data.external_id.split('-');
           const loanApplicationId = parts[1];
-          const paymentIndex = parts[2];
+          const selectedTableRowIndex = parseInt(parts[2]);
 
           // Get loan_id from loan_application_id
           const [loanInfo] = await db.query(
@@ -1511,22 +1596,56 @@ router.get('/payment-status/:reference', async (req, res) => {
           if (loanInfo.length > 0) {
             // Check if payment record already exists
             const [existingPayment] = await db.query(
-              `SELECT id FROM payment WHERE loan_id = ? AND reference_number = ?`,
+              `SELECT payment_id FROM payment WHERE loan_id = ? AND reference_number = ?`,
               [loanInfo[0].loan_id, reference]
             );
 
             if (!existingPayment.length) {
-              // Insert payment record
+              // Get loan payment details to check if this is a past due payment
+              const [paymentDetails] = await db.query(
+                `SELECT 
+                  is_past_due, 
+                  original_amount,
+                  past_due_amount 
+                 FROM loan_payment_schedule 
+                 WHERE loan_id = ? AND payment_index = ?`,
+                [loanInfo[0].loan_id, selectedTableRowIndex]
+              );
+
+              const isPastDue =
+                paymentDetails.length > 0 &&
+                paymentDetails[0].is_past_due === 1;
+              const originalAmount =
+                paymentDetails.length > 0
+                  ? paymentDetails[0].original_amount
+                  : xenditResponse.data.amount;
+              const pastDueAmount =
+                paymentDetails.length > 0
+                  ? paymentDetails[0].past_due_amount
+                  : 0;
+
+              // Insert payment with the correct schema
               await db.query(
                 `INSERT INTO payment 
-                 (loan_id, payment_amount, payment_date, payment_method, reference_number, payment_status, payment_index) 
-                 VALUES (?, ?, NOW(), ?, ?, 'Approved', ?)`,
+                 (loan_id, payment_amount, payment_date, payment_method, reference_number, 
+                  payment_status, selectedTableRowIndex, proof_of_payment, includes_past_due,
+                  past_due_amount, original_amount, past_due_handled, remarks) 
+                 VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                   loanInfo[0].loan_id,
                   xenditResponse.data.amount,
                   xenditResponse.data.payment_method || 'Xendit',
                   reference,
-                  paymentIndex
+                  'Approved',
+                  selectedTableRowIndex,
+                  JSON.stringify(xenditResponse.data), // Store the Xendit response as proof
+                  isPastDue ? 1 : 0,
+                  pastDueAmount,
+                  originalAmount,
+                  isPastDue ? 1 : 0, // Mark past due as handled if this was a past due payment
+                  `Payment received via Xendit (${
+                    xenditResponse.data.payment_channel || 'Online Payment'
+                  })`
                 ]
               );
             }
