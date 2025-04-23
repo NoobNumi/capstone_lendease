@@ -133,121 +133,50 @@ const LoanReleaseStatement = ({
     }
   };
 
-  // Updated function to match PaymentsLogicView logic exactly
-  const getCombinedPayments = (payments, loanPaymentList) => {
-    if (!payments?.length) return [];
-
+  // Update the getCombinedPayments function to include showQR flag
+  function getCombinedPayments(scheduledPayments, actualPayments) {
     const today = new Date();
     const isLoanActive = selectedLoan?.loan_status === 'Approved' || selectedLoan?.loan_status === 'Disbursed';
 
-    // Check for pending payments
-    const pendingPayment = loanPaymentList?.find(p => p.payment_status === 'Pending');
-    if (pendingPayment) {
-      // Extract which months this pending payment covers
-      const monthsRegex = /Months (\d+(,\s*\d+)*)/;
-      const monthsMatch = pendingPayment.remarks?.match(monthsRegex);
-      const pendingMonths = monthsMatch ?
-        monthsMatch[1].split(',').map(num => parseInt(num.trim())) : [];
-
-      // Create a single payment entry for the pending payment
-      const pendingPaymentEntry = {
-        ...payments[pendingPayment.selectedTableRowIndex - 1],
-        payment_id: pendingPayment.payment_id,
-        dueAmount: parseFloat(pendingPayment.payment_amount),
-        status: 'pending',
-        isMultipleMonths: true,
-        showQR: false,
-        pastDueMonths: pendingMonths,
-        includesCurrentPayment: pendingPayment.remarks?.includes('& Current'),
-        paymentStatus: 'Pending',
-        pendingAmount: parseFloat(pendingPayment.payment_amount),
-        referenceNumber: pendingPayment.reference_number,
-        paymentMethod: pendingPayment.payment_method,
-        paymentDate: pendingPayment.payment_date
-      };
-
-      // Return only the pending payment and future payments
-      const futurePayments = payments
-        .filter((_, index) => !pendingMonths.includes(index + 1))
-        .map(payment => ({
-          ...payment,
-          status: 'due',
-          showQR: false
-        }));
-
-      return [pendingPaymentEntry, ...futurePayments];
-    }
-
-    // If no pending payment, process all payments
-    let pastDuePayments = [];
-    let currentPayment = null;
-    let futurePayments = [];
-
-    // Process payments
-    payments.forEach((payment, index) => {
+    // Create a copy of the scheduled payments
+    const combined = [...scheduledPayments].map((payment, index) => {
       const dueDate = new Date(payment.transactionDate);
-      const paymentStatus = loanPaymentList?.find(p => p.selectedTableRowIndex === index + 1);
+      const isPastDue = isLoanActive && dueDate < today;
 
-      // Skip if payment is approved
-      if (paymentStatus?.payment_status === 'Approved') {
-        return;
-      }
-
-      const formattedPayment = {
+      return {
         ...payment,
-        index: index + 1,
-        // Only mark as past_due if loan is active and payment date has passed
-        status: isLoanActive && dueDate < today ? 'past_due' : 'due',
-        paymentStatus: paymentStatus?.payment_status,
-        paymentMethod: paymentStatus?.payment_method,
-        referenceNumber: paymentStatus?.reference_number,
-        paymentDate: paymentStatus?.payment_date,
-        remarks: paymentStatus?.remarks
+        paymentStatus: null,
+        paymentDate: null,
+        paymentMethod: null,
+        referenceNumber: null,
+        // Set showQR based on payment status and date
+        showQR: isLoanActive && !payment.paymentStatus,
+        status: isPastDue ? 'past_due' : 'due'
       };
-
-      // Only consider past due if loan is active
-      if (isLoanActive && dueDate < today) {
-        pastDuePayments.push(formattedPayment);
-      } else if (!currentPayment) {
-        currentPayment = {
-          ...formattedPayment,
-          status: 'due',
-          showQR: isLoanActive // Only show QR if loan is active
-        };
-      } else {
-        futurePayments.push({
-          ...formattedPayment,
-          status: 'future'
-        });
-      }
     });
 
-    let paymentList = [];
-
-    // Handle past due + current month combination only if loan is active
-    if (isLoanActive && pastDuePayments.length > 0) {
-      const totalPastDue = pastDuePayments.reduce((sum, p) => sum + p.dueAmount, 0);
-      const combinedPayment = {
-        ...pastDuePayments[0],
-        dueAmount: totalPastDue + (currentPayment?.dueAmount || 0),
-        pastDueMonths: pastDuePayments.map(p => p.index),
-        status: 'past_due',
-        isMultipleMonths: true,
-        showQR: true,
-        includesCurrentPayment: !!currentPayment,
-        currentAmount: currentPayment?.dueAmount || 0,
-        pastDueAmount: totalPastDue
-      };
-      paymentList.push(combinedPayment);
-    } else if (currentPayment) {
-      paymentList.push(currentPayment);
+    // Match actual payments to scheduled payments
+    if (actualPayments && actualPayments.length > 0) {
+      actualPayments.forEach(actual => {
+        const index = actual.selectedTableRowIndex - 1; // Adjust for 0-based array
+        if (index >= 0 && index < combined.length) {
+          combined[index] = {
+            ...combined[index],
+            paymentStatus: actual.payment_status,
+            paymentDate: actual.payment_date,
+            paymentMethod: actual.payment_method,
+            referenceNumber: actual.reference_number,
+            proofOfPayment: actual.proof_of_payment,
+            paymentId: actual.payment_id,
+            // Don't show payment UI for approved payments
+            showQR: actual.payment_status !== 'Approved' && combined[index].showQR
+          };
+        }
+      });
     }
 
-    // Add future payments
-    paymentList = [...paymentList, ...futurePayments];
-
-    return paymentList;
-  };
+    return combined;
+  }
 
   // Use the renamed function in the useEffect
   useEffect(() => {
@@ -259,8 +188,12 @@ const LoanReleaseStatement = ({
     calculatePayments();
   }, [calculatorLoanAmmount, calculatorInterestRate, calculatorMonthsToPay, selectedLoan?.approval_date]);
 
+
+  console.log({ loanPaymentList, payments })
   const combinedPayments = getCombinedPayments(payments, loanPaymentList);
 
+
+  console.log({ combinedPayments })
   // Calculate totals for the table footer
   const totalAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
   const totalInterestAmount = payments.reduce((sum, payment) => sum + payment.interestAmount, 0);
@@ -511,28 +444,56 @@ const LoanReleaseStatement = ({
 
       {/* Payment Schedule Content */}
       {viewMode === 'grid' ? (
-        /* Grid View */
+        /* Grid View - Show only current active payment */
         <div className="p-6">
-          <h2 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-blue-600" />
-            Payment Schedule
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-blue-600" />
+              Current Payment
+            </h2>
+
+            {/* Show a toggle to view all payments */}
+            <button
+              onClick={() => setViewMode('table')}
+              className="btn btn-sm btn-outline flex items-center gap-1"
+            >
+              <List className="w-4 h-4" />
+              View All Payments
+            </button>
+          </div>
 
           <div className="grid grid-cols-1 gap-6">
-            {combinedPayments.map((payment, index) => {
-              const isPending = payment.paymentStatus === 'Pending';
-              const isPastDue = payment.status === 'past_due';
-              const isApproved = payment.paymentStatus === 'Approved';
-              const isRejected = payment.paymentStatus === 'Rejected';
+            {/* Find the next active payment */}
+            {(() => {
+              // Find the first unpaid payment (not Approved)
+              const activePayment = combinedPayments.find(p =>
+                p.paymentStatus !== 'Approved' &&
+                (selectedLoan?.loan_status === 'Approved' || selectedLoan?.loan_status === 'Disbursed')
+              );
+
+              // If no active payment, show a message
+              if (!activePayment) {
+                return (
+                  <div className="bg-green-50 p-6 rounded-lg border border-green-200 text-center">
+                    <CheckCircle className="w-12 h-12 mx-auto text-green-500 mb-2" />
+                    <h3 className="text-lg font-semibold text-green-800 mb-1">All Payments Completed!</h3>
+                    <p className="text-green-700">
+                      You have no pending payments. View payment history in table view.
+                    </p>
+                  </div>
+                );
+              }
+
+              // Display the active payment card
+              const isPending = activePayment.paymentStatus === 'Pending';
+              const isPastDue = activePayment.status === 'past_due';
+              const isApproved = activePayment.paymentStatus === 'Approved';
 
               return (
                 <div
-                  key={index}
-                  className={`bg-white rounded-lg shadow-md overflow-hidden border-l-4 ${isApproved ? 'border-green-500' :
-                    isRejected ? 'border-red-500' :
-                      isPending ? 'border-yellow-500' :
-                        isPastDue ? 'border-red-500' :
-                          'border-blue-500'
+                  className={`bg-white rounded-lg shadow-md overflow-hidden border-l-4 ${isPending ? 'border-yellow-500' :
+                      isPastDue ? 'border-red-500' :
+                        'border-blue-500'
                     }`}
                 >
                   {/* Payment Header */}
@@ -548,22 +509,22 @@ const LoanReleaseStatement = ({
                           ) : (
                             <Calendar className="w-5 h-5 text-blue-500" />
                           )}
-                          {payment.isMultipleMonths ? (
+                          {activePayment.isMultipleMonths ? (
                             <span className="text-red-600">
                               Past Due + Current Payment
                               <span className="block text-sm font-normal text-gray-600">
-                                Months {payment.pastDueMonths.join(', ')} {payment.includesCurrentPayment && '& Current'}
+                                Months {activePayment.pastDueMonths.join(', ')} {activePayment.includesCurrentPayment && '& Current'}
                               </span>
                             </span>
                           ) : (
-                            <span>Payment {payment.index}</span>
+                            <span>Payment {activePayment.index}</span>
                           )}
                         </h3>
 
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                           <span className="flex items-center gap-1">
                             <Clock className="w-4 h-4" />
-                            {format(new Date(payment.transactionDate), 'MMM dd, yyyy')}
+                            {format(new Date(activePayment.transactionDate), 'MMM dd, yyyy')}
                           </span>
                         </div>
                       </div>
@@ -572,24 +533,24 @@ const LoanReleaseStatement = ({
                       <div className="text-right">
                         <div className={`
                           px-3 py-1 rounded-full text-sm font-medium
-                          ${payment.paymentStatus === 'Approved' ? 'bg-green-100 text-green-800' :
-                            payment.paymentStatus === 'Rejected' ? 'bg-red-100 text-red-800' :
-                              payment.paymentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          ${activePayment.paymentStatus === 'Approved' ? 'bg-green-100 text-green-800' :
+                            activePayment.paymentStatus === 'Rejected' ? 'bg-red-100 text-red-800' :
+                              activePayment.paymentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
                                 isPastDue ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}
                         `}>
-                          {payment.paymentStatus || (isPastDue ? 'Past Due' : 'Upcoming')}
+                          {activePayment.paymentStatus || (isPastDue ? 'Past Due' : 'Upcoming')}
                         </div>
                         <p className="text-2xl font-bold mt-2 text-gray-800">
-                          {formatCurrency(payment.dueAmount)}
+                          {formatCurrency(activePayment.dueAmount)}
                         </p>
-                        {payment.isMultipleMonths && (
+                        {activePayment.isMultipleMonths && (
                           <div className="mt-1 text-xs">
                             <div className="text-red-600">
-                              Past Due: {formatCurrency(payment.pastDueAmount)}
+                              Past Due: {formatCurrency(activePayment.pastDueAmount)}
                             </div>
-                            {payment.includesCurrentPayment && (
+                            {activePayment.includesCurrentPayment && (
                               <div className="text-blue-600">
-                                Current: {formatCurrency(payment.currentAmount)}
+                                Current: {formatCurrency(activePayment.currentAmount)}
                               </div>
                             )}
                           </div>
@@ -603,29 +564,29 @@ const LoanReleaseStatement = ({
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-500 mb-1">Principal</p>
-                        <p className="font-medium">{formatCurrency(payment.principal)}</p>
+                        <p className="font-medium">{formatCurrency(activePayment.principal)}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500 mb-1">Principal Payment</p>
-                        <p className="font-medium">{formatCurrency(payment.amountPrincipal)}</p>
+                        <p className="font-medium">{formatCurrency(activePayment.amountPrincipal)}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500 mb-1">Interest</p>
-                        <p className="font-medium">{formatCurrency(payment.interestAmount)}</p>
+                        <p className="font-medium">{formatCurrency(activePayment.interestAmount)}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500 mb-1">Balance After Payment</p>
-                        <p className="font-medium">{formatCurrency(payment.remainingBalance)}</p>
+                        <p className="font-medium">{formatCurrency(activePayment.remainingBalance)}</p>
                       </div>
                     </div>
 
                     {/* QR Code and Pay Now Button (if applicable) */}
-                    {payment.showQR && (
+                    {activePayment.showQR && (
                       <div className="mt-4">
                         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                           <div className="bg-white p-4 rounded-lg shadow-md">
                             <QRCodeSVG
-                              value={`${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${payment.index}`}
+                              value={`${import.meta.env.VITE_REACT_APP_FRONTEND_URL}/app/loan_details/${selectedLoan?.loan_id}/selectedTableRowIndex/${activePayment.index}`}
                               size={120}
                               level="H"
                               includeMargin={true}
@@ -635,20 +596,20 @@ const LoanReleaseStatement = ({
 
                           <div className="flex flex-col items-center w-full md:w-auto">
                             <div className="dropdown dropdown-top dropdown-end w-full md:w-auto">
-                              <label tabIndex={0} className={`btn btn-primary w-full gap-2 ${payment.paymentStatus === 'Approved' ? 'btn-disabled' : ''
+                              <label tabIndex={0} className={`btn btn-primary w-full gap-2 ${activePayment.paymentStatus === 'Approved' ? 'btn-disabled' : ''
                                 }`}>
                                 <Send className="w-4 h-4" />
                                 Pay Now
                               </label>
                               <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
                                 <li>
-                                  <a onClick={() => initiateXenditPayment(payment)}>
+                                  <a onClick={() => initiateXenditPayment(activePayment)}>
                                     <CreditCard className="w-4 h-4" />
                                     Pay Online
                                   </a>
                                 </li>
                                 {/* <li>
-                                  <a onClick={() => handlePayNowClick(payment)}>
+                                  <a onClick={() => handlePayNowClick(activePayment)}>
                                     <PhilippinePesoIcon className="w-4 h-4" />
                                     Manual Payment
                                   </a>
@@ -664,7 +625,7 @@ const LoanReleaseStatement = ({
                     )}
 
                     {/* Payment Evidence (if applicable) */}
-                    {(isPending || isApproved || isRejected) && (
+                    {(isPending || activePayment.paymentStatus === 'Approved' || activePayment.paymentStatus === 'Rejected') && (
                       <div className="mt-4 p-3 bg-white rounded-lg border">
                         <h4 className="font-medium text-sm mb-2 flex items-center gap-1">
                           <CreditCard className="w-4 h-4 text-blue-500" />
@@ -673,17 +634,17 @@ const LoanReleaseStatement = ({
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div>
                             <p className="text-gray-500">Reference:</p>
-                            <p className="font-medium">{payment.referenceNumber || 'N/A'}</p>
+                            <p className="font-medium">{activePayment.referenceNumber || 'N/A'}</p>
                           </div>
                           <div>
                             <p className="text-gray-500">Method:</p>
-                            <p className="font-medium">{payment.paymentMethod || 'N/A'}</p>
+                            <p className="font-medium">{activePayment.paymentMethod || 'N/A'}</p>
                           </div>
-                          {payment.paymentDate && (
+                          {activePayment.paymentDate && (
                             <div className="col-span-2">
                               <p className="text-gray-500">Date Submitted:</p>
                               <p className="font-medium">
-                                {format(new Date(payment.paymentDate), 'MMM dd, yyyy h:mm a')}
+                                {format(new Date(activePayment.paymentDate), 'MMM dd, yyyy h:mm a')}
                               </p>
                             </div>
                           )}
@@ -693,7 +654,20 @@ const LoanReleaseStatement = ({
                   </div>
                 </div>
               );
-            })}
+            })()}
+
+            {/* Show a shortcut to view all payments */}
+            <div className="mt-6 text-center">
+              <p className="text-gray-500 mb-2">
+                Need to view your payment history or future payments?
+              </p>
+              <button
+                onClick={() => setViewMode('table')}
+                className="btn btn-outline btn-sm"
+              >
+                Switch to Table View
+              </button>
+            </div>
           </div>
         </div>
       ) : (
@@ -720,13 +694,18 @@ const LoanReleaseStatement = ({
                   <div>Balance</div>
                   <div className="text-xs text-gray-500">(Remaining)</div>
                 </th>
-                <th className="py-3 text-center px-4">Status</th>
+                <th className="py-3 text-center px-4">
+                  <div>Payment Status</div>
+                  <div className="text-xs text-gray-500">(Paid/Due/Pending)</div>
+                </th>
+                {/* <th className="py-3 text-center px-4">Action</th> */}
               </tr>
             </thead>
             <tbody>
               {combinedPayments.map((payment, index) => {
                 const isPending = payment.paymentStatus === 'Pending';
                 const isPastDue = payment.status === 'past_due';
+                const isApproved = payment.paymentStatus === 'Approved';
 
                 return (
                   <tr key={index} className={`border-b hover:bg-gray-50 
@@ -776,15 +755,25 @@ const LoanReleaseStatement = ({
                     <td className="py-3 px-4 text-center">
                       {selectedLoan?.loan_status === 'Pending' ? (
                         <div className="text-gray-500">Awaiting Loan Approval</div>
-                      ) : payment.paymentStatus ? (
-                        <div className={`
-                          px-2 py-1 rounded-full text-xs font-medium
-                          ${payment.paymentStatus === 'Approved' ? 'bg-green-100 text-green-800' :
-                            payment.paymentStatus === 'Rejected' ? 'bg-red-100 text-red-800' :
-                              payment.paymentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-gray-100 text-gray-800'}
-                        `}>
-                          {payment.paymentStatus}
+                      ) : payment.paymentStatus === 'Approved' ? (
+                        <div className="flex flex-col items-center">
+                          <div className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium mb-1">
+                            <CheckCircle className="w-3 h-3 inline mr-1" />
+                            Paid
+                          </div>
+                          {payment.paymentDate && (
+                            <div className="text-xs text-gray-600">
+                              {format(new Date(payment.paymentDate), 'MMM dd, yyyy')}
+                            </div>
+                          )}
+                        </div>
+                      ) : payment.paymentStatus === 'Pending' ? (
+                        <div className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+                          Processing
+                        </div>
+                      ) : payment.paymentStatus === 'Rejected' ? (
+                        <div className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
+                          Rejected
                         </div>
                       ) : (
                         <span className={`text-sm ${isPastDue ? 'text-red-600 font-medium' : 'text-gray-400'}`}>
@@ -792,6 +781,7 @@ const LoanReleaseStatement = ({
                         </span>
                       )}
                     </td>
+
                   </tr>
                 );
               })}
@@ -807,6 +797,46 @@ const LoanReleaseStatement = ({
               </tr>
             </tbody>
           </table>
+
+          {/* In the table summary section, add paid vs remaining count */}
+          <div className="mt-4 flex flex-col md:flex-row md:justify-between">
+            <div className="stats shadow stats-vertical lg:stats-horizontal">
+              <div className="stat">
+                <div className="stat-title">Total Payments</div>
+                <div className="stat-value">{combinedPayments.length}</div>
+              </div>
+
+              <div className="stat">
+                <div className="stat-title">Payments Made</div>
+                <div className="stat-value text-success">
+                  {combinedPayments.filter(p => p.paymentStatus === 'Approved').length}
+                </div>
+              </div>
+
+              <div className="stat">
+                <div className="stat-title">Remaining</div>
+                <div className="stat-value text-info">
+                  {combinedPayments.length - combinedPayments.filter(p => p.paymentStatus === 'Approved').length}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 md:mt-0">
+              <div className="text-xl font-bold">Total Amount: {formatCurrency(totalAmount)}</div>
+              <div className="text-lg text-success">
+                Paid: {formatCurrency(combinedPayments
+                  .filter(p => p.paymentStatus === 'Approved')
+                  .reduce((total, payment) => total + payment.amount, 0)
+                )}
+              </div>
+              <div className="text-lg text-info">
+                Remaining: {formatCurrency(combinedPayments
+                  .filter(p => p.paymentStatus !== 'Approved')
+                  .reduce((total, payment) => total + payment.amount, 0)
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

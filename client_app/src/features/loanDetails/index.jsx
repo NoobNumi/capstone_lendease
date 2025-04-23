@@ -103,26 +103,34 @@ const LoanDetailsHeader = ({ selectedLoan, paymentList }) => {
 
 
 
-  function getProgressPercentage(paymentList, loanPaymentList) {
-    // Calculate total due amount (sum of amounts in paymentList)
-    const totalDueAmount = paymentList.reduce((total, payment) => total + payment.dueAmount, 0);
+  function getProgressPercentage(paymentsList, selectedLoan) {
+    console.log({ paymentsList, selectedLoan });
 
-    // Calculate total paid amount (sum of approved payments in loanPaymentList)
-    const totalPaidAmount = loanPaymentList.reduce((total, payment) => {
+    if (!paymentsList || !paymentsList.length || !selectedLoan) {
+      return { percentage: 0, totalPaidAmount: 0, totalDueAmount: 0 };
+    }
+
+    // Calculate Total Amount to Pay by getting it from the payment list
+    // This is the most accurate way since it reflects the actual payment schedule
+    const totalDueAmount = paymentsList.reduce((sum, payment) => {
+      // Sum all payments regardless of status to get total amount due
+      return sum + parseFloat(payment.payment_amount || 0);
+    }, 0);
+
+    // For paid amount, only count payments with 'Approved' status
+    const totalPaidAmount = paymentsList.reduce((total, payment) => {
       if (payment.payment_status === 'Approved') {
-        return total + parseFloat(payment.payment_amount);
+        return total + parseFloat(payment.payment_amount || 0);
       }
       return total;
     }, 0);
 
-    // Calculate percentage of progress
-    const progress = (totalPaidAmount / totalDueAmount) * 100;
-    const percentage = Math.min(progress, 100); // Ensure that the percentage doesn't exceed 100%
+    // Calculate percentage safely
+    const percentage = totalDueAmount > 0
+      ? Math.min(Math.round((totalPaidAmount / totalDueAmount) * 100), 100)
+      : 0;
 
-    return {
-      percentage: percentage.toFixed(2), // Return percentage as a string with 2 decimals
-      totalPaidAmount: totalPaidAmount.toFixed(2)// Return total paid amount with 2 decimals
-    };
+    return { percentage, totalPaidAmount, totalDueAmount };
   }
 
   // Example usage
@@ -130,7 +138,7 @@ const LoanDetailsHeader = ({ selectedLoan, paymentList }) => {
 
 
   // Get progress percentage and total paid amount
-  const { percentage, totalPaidAmount } = getProgressPercentage(paymentList, loanPaymentList);
+  const progressData = getProgressPercentage(loanPaymentList, selectedLoan);
 
   //console.log({ percentage, totalPaidAmount }); // Output the progress percentage and total paid amount
 
@@ -150,22 +158,19 @@ const LoanDetailsHeader = ({ selectedLoan, paymentList }) => {
 
 
         {/* Right: Circular Progress Bar */}
-        <div className="w-1/4 bg-gray-200 rounded-full h-4 mb-2 relative">
-          {/* Progress Bar */}
-          <div
-            className="h-4 rounded-full"
-            style={{
-              width: `${percentage || 0}%`, // Dynamic width based on progress percentage
-              backgroundColor: getStrokeColor(percentage), // Dynamic color based on progress
-              transition: 'width 0.5s ease', // Smooth animation for width change
-            }}
-          />
-          {/* Percentage Text inside the Progress Bar */}
-          <span
-            className="absolute p-2 inset-0 flex justify-center items-center text-white font-bold"
-          >
-            {percentage || 0}% (₱{totalPaidAmount}) Paid
-          </span>
+        <div className="w-full">
+          {/* Progress Bar with simplified display */}
+          {/* <div className="flex justify-between mb-1 text-sm">
+            <span className="font-medium">Payment Progress</span>
+            <span className="font-bold text-green-600">{formatAmount(progressData.totalPaidAmount)}</span>
+          </div> */}
+
+
+
+          {/* Simple total display */}
+          {/* <div className="text-xs text-gray-600 text-right">
+            of {formatAmount(progressData.totalDueAmount)} total
+          </div> */}
         </div>
       </div>
       <hr className="border-gray-300 mb-4" />
@@ -1192,12 +1197,12 @@ function LoanApplication() {
         url: `loan/${loanId}/paymentList`,
       });
 
-      if (res.data.success) {
-        setLoanPaymentList(res.data.data);
-      }
+      // if (res.data.success) {
+      //   setLoanPaymentList(res.data.data);
+      // }
     } catch (error) {
       console.error("Error fetching loan payment list:", error);
-      toast.error("Failed to fetch payment list");
+      // toast.error("Failed to fetch payment list");
     }
   };
 
