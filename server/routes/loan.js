@@ -131,7 +131,7 @@ const sendMessage = async ({
     ? templates[messageType]({ firstName, lastName, ...additionalData })
     : 'No valid message type provided.';
 
-  const from = '+639221200298'; // Set your company name or short code as sender
+  const from = '+639221200715'; // Set your company name or short code as sender
   const to = phoneNumber;
 
   try {
