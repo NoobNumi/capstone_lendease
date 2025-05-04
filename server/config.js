@@ -1,11 +1,11 @@
-import dotenv from 'dotenv';
-import assert from 'assert';
+import dotenv from "dotenv";
+import assert from "assert";
 
-import neo4j from 'neo4j-driver';
-import mysql from 'mysql2/promise';
+import neo4j from "neo4j-driver";
+import mysql from "mysql2/promise";
 
-import { initializeApp } from 'firebase/app';
-import { getStorage } from 'firebase/storage';
+import { initializeApp } from "firebase/app";
+import { getStorage } from "firebase/storage";
 
 //import mysql from 'promise-mysql';
 dotenv.config();
@@ -25,7 +25,7 @@ const {
   NEO4J_USER,
   NEO4J_PASSWORD,
   SENDGRID_API_KEY,
-  DATABASE_URL
+  DATABASE_URL,
 } = process.env;
 let mySqlDriver;
 let driver;
@@ -43,19 +43,19 @@ try {
     // $database = 'root'; //
 
     const pool = await mysql.createPool({
-      port: 3934,
-      host: 'aiks1r.stackhero-network.com',
-      user: 'root',
-      password: 'de5Jtt5OaQr5QY0mS5Cfb1jRQUDddlPD',
-      database: 'sample',
+      port: process.env.DB_PORT,
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       connectTimeout: 10000,
       waitForConnections: true,
-      connectionLimit: 100000, // Adjust this number based on your needs
+      connectionLimit: 100000,
       queueLimit: 0,
-      ssl: {
-        rejectUnauthorized: true // Ensure it's a secure connection
-      },
-      timezone: 'Asia/Manila'
+      // ssl: {
+      //   rejectUnauthorized: true,
+      // },
+      timezone: "+08:00",
     });
 
     // const pool = await mysql.createPool({
@@ -77,13 +77,13 @@ try {
 
   // Your Firebase configuration
   firebaseConfig = {
-    apiKey: 'AIzaSyAln9KogkLpr_eMbBLlnQfMae7Ji380phQ',
-    authDomain: 'avdeasis-4b5c7.firebaseapp.com',
-    projectId: 'avdeasis-4b5c7',
-    storageBucket: 'avdeasis-4b5c7.appspot.com',
-    messagingSenderId: '563212793374',
-    appId: '1:563212793374:web:4a5f5dd187e0304661a00f',
-    measurementId: 'G-5LTWLEWR22'
+    apiKey: "AIzaSyAln9KogkLpr_eMbBLlnQfMae7Ji380phQ",
+    authDomain: "avdeasis-4b5c7.firebaseapp.com",
+    projectId: "avdeasis-4b5c7",
+    storageBucket: "avdeasis-4b5c7.appspot.com",
+    messagingSenderId: "563212793374",
+    appId: "1:563212793374:web:4a5f5dd187e0304661a00f",
+    measurementId: "G-5LTWLEWR22",
   };
 
   // Initialize Firebase
@@ -91,7 +91,7 @@ try {
   firebaseStorage = getStorage(app);
 
   // console.log({ firebaseStorage });
-  console.log('DBs Connected');
+  console.log("DBs Connected");
 } catch (err) {
   console.log(`Connection error\n${err}\nCause: ${err.cause}`);
 }
@@ -107,79 +107,79 @@ let cypherQuerySession = `1`;
 // config
 //config
 
-let gmailEmailpassword = 'dqeq ukrn hvjg vnyx';
+let gmailEmailpassword = "dqeq ukrn hvjg vnyx";
 
 // Update database relationships
 const dbRelationships = {
   // Loan relationships
   loan: {
-    belongsTo: ['borrower_account', 'loan_officer', 'loan_setting_parameters'],
-    hasMany: ['payment', 'collateral', 'disbursement_details']
+    belongsTo: ["borrower_account", "loan_officer", "loan_setting_parameters"],
+    hasMany: ["payment", "collateral", "disbursement_details"],
   },
 
   // Borrower relationships
   borrower_account: {
-    hasMany: ['loan', 'notification', 'guarantor'],
-    hasOne: ['user_account', 'address']
+    hasMany: ["loan", "notification", "guarantor"],
+    hasOne: ["user_account", "address"],
   },
 
   // Payment relationships
   payment: {
-    belongsTo: ['loan', 'payment_method', 'loan_officer'],
-    hasOne: ['transaction']
+    belongsTo: ["loan", "payment_method", "loan_officer"],
+    hasOne: ["transaction"],
   },
 
   // User account relationships
   user_account: {
-    belongsTo: ['user_role'],
+    belongsTo: ["user_role"],
     hasOne: [
-      'borrower_account',
-      'collector_account',
-      'admin_account',
-      'loan_officer'
+      "borrower_account",
+      "collector_account",
+      "admin_account",
+      "loan_officer",
     ],
-    hasMany: ['logs', 'user_log']
+    hasMany: ["logs", "user_log"],
   },
 
   // Collector relationships
   collector_account: {
-    hasOne: ['user_account'],
-    hasMany: ['payment']
+    hasOne: ["user_account"],
+    hasMany: ["payment"],
   },
 
   // Loan officer relationships
   loan_officer: {
-    hasOne: ['user_account'],
-    hasMany: ['loan', 'payment']
+    hasOne: ["user_account"],
+    hasMany: ["loan", "payment"],
   },
 
   // Admin relationships
   admin_account: {
-    hasOne: ['user_account'],
-    hasMany: ['logs']
+    hasOne: ["user_account"],
+    hasMany: ["logs"],
   },
 
   // Notification relationships
   notification: {
-    belongsTo: ['borrower_account'],
-    hasOne: ['notification_template']
+    belongsTo: ["borrower_account"],
+    hasOne: ["notification_template"],
   },
 
   // SMS relationships
   sms: {
-    belongsTo: ['borrower_account', 'loan']
+    belongsTo: ["borrower_account", "loan"],
   },
 
   // QR Code relationships
   qr_code: {
-    belongsTo: ['loan_application']
+    belongsTo: ["loan_application"],
   },
 
   // Loan application relationships
   loan_application: {
-    belongsTo: ['borrower_account'],
-    hasOne: ['loan', 'qr_code']
-  }
+    belongsTo: ["borrower_account"],
+    hasOne: ["loan", "qr_code"],
+  },
 };
 
 export default {
@@ -190,19 +190,20 @@ export default {
   cypherQuerySession,
   JWT_TOKEN_SECRET,
   SENDGRID_API_KEY,
-  cypherQuerySessionDriver: '',
-  defaultDBName: 'neo4j',
+  cypherQuerySessionDriver: "",
+  // defaultDBName: "neo4j",
+  defaultDBName: "mysql",
   mySqlDriver: mySqlDriver,
   firebaseStorage,
-  REACT_FRONT_END_URL: 'https://capstone-lendeasee.onrender.com',
+  REACT_FRONT_END_URL: "http://localhost:5173/",
   // REACT_FRONT_END_URL: 'http://localhost:5173',
-  VONAGE_apiKey: '863ca4ba',
-  VONAGE_apiSecret: 'ehM0AWozSgvxn71t',
-  accountSid: 'ACfb12bb4c54eb34cea004ae3ab0f4184b',
-  authToken: '1f033123c12278f0f70b1804f049dd8f',
+  VONAGE_apiKey: "863ca4ba",
+  VONAGE_apiSecret: "ehM0AWozSgvxn71t",
+  accountSid: "ACfb12bb4c54eb34cea004ae3ab0f4184b",
+  authToken: "1f033123c12278f0f70b1804f049dd8f",
   XENDIT_WEBHOOK_VERIFICATION_TOKEN:
-    'lF6coAL4M8xx78B117L4mapw4CRSuSgjiwGHoliXW0VkmE6k',
-  XENDIT_API_URL: 'https://api.xendit.co',
+    "lF6coAL4M8xx78B117L4mapw4CRSuSgjiwGHoliXW0VkmE6k",
+  XENDIT_API_URL: "https://api.xendit.co",
   XENDIT_SECRET_KEY:
-    'xnd_development_qrIuFbkua0EJg4zLPMMTGmlKRg8Ttu0hyOwfa6if2EiAixv9rTZYXSz4dsQexhF'
+    "xnd_development_qrIuFbkua0EJg4zLPMMTGmlKRg8Ttu0hyOwfa6if2EiAixv9rTZYXSz4dsQexhF",
 };

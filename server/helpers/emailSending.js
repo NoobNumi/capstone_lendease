@@ -1,15 +1,15 @@
-import sgMail from '@sendgrid/mail';
+import sgMail from "@sendgrid/mail";
 
-import config from '../config.js';
+import config from "../config.js";
 
 export const sendEmail = async ({ data }) => {
   let link = data.link;
 
   sgMail.setApiKey(config.SENDGRID_API_KEY);
   let mailOptions = {
-    from: 'admin@axztechItsolutions.com',
-    to: 'dextermiranda441@gmail.com',
-    subject: 'Bundle of Code(s) Approval',
+    from: "admin@axztechItsolutions.com",
+    to: "ninagillianvillamin1128@gmail.com",
+    subject: "Bundle of Code(s) Approval",
 
     text: `
    New list of code(s) has been created by our system.
@@ -27,15 +27,15 @@ export const sendEmail = async ({ data }) => {
 
 
     
-    `
+    `,
   };
 
   try {
     sgMail.send(mailOptions);
 
-    console.log('email sent');
+    console.log("email sent");
   } catch (error) {
-    console.log('sendgrid');
+    console.log("sendgrid");
 
     console.log(error);
   }

@@ -1,33 +1,33 @@
-import express from 'express';
+import express from "express";
 
-import config from '../../config.js';
+import config from "../../config.js";
 
 import {
   authenticateUserMiddleware,
-  auditTrailMiddleware
-} from '../../middleware/authMiddleware.js';
+  auditTrailMiddleware,
+} from "../../middleware/authMiddleware.js";
 
 let db = config.mySqlDriver;
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 const router = express.Router();
 
-import multer from 'multer';
+import multer from "multer";
 const upload = multer({ storage: multer.memoryStorage() });
 let firebaseStorage = config.firebaseStorage;
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-import { Vonage } from '@vonage/server-sdk';
+import { Vonage } from "@vonage/server-sdk";
 // twillo YCBPSCDZWYP11Z5JUD89W7DT
 
 const accountSid = config.accountSid; // Replace with your Twilio Account SID
 const authToken = config.authToken; // Replace with your Twilio Auth Token
-import twilio from 'twilio'; // Use import statement for Twilio
+import twilio from "twilio"; // Use import statement for Twilio
 
 const loanApprovalMessage = ({
   firstName,
   lastName,
   loanAmount,
-  loanId
+  loanId,
 }) => `Dear ${firstName} ${lastName},
 
 Congratulations! Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been approved. Our team will contact you with the next steps.
@@ -37,7 +37,7 @@ Thank you for choosing us!`;
 const loanRejectionMessage = ({
   firstName,
   lastName,
-  loanId
+  loanId,
 }) => `Dear ${firstName} ${lastName},
 
 We regret to inform you that your loan application (Loan ID: ${loanId}) has been declined after careful review. Please contact us for further details.
@@ -48,7 +48,7 @@ const loanAdvancePaymentMessage = ({
   firstName,
   lastName,
   dueAmount,
-  dueDate
+  dueDate,
 }) => `Dear ${firstName} ${lastName},
 
 This is a reminder that your loan advance payment of ${dueAmount} is due on ${dueDate}. Please ensure timely payment to avoid penalties.
@@ -60,7 +60,7 @@ const loanPaymentAcceptanceMessage = ({
   lastName,
   paymentAmount,
   paymentDate,
-  loanId
+  loanId,
 }) => `Dear ${firstName} ${lastName},
 
 We have successfully received your payment of ${paymentAmount} for 
@@ -74,7 +74,7 @@ const loanPaymentRejectionMessage = ({
   lastName,
   paymentAmount,
   reason,
-  loanId
+  loanId,
 }) => `Dear ${firstName} ${lastName},
 
 We regret to inform you that your payment of ${paymentAmount} for 
@@ -86,7 +86,7 @@ const loanCreationMessage = ({
   firstName,
   lastName,
   loanAmount,
-  loanId
+  loanId,
 }) => `Dear ${firstName} ${lastName},
 
 Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been successfully created. Our team will review your application and get back to you shortly.
@@ -99,11 +99,11 @@ const loanDisbursementMessage = ({
   loanAmount,
   loanId,
   paymentMethod,
-  paymentChannel
+  paymentChannel,
 }) => `Dear ${firstName} ${lastName},
 
 Good news! Your loan (ID: ${loanId}) for the amount of ${loanAmount} has been successfully disbursed via ${paymentMethod}${
-  paymentChannel ? ' through ' + paymentChannel : ''
+  paymentChannel ? " through " + paymentChannel : ""
 }.
 
 Please check your account for the funds. If you have any questions, feel free to contact us.
@@ -115,7 +115,7 @@ const sendMessage = async ({
   lastName,
   phoneNumber,
   messageType,
-  additionalData = {}
+  additionalData = {},
 }) => {
   const client = twilio(accountSid, authToken);
   const templates = {
@@ -124,14 +124,14 @@ const sendMessage = async ({
     loanRejection: loanRejectionMessage,
     loanPaymentAcceptance: loanPaymentAcceptanceMessage,
     loanPaymentRejection: loanPaymentRejectionMessage,
-    loanDisbursement: loanDisbursementMessage
+    loanDisbursement: loanDisbursementMessage,
   };
 
   const text = templates[messageType]
     ? templates[messageType]({ firstName, lastName, ...additionalData })
-    : 'No valid message type provided.';
+    : "No valid message type provided.";
 
-  const from = '+639221200298'; // Set your company name or short code as sender
+  const from = "+639221200298"; // Set your company name or short code as sender
   const to = phoneNumber;
 
   try {
@@ -141,19 +141,19 @@ const sendMessage = async ({
       .create({
         body: text,
         from: from,
-        to: to
+        to: to,
       })
-      .then(message => {
-        console.log('Message sent successfully with Twilio');
-        console.log('Message SID:', message.sid);
+      .then((message) => {
+        console.log("Message sent successfully with Twilio");
+        console.log("Message SID:", message.sid);
       });
   } catch (error) {
-    console.error('Error occurred while sending message with Twilio:', error);
+    console.error("Error occurred while sending message with Twilio:", error);
   }
 };
 
 router.post(
-  '/create',
+  "/create",
   authenticateUserMiddleware,
 
   async (req, res) => {
@@ -165,7 +165,7 @@ router.post(
       loan_type_specific,
       calculatorLoanAmmount,
       calculatorInterestRate,
-      calculatorMonthsToPay
+      calculatorMonthsToPay,
     } = data;
 
     let { user_id } = req.user;
@@ -179,9 +179,9 @@ router.post(
     let repayment_schedule_id = calculatorMonthsToPay;
     let loan_type_value = loan_type || loan_type_specific;
     let interest_rate = calculatorInterestRate;
-    let loan_status = 'Pending';
+    let loan_status = "Pending";
     let purpose = loan_type_specific;
-    let remarks = '';
+    let remarks = "";
 
     try {
       await db.query(
@@ -216,29 +216,29 @@ router.post(
           loan_status,
           purpose,
           remarks,
-          repayment_schedule_id
+          repayment_schedule_id,
         ]
       );
 
       // insert QR CODE
       await db.query(`INSERT INTO qr_code ( code, type) VALUES ( ?, ?)`, [
         loan_application_id,
-        'Loan Application'
+        "Loan Application",
       ]);
 
       res.status(201).json({
         success: true,
-        message: 'Loan application created successfully',
+        message: "Loan application created successfully",
         data: {
-          loan_application_id
-        }
+          loan_application_id,
+        },
       });
     } catch (err) {
       console.error(err); // Log the error for debugging
       res.status(500).json({
         success: false,
         message:
-          'An error occurred while creating the loan application. Please try again later.'
+          "An error occurred while creating the loan application. Please try again later.",
       });
     }
   }
@@ -246,11 +246,11 @@ router.post(
 
 // Route to handle file uploads
 router.post(
-  '/upload-files/uploadSupportingDocuments',
+  "/upload-files/uploadSupportingDocuments",
   upload.fields([
-    { name: 'bankStatement', maxCount: 1 },
-    { name: 'borrowerValidID', maxCount: 1 },
-    { name: 'coMakersValidID', maxCount: 1 }
+    { name: "bankStatement", maxCount: 1 },
+    { name: "borrowerValidID", maxCount: 1 },
+    { name: "coMakersValidID", maxCount: 1 },
   ]),
   async (req, res) => {
     try {
@@ -259,7 +259,7 @@ router.post(
       const loan_application_id = req.body.loan_application_id;
       const uploadType = req.body.uploadType;
 
-      console.log({ uploadSupportingDocuments: 'uploadSupportingDocuments' });
+      console.log({ uploadSupportingDocuments: "uploadSupportingDocuments" });
       console.log({ loan_application_id, files, uploadType });
 
       let {
@@ -267,13 +267,17 @@ router.post(
         recipient_account_number,
         payment_method,
         payment_channel,
-        amount
+        amount,
       } = req.body;
 
-      if (uploadType === 'for_proof_of_disbursement') {
+      if (uploadType === "for_proof_of_disbursement") {
         // Upload each file to Firebase Storage
         for (const [key, fileArray] of Object.entries(files)) {
           const file = fileArray[0];
+
+          console.log("firebaseStorage:", firebaseStorage);
+          console.log("file:", file);
+          console.log("file.originalname:", file?.originalname);
 
           const storageRef = ref(
             firebaseStorage,
@@ -315,13 +319,13 @@ router.post(
                 amount,
                 payment_method,
                 payment_channel,
-                '',
-                proof_of_disbursement
+                "",
+                proof_of_disbursement,
               ]
             );
           } else {
             // Handle the case where loan_id already exists
-            console.log('Loan ID already exists');
+            console.log("Loan ID already exists");
           }
           console.log(`${key} uploaded successfully...`);
         }
@@ -340,20 +344,20 @@ router.post(
 
           function formatPhoneNumber(phoneNumber) {
             // Remove any non-digit characters
-            let cleaned = phoneNumber.replace(/\D/g, '');
+            let cleaned = phoneNumber.replace(/\D/g, "");
 
             // Check if the number starts with '09' or any other prefix and always convert to '+63'
-            if (cleaned.startsWith('9')) {
-              cleaned = '+63' + cleaned.substring(1); // Replace '0' or '9' with '+63'
-            } else if (cleaned.startsWith('0')) {
-              cleaned = '+63' + cleaned.substring(1); // Replace '0' with '+63'
+            if (cleaned.startsWith("9")) {
+              cleaned = "+63" + cleaned.substring(1); // Replace '0' or '9' with '+63'
+            } else if (cleaned.startsWith("0")) {
+              cleaned = "+63" + cleaned.substring(1); // Replace '0' with '+63'
             }
 
             // Ensure the number has the correct length after conversion
             if (cleaned.length === 13) {
               return cleaned; // Return the correctly formatted number
             } else {
-              return 'Invalid phone number length';
+              return "Invalid phone number length";
             }
           }
 
@@ -362,16 +366,16 @@ router.post(
             firstName: first_name,
             lastName: last_name,
             phoneNumber: formatPhoneNumber(contact_number),
-            messageType: 'loanDisbursement',
+            messageType: "loanDisbursement",
             additionalData: {
               loanId: loan_application_id,
               loanAmount: loan_amount,
               paymentMethod: payment_method,
-              paymentChannel: payment_channel
-            }
+              paymentChannel: payment_channel,
+            },
           });
 
-          console.log('Disbursement notification sent successfully');
+          console.log("Disbursement notification sent successfully");
         }
       } else {
         // Upload each file to Firebase Storage
@@ -395,14 +399,14 @@ router.post(
           let co_makers_valid_id;
           let bank_statement;
 
-          if (key === 'borrowerValidID') {
-            key = 'borrowers_valid_id';
+          if (key === "borrowerValidID") {
+            key = "borrowers_valid_id";
             borrowers_valid_id = downloadURL;
-          } else if (key === 'coMakersValidID') {
-            key = 'co_makers_valid_id';
+          } else if (key === "coMakersValidID") {
+            key = "co_makers_valid_id";
             co_makers_valid_id = downloadURL;
-          } else if (key === 'bankStatement') {
-            key = 'bank_statement';
+          } else if (key === "bankStatement") {
+            key = "bank_statement";
             bank_statement = downloadURL;
           }
 
@@ -418,15 +422,15 @@ router.post(
         }
       }
 
-      res.status(200).json({ message: 'Files uploaded successfully!' });
+      res.status(200).json({ message: "Files uploaded successfully!" });
     } catch (error) {
-      console.error('Error uploading files:', error);
-      res.status(500).json({ error: 'Failed to upload files.' });
+      console.error("Error uploading files:", error);
+      res.status(500).json({ error: "Failed to upload files." });
     }
   }
 );
 
-router.post('/list', authenticateUserMiddleware, async (req, res) => {
+router.post("/list", authenticateUserMiddleware, async (req, res) => {
   try {
     const [rows] = await db.query(
       `
@@ -449,17 +453,17 @@ router.post('/list', authenticateUserMiddleware, async (req, res) => {
     if (rows.length > 0) {
       res.status(200).json({ success: true, data: rows });
     } else {
-      res.status(404).json({ message: 'No loans found for this user.' });
+      res.status(404).json({ message: "No loans found for this user." });
     }
   } catch (error) {
     res
       .status(500)
-      .json({ error: 'Error fetching loan list with borrower details' });
+      .json({ error: "Error fetching loan list with borrower details" });
   }
 });
 
 router.post(
-  '/:loanId/updateStatus/confirmation',
+  "/:loanId/updateStatus/confirmation",
   authenticateUserMiddleware,
   async (req, res) => {
     try {
@@ -511,20 +515,20 @@ router.post(
 
       function formatPhoneNumber(phoneNumber) {
         // Remove any non-digit characters
-        let cleaned = phoneNumber.replace(/\D/g, '');
+        let cleaned = phoneNumber.replace(/\D/g, "");
 
         // Check if the number starts with '09' or any other prefix and always convert to '+63'
-        if (cleaned.startsWith('9')) {
-          cleaned = '+63' + cleaned.substring(1); // Replace '0' or '9' with '+63'
-        } else if (cleaned.startsWith('0')) {
-          cleaned = '+63' + cleaned.substring(1); // Replace '0' with '+63'
+        if (cleaned.startsWith("9")) {
+          cleaned = "+63" + cleaned.substring(1); // Replace '0' or '9' with '+63'
+        } else if (cleaned.startsWith("0")) {
+          cleaned = "+63" + cleaned.substring(1); // Replace '0' with '+63'
         }
 
         // Ensure the number has the correct length after conversion
         if (cleaned.length === 13) {
           return cleaned; // Return the correctly formatted number
         } else {
-          return 'Invalid phone number length';
+          return "Invalid phone number length";
         }
       }
 
@@ -533,12 +537,12 @@ router.post(
         lastName: last_name,
         phoneNumber: formatPhoneNumber(contact_number),
         messageType:
-          loan_status === 'Approved' ? 'loanApproval' : 'loanRejection',
+          loan_status === "Approved" ? "loanApproval" : "loanRejection",
 
-        additionalData: { loanId: loanId, loanAmount: loan_amount }
+        additionalData: { loanId: loanId, loanAmount: loan_amount },
       });
 
-      console.log('text message sent successuly');
+      console.log("text message sent successuly");
 
       res.status(200).json({ success: true });
 
@@ -555,7 +559,7 @@ router.post(
 );
 
 router.post(
-  '/:loanId/updatePaymentStatus',
+  "/:loanId/updatePaymentStatus",
   authenticateUserMiddleware,
   async (req, res) => {
     try {
@@ -595,20 +599,20 @@ router.post(
 
       function formatPhoneNumber(phoneNumber) {
         // Remove any non-digit characters
-        let cleaned = phoneNumber.replace(/\D/g, '');
+        let cleaned = phoneNumber.replace(/\D/g, "");
 
         // Check if the number starts with '09' or any other prefix and always convert to '+63'
-        if (cleaned.startsWith('9')) {
-          cleaned = '+63' + cleaned.substring(1); // Replace '0' or '9' with '+63'
-        } else if (cleaned.startsWith('0')) {
-          cleaned = '+63' + cleaned.substring(1); // Replace '0' with '+63'
+        if (cleaned.startsWith("9")) {
+          cleaned = "+63" + cleaned.substring(1); // Replace '0' or '9' with '+63'
+        } else if (cleaned.startsWith("0")) {
+          cleaned = "+63" + cleaned.substring(1); // Replace '0' with '+63'
         }
 
         // Ensure the number has the correct length after conversion
         if (cleaned.length === 13) {
           return cleaned; // Return the correctly formatted number
         } else {
-          return 'Invalid phone number length';
+          return "Invalid phone number length";
         }
       }
 
@@ -633,16 +637,16 @@ router.post(
         lastName: last_name,
         phoneNumber: formatPhoneNumber(contact_number),
         messageType:
-          action === 'Approved'
-            ? 'loanPaymentAcceptance'
-            : 'loanPaymentRejection',
+          action === "Approved"
+            ? "loanPaymentAcceptance"
+            : "loanPaymentRejection",
 
         additionalData: {
           loanId: loanId,
           loanAmount: loan_amount,
           paymentAmount,
-          paymentDate
-        }
+          paymentDate,
+        },
       });
 
       res.status(200).json({ success: true });
@@ -660,7 +664,7 @@ router.post(
 );
 
 // Add these endpoints for dashboard stats
-router.get('/dashboard-stats', async (req, res) => {
+router.get("/dashboard-stats", async (req, res) => {
   try {
     const [stats] = await db.query(`
       SELECT 
@@ -701,11 +705,11 @@ router.get('/dashboard-stats', async (req, res) => {
     res.json({
       stats: stats[0],
       monthlyDisbursements,
-      paymentStats
+      paymentStats,
     });
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error fetching dashboard stats:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
