@@ -1,44 +1,43 @@
-import express from 'express';
-
-import config from '../config.js';
+import express from "express";
+import config from "../config.js";
 
 let db = config.mySqlDriver;
 
 const router = express.Router();
 
-import multer from 'multer';
+import multer from "multer";
 
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 import {
   authenticateUserMiddleware,
-  auditTrailMiddleware
-} from '../middleware/authMiddleware.js';
+  auditTrailMiddleware,
+} from "../middleware/authMiddleware.js";
 
 let firebaseStorage = config.firebaseStorage;
 
 const storage = multer.diskStorage({
   destination: (req, file, callBack) => {
-    callBack(null, 'uploads');
+    callBack(null, "uploads");
   },
   filename: (req, file, callBack) => {
     callBack(null, `${file.originalname}_${Date.now()}.xlsx`);
-  }
+  },
 });
 const upload = multer({ storage: multer.memoryStorage() });
 
 let mapped = {
-  Borrower: { table_name: 'borrower_account', column_id: 'borrower_id' },
-  'Loan Officer': { table_name: 'loan_officer', column_id: 'officer_id' },
-  Collector: { table_name: 'collector_account', column_id: 'collector_id' },
-  Admin: { table_name: 'admin_account', column_id: 'admin_id' }
+  Borrower: { table_name: "borrower_account", column_id: "borrower_id" },
+  "Loan Officer": { table_name: "loan_officer", column_id: "officer_id" },
+  Collector: { table_name: "collector_account", column_id: "collector_id" },
+  Admin: { table_name: "admin_account", column_id: "admin_id" },
 };
 
 // Get user by ID
-router.get('/:id', async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const [resul1] = await db.query(
-      'SELECT * FROM user_account WHERE user_id  = ?',
+      "SELECT * FROM user_account WHERE user_id  = ?",
       [req.params.id]
     );
 
@@ -65,7 +64,7 @@ router.get('/:id', async (req, res) => {
     console.log({ result });
     let data = {
       ...result[0],
-      role: roleName
+      role: roleName,
     };
     res.status(200).json({ success: true, data: data });
   } catch (err) {
@@ -74,11 +73,11 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create a new role
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
   const { role_id, role_name } = req.body;
   try {
     const [result] = await db.query(
-      'INSERT INTO user_role (role_id, role_name) VALUES (?, ?)',
+      "INSERT INTO user_role (role_id, role_name) VALUES (?, ?)",
       [role_id, role_name]
     );
     res
@@ -90,9 +89,9 @@ router.post('/', async (req, res) => {
 });
 
 // Get all roles
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const [results] = await db.query('SELECT * FROM user_role');
+    const [results] = await db.query("SELECT * FROM user_role");
     res.status(200).json({ success: true, data: results });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -100,21 +99,21 @@ router.get('/', async (req, res) => {
 });
 
 // Update a role
-router.put('/:id', async (req, res) => {
+router.put("/:id", async (req, res) => {
   const userId = req.params.id;
   const role = req.body.role;
   let data = req.body;
   try {
-    if (role === 'Borrower') {
+    if (role === "Borrower") {
       // Dynamically construct the SQL query based on fields in the request body
       const fields = Object.keys(data)
-        .filter(key => key !== 'role') // Exclude the 'role' field from the update
-        .map(key => `${key} = ?`)
-        .join(', ');
+        .filter((key) => key !== "role") // Exclude the 'role' field from the update
+        .map((key) => `${key} = ?`)
+        .join(", ");
 
       const values = Object.keys(data)
-        .filter(key => key !== 'role')
-        .map(key => data[key]);
+        .filter((key) => key !== "role")
+        .map((key) => data[key]);
 
       if (fields.length > 0) {
         const [result] = await db.query(
@@ -124,32 +123,32 @@ router.put('/:id', async (req, res) => {
       }
     }
 
-    res.status(200).json({ success: true, message: 'Updated successfully.' });
+    res.status(200).json({ success: true, message: "Updated successfully." });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
 // Delete a role
-router.delete('/:id', async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
-    const [result] = await db.query('DELETE FROM user_role WHERE role_id = ?', [
-      req.params.id
+    const [result] = await db.query("DELETE FROM user_role WHERE role_id = ?", [
+      req.params.id,
     ]);
     if (result.affectedRows === 0)
       return res
         .status(404)
-        .json({ success: false, message: 'Role not found' });
-    res.status(200).json({ success: true, message: 'Role deleted' });
+        .json({ success: false, message: "Role not found" });
+    res.status(200).json({ success: true, message: "Role deleted" });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
 router.post(
-  '/uploadProfilePicture',
+  "/uploadProfilePicture",
   authenticateUserMiddleware,
-  upload.single('profilePic'),
+  upload.single("profilePic"),
   async (req, res) => {
     try {
       const file = req.file;
@@ -174,13 +173,13 @@ router.post(
       console.log({ downloadURL, role, id });
 
       const [resul1] = await db.query(
-        'SELECT * FROM user_account WHERE user_id  = ?',
+        "SELECT * FROM user_account WHERE user_id  = ?",
         [id]
       );
 
       let { borrower_id } = resul1[0];
 
-      if (role === 'Borrower') {
+      if (role === "Borrower") {
         const query = `UPDATE borrower_account SET profile_pic = ?
         WHERE borrower_id  = ?`;
         await db.execute(query, [downloadURL, borrower_id]);
@@ -195,7 +194,7 @@ router.post(
 );
 
 // get all borrowers
-router.get('/borrowers/list', async (req, res) => {
+router.get("/borrowers/list", async (req, res) => {
   try {
     const [messages] = await db.query(`SELECT * FROM borrower_account
       order by first_name DESC
@@ -203,20 +202,76 @@ router.get('/borrowers/list', async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: messages
+      data: messages,
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({
       success: false,
       message:
-        'An error occurred while fetching messages. Please try again later.'
+        "An error occurred while fetching messages. Please try again later.",
     });
   }
 });
 
+// Change Password
+router.put(
+  "/:id/change-password",
+  authenticateUserMiddleware,
+  async (req, res) => {
+    const userId = req.params.id;
+    const { password, new_password, confirm_password } = req.body;
+
+    if (!password || !new_password || !confirm_password) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing password fields." });
+    }
+
+    try {
+      // 2. Get current password (not hashed)
+      const [userResult] = await db.query(
+        "SELECT password FROM user_account WHERE user_id = ?",
+        [userId]
+      );
+
+      if (userResult.length === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found." });
+      }
+
+      const currentPassword = userResult[0].password;
+
+      if (password !== currentPassword) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Old password is incorrect." });
+      }
+
+      if (new_password !== confirm_password) {
+        return res.status(400).json({
+          success: false,
+          message: "New password and confirm password do not match.",
+        });
+      }
+
+      await db.query("UPDATE user_account SET password = ? WHERE user_id = ?", [
+        new_password,
+        userId,
+      ]);
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Password updated successfully." });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: error.message });
+    }
+  }
+);
+
 router.post(
-  '/register',
+  "/register",
   // authenticateUserMiddleware,
   // upload.single('profilePic'),
   async (req, res) => {
@@ -236,13 +291,13 @@ router.post(
       date_of_birth,
       role,
       gender,
-      nationality
+      nationality,
     } = data;
 
     let mapped = {
-      Borrower: 'borrower_account',
-      'Loan Officer': 'loan_officer',
-      Collector: 'collector_account'
+      Borrower: "borrower_account",
+      "Loan Officer": "loan_officer",
+      Collector: "collector_account",
     };
 
     const checkRole = async (email, contact_number, role) => {
@@ -268,10 +323,10 @@ router.post(
             return { exists: true, role }; // Early exit if a match is found
           }
         }
-        console.log('Does not exist in any role');
+        console.log("Does not exist in any role");
         return { exists: false, role: null };
       } catch (error) {
-        console.error('Error in checkAllRoles:', error.message);
+        console.error("Error in checkAllRoles:", error.message);
         throw error;
       }
     };
@@ -281,7 +336,7 @@ router.post(
     if (result.exists) {
       return res.status(400).json({
         success: false,
-        message: 'Email or Contact Number already exists.'
+        message: "Email or Contact Number already exists.",
       });
     } else {
       const [result] = await db.query(
@@ -315,7 +370,7 @@ router.post(
           contact_number,
           date_of_birth,
           gender,
-          nationality
+          nationality,
         ]
       );
 
@@ -327,9 +382,9 @@ router.post(
       let role_id = roleResult[0].role_id;
 
       let mappedColumnId = {
-        Borrower: 'borrower_id',
-        'Loan Officer': 'officer_id',
-        Collector: 'collector_id'
+        Borrower: "borrower_id",
+        "Loan Officer": "officer_id",
+        Collector: "collector_id",
       };
       const queryInsertAccount = `
             INSERT INTO user_account (
@@ -347,7 +402,7 @@ router.post(
 
       res.status(200).json({
         success: true,
-        needVerification: true
+        needVerification: true,
       });
     }
   }

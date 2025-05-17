@@ -1,17 +1,22 @@
-import { useEffect, useState } from 'react';
-import { jwtDecode } from 'jwt-decode';
-import checkAuth from '../app/auth';
-import { NavLink, useLocation } from 'react-router-dom';
-import SidebarSubmenu from '../containers/SidebarSubmenu';
+import { useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
+import checkAuth from "../app/auth";
+import { NavLink, useLocation } from "react-router-dom";
+import SidebarSubmenu from "../containers/SidebarSubmenu";
 import {
-  Squares2X2Icon, UsersIcon, PresentationChartLineIcon,
-  BanknotesIcon, DocumentChartBarIcon, CogIcon, IdentificationIcon
-} from '@heroicons/react/24/outline';
+  Squares2X2Icon,
+  UsersIcon,
+  PresentationChartLineIcon,
+  BanknotesIcon,
+  DocumentChartBarIcon,
+  CogIcon,
+  IdentificationIcon,
+} from "@heroicons/react/24/outline";
 
 const AppRoutes = () => {
   const [routes, setRoutes] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState("");
   const location = useLocation(); // for active route styling
 
   const fetchAccountSettings = async () => {
@@ -27,62 +32,67 @@ const AppRoutes = () => {
 
       // Icon map based on route name
       const iconMap = {
-        'My Loans': <PresentationChartLineIcon className="h-6 w-6" />,
-        'My Profile': <IdentificationIcon className="h-6 w-6" />,
-        'Loan Management': <BanknotesIcon className="h-6 w-6" />,
-        'Disbursement': <DocumentChartBarIcon className="h-6 w-6" />,
-        'SMS Logs': <UsersIcon className="h-6 w-6" />,
-        'Dashboard': <Squares2X2Icon className="h-6 w-6" />,
-        'Borrowers': <UsersIcon className="h-6 w-6" />,
-        'Loan Officers': <IdentificationIcon className="h-6 w-6" />,
-        'Collectors': <BanknotesIcon className="h-6 w-6" />,
-        'Settings': <CogIcon className="h-6 w-6" />
+        "My Loans": <PresentationChartLineIcon className="h-6 w-6" />,
+        "My Profile": <IdentificationIcon className="h-6 w-6" />,
+        "Loan Management": <BanknotesIcon className="h-6 w-6" />,
+        Disbursement: <DocumentChartBarIcon className="h-6 w-6" />,
+        "SMS Logs": <UsersIcon className="h-6 w-6" />,
+        Dashboard: <Squares2X2Icon className="h-6 w-6" />,
+        Borrowers: <UsersIcon className="h-6 w-6" />,
+        "Loan Officers": <IdentificationIcon className="h-6 w-6" />,
+        Collectors: <BanknotesIcon className="h-6 w-6" />,
+        Settings: <CogIcon className="h-6 w-6" />,
+        "Payment History": <BanknotesIcon className="h-6 w-6" />,
       };
 
       // Dynamic route generation based on user role
-      if (role === 'Borrower') {
+      if (role === "Borrower") {
         newRoutes = [
-          { path: '/app/loan_application', name: 'My Loans' },
-          { path: `/app/userProfile/${selectedUserId}`, name: 'My Profile' },
+          { path: "/app/loan_application", name: "My Loans" },
+          { path: `/app/userProfile/${selectedUserId}`, name: "My Profile" },
+          { path: "/app/payment_history", name: "Payment History" },
         ];
       }
 
-      if (role === 'Collector') {
+      if (role === "Collector") {
+        newRoutes = [{ path: "/app/loan_management", name: "Loan Management" }];
+      }
+
+      if (role === "Loan Officer") {
         newRoutes = [
-          { path: '/app/loan_management', name: 'Loan Management' },
+          { path: "/app/loan_management", name: "Loan Management" },
+          { path: "/app/disbursement", name: "Disbursement" },
+          { path: "/app/detailed_borrowers", name: "Borrower Accounts" },
         ];
       }
 
-      if (role === 'Loan Officer') {
+      if (role === "Admin") {
         newRoutes = [
-          { path: '/app/loan_management', name: 'Loan Management' },
-          { path: '/app/disbursement', name: 'Disbursement' },
-        ];
-      }
-
-      if (role === 'Admin') {
-        newRoutes = [
-          { path: '/app/dashboard', name: 'Dashboard' },
-          { path: '/app/loan_management', name: 'Loan Management' },
-          { path: '/app/disbursement', name: 'Disbursement' },
-          { path: '/app/borrowers', name: 'Borrowers' },
-          { path: '/app/loan_officers', name: 'Loan Officers' },
-          { path: '/app/collectors', name: 'Collectors' },
-          { path: '/app/sms_logs', name: 'SMS Logs' },
-          { path: '/app/settings', name: 'Settings' },
-          { path: '/app/financial-management', name: 'Financial Management', icon: <BanknotesIcon className="h-6 w-6" /> },
+          { path: "/app/dashboard", name: "Dashboard" },
+          { path: "/app/loan_management", name: "Loan Management" },
+          { path: "/app/disbursement", name: "Disbursement" },
+          { path: "/app/borrowers", name: "Borrowers" },
+          { path: "/app/loan_officers", name: "Loan Officers" },
+          { path: "/app/collectors", name: "Collectors" },
+          { path: "/app/sms_logs", name: "SMS Logs" },
+          { path: "/app/settings", name: "Settings" },
+          {
+            path: "/app/financial-management",
+            name: "Financial Management",
+            icon: <BanknotesIcon className="h-6 w-6" />,
+          },
         ];
       }
 
       // Assign icons dynamically based on route name
-      newRoutes = newRoutes.map(route => ({
+      newRoutes = newRoutes.map((route) => ({
         ...route,
-        icon: iconMap[route.name] || <Squares2X2Icon className="h-6 w-6" />
+        icon: iconMap[route.name] || <Squares2X2Icon className="h-6 w-6" />,
       }));
 
       setRoutes(newRoutes);
     } catch (error) {
-      console.error('Error fetching account settings:', error);
+      console.error("Error fetching account settings:", error);
       // Optionally, set some error state here
     }
   };
@@ -101,10 +111,16 @@ const AppRoutes = () => {
             <NavLink
               end
               to={route.path}
-              className={({ isActive }) => isActive ? 'font-bold text-white bg-blue-900 shadow-2xl' : ''}>
+              className={({ isActive }) =>
+                isActive ? "font-bold text-white bg-blue-900 shadow-2xl" : ""
+              }
+            >
               {route.icon} {route.name}
               {location.pathname === route.path && (
-                <span className="absolute inset-y-0 left-0 w-2 rounded-tr-md rounded-br-md" aria-hidden="true"></span>
+                <span
+                  className="absolute inset-y-0 left-0 w-2 rounded-tr-md rounded-br-md"
+                  aria-hidden="true"
+                ></span>
               )}
             </NavLink>
           )}

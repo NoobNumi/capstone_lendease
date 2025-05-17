@@ -1,50 +1,50 @@
-import express from 'express';
+import express from "express";
 
-import config from '../config.js';
+import config from "../config.js";
 
 import {
   authenticateUserMiddleware,
-  auditTrailMiddleware
-} from '../middleware/authMiddleware.js';
+  auditTrailMiddleware,
+} from "../middleware/authMiddleware.js";
 
 let db = config.mySqlDriver;
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 const router = express.Router();
 
-import axios from 'axios';
-import multer from 'multer';
+import axios from "axios";
+import multer from "multer";
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 5 * 1024 * 1024, // 5MB limit
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    if (file.mimetype.startsWith("image/")) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed!'));
+      cb(new Error("Only image files are allowed!"));
     }
-  }
+  },
 });
 let firebaseStorage = config.firebaseStorage;
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const accountSid = config.accountSid; // Replace with your Twilio Account SID
 const authToken = config.authToken; // Replace with your Twilio Auth Token
-import twilio from 'twilio'; // Use import statement for Twilio
-import { Vonage } from '@vonage/server-sdk';
+import twilio from "twilio"; // Use import statement for Twilio
+import { Vonage } from "@vonage/server-sdk";
 
 console.log({ accountSid, authToken });
 const vonage = new Vonage({
   apiKey: config.VONAGE_apiKey,
-  apiSecret: config.VONAGE_apiSecret
+  apiSecret: config.VONAGE_apiSecret,
 });
 
 const loanCreationMessage = ({
   firstName,
   lastName,
   loanAmount,
-  loanId
+  loanId,
 }) => `Dear ${firstName} ${lastName},
 
 Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been successfully created. Our team will review your application and get back to you shortly.
@@ -55,7 +55,7 @@ const loanApprovalMessage = ({
   firstName,
   lastName,
   loanAmount,
-  loanId
+  loanId,
 }) => `Dear ${firstName} ${lastName},
 
 Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been approved. Our team will proceed with the disbursement process.
@@ -65,7 +65,7 @@ Thank you for choosing us!`;
 const loanRejectionMessage = ({
   firstName,
   lastName,
-  loanId
+  loanId,
 }) => `Dear ${firstName} ${lastName},
 
 Your loan application (Loan ID: ${loanId}) has been rejected.
@@ -76,7 +76,7 @@ const loanPaymentAcceptanceMessage = ({
   firstName,
   lastName,
   paymentAmount,
-  paymentDate
+  paymentDate,
 }) => `Dear ${firstName} ${lastName},
 
 Your payment of ${paymentAmount} has been successfully processed on ${paymentDate}.
@@ -87,7 +87,7 @@ const loanPaymentRejectionMessage = ({
   firstName,
   lastName,
   paymentAmount,
-  reason
+  reason,
 }) => `Dear ${firstName} ${lastName},
 
 Your payment of ${paymentAmount} has been rejected.
@@ -101,7 +101,7 @@ const paymentSubmissionMessage = ({
   lastName,
   paymentAmount,
   referenceNumber,
-  paymentMethod
+  paymentMethod,
 }) => `Dear ${firstName} ${lastName},
 
 Thank you for your payment of ${paymentAmount}. Your payment with reference number ${referenceNumber} via ${paymentMethod} has been received and is now being processed.
@@ -115,7 +115,7 @@ const sendMessage = async ({
   lastName,
   phoneNumber,
   messageType,
-  additionalData = {}
+  additionalData = {},
 }) => {
   const client = twilio(accountSid, authToken);
   const templates = {
@@ -124,14 +124,14 @@ const sendMessage = async ({
     loanRejection: loanRejectionMessage,
     loanPaymentAcceptance: loanPaymentAcceptanceMessage,
     loanPaymentRejection: loanPaymentRejectionMessage,
-    paymentSubmission: paymentSubmissionMessage
+    paymentSubmission: paymentSubmissionMessage,
   };
 
   const text = templates[messageType]
     ? templates[messageType]({ firstName, lastName, ...additionalData })
-    : 'No valid message type provided.';
+    : "No valid message type provided.";
 
-  const from = '+639221200715'; // Set your company name or short code as sender
+  const from = "+639221200715"; // Set your company name or short code as sender
   const to = phoneNumber;
 
   try {
@@ -141,14 +141,14 @@ const sendMessage = async ({
       .create({
         body: text,
         from: from,
-        to: to
+        to: to,
       })
-      .then(message => {
-        console.log('Message sent successfully with Twilio');
-        console.log('Message SID:', message.sid);
+      .then((message) => {
+        console.log("Message sent successfully with Twilio");
+        console.log("Message SID:", message.sid);
       });
   } catch (error) {
-    console.error('Error occurred while sending message with Twilio:', error);
+    console.error("Error occurred while sending message with Twilio:", error);
   }
 };
 
@@ -163,7 +163,7 @@ const evaluateLoanApplicationWithDetailedBreakdown = (
     minCreditScore,
     minMonthlyIncome,
     maxLoanToIncomeRatio,
-    minEmploymentYears
+    minEmploymentYears,
   } = parameters;
 
   // Calculate credit score percentage
@@ -171,7 +171,7 @@ const evaluateLoanApplicationWithDetailedBreakdown = (
     creditScore >= minCreditScore ? 100 : (creditScore / minCreditScore) * 100;
   const creditScoreMessage =
     creditScore >= minCreditScore
-      ? 'Credit score meets the required threshold.'
+      ? "Credit score meets the required threshold."
       : `Credit score is lower than the required minimum of ${minCreditScore}. (${creditScorePercentage.toFixed(
           2
         )}%)`;
@@ -183,7 +183,7 @@ const evaluateLoanApplicationWithDetailedBreakdown = (
       : (monthlyIncome / minMonthlyIncome) * 100;
   const incomeMessage =
     monthlyIncome >= minMonthlyIncome
-      ? 'Income meets the required minimum.'
+      ? "Income meets the required minimum."
       : `Income is below the required minimum of ${minMonthlyIncome}. (${incomePercentage.toFixed(
           2
         )}%)`;
@@ -194,7 +194,7 @@ const evaluateLoanApplicationWithDetailedBreakdown = (
     loanAmount <= maxLoanAmount ? 100 : (maxLoanAmount / loanAmount) * 100;
   const loanToIncomeMessage =
     loanAmount <= maxLoanAmount
-      ? 'Loan amount is within the acceptable loan-to-income ratio.'
+      ? "Loan amount is within the acceptable loan-to-income ratio."
       : `Loan amount exceeds the allowed limit based on income (${loanToIncomePercentage.toFixed(
           2
         )}%).`;
@@ -206,7 +206,7 @@ const evaluateLoanApplicationWithDetailedBreakdown = (
       : (employmentYears / minEmploymentYears) * 100;
   const employmentYearsMessage =
     employmentYears >= minEmploymentYears
-      ? 'Employment history meets the required duration.'
+      ? "Employment history meets the required duration."
       : `Employment history is below the required minimum of ${minEmploymentYears} years. (${employmentYearsPercentage.toFixed(
           2
         )}%)`;
@@ -220,11 +220,11 @@ const evaluateLoanApplicationWithDetailedBreakdown = (
   );
 
   // Construct approval/denial message
-  let approvalMessage = 'Loan application approved.';
+  let approvalMessage = "Loan application approved.";
 
   if (overallApprovalPercentage < 100) {
     approvalMessage =
-      'Loan application denied due to the following criteria not meeting the required thresholds:';
+      "Loan application denied due to the following criteria not meeting the required thresholds:";
   }
 
   return {
@@ -233,26 +233,26 @@ const evaluateLoanApplicationWithDetailedBreakdown = (
     breakdown: {
       creditScore: {
         percentage: creditScorePercentage,
-        message: creditScoreMessage
+        message: creditScoreMessage,
       },
       income: {
         percentage: incomePercentage,
-        message: incomeMessage
+        message: incomeMessage,
       },
       loanToIncomeRatio: {
         percentage: loanToIncomePercentage,
-        message: loanToIncomeMessage
+        message: loanToIncomeMessage,
       },
       employmentYears: {
         percentage: employmentYearsPercentage,
-        message: employmentYearsMessage
-      }
+        message: employmentYearsMessage,
+      },
     },
-    overallApprovalPercentage
+    overallApprovalPercentage,
   };
 };
 
-const getBorrowerAccountByUserAccountId = async userId => {
+const getBorrowerAccountByUserAccountId = async (userId) => {
   const [rows] = await db.query(
     `
 
@@ -267,7 +267,7 @@ SELECT borrower_id  FROM user_account WHERE user_id = ?
   return rows[0].borrower_id;
 };
 
-router.post('/checkLoanApplicationApprovalRate', async (req, res) => {
+router.post("/checkLoanApplicationApprovalRate", async (req, res) => {
   try {
     const { loan_application_id } = req.body;
 
@@ -283,7 +283,7 @@ router.post('/checkLoanApplicationApprovalRate', async (req, res) => {
     // Fetch loan parameters
     const [parameters] = await db.query(
       `SELECT * FROM loan_setting_parameters WHERE loan_type = ?`,
-      ['personal']
+      ["personal"]
     );
 
     const param = parameters[0];
@@ -310,11 +310,11 @@ router.post('/checkLoanApplicationApprovalRate', async (req, res) => {
           100
         ).toFixed(2)
       ),
-      formula: 'Credit Score / Required Credit Score × 100',
+      formula: "Credit Score / Required Credit Score × 100",
       explanation: `${loan.credit_score} / ${param.min_credit_score} × 100 = ${(
         (loan.credit_score / param.min_credit_score) *
         100
-      ).toFixed(2)}%`
+      ).toFixed(2)}%`,
     };
 
     const incomeCalc = {
@@ -326,17 +326,17 @@ router.post('/checkLoanApplicationApprovalRate', async (req, res) => {
           100
         ).toFixed(2)
       ),
-      formula: 'Monthly Income / Required Monthly Income × 100',
-      explanation: `₱${loan.monthly_income.toLocaleString('en-US', {
+      formula: "Monthly Income / Required Monthly Income × 100",
+      explanation: `₱${loan.monthly_income.toLocaleString("en-US", {
         minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })} / ₱${param.min_monthly_income.toLocaleString('en-US', {
+        maximumFractionDigits: 2,
+      })} / ₱${param.min_monthly_income.toLocaleString("en-US", {
         minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+        maximumFractionDigits: 2,
       })} × 100 = ${(
         (loan.monthly_income / param.min_monthly_income) *
         100
-      ).toFixed(2)}%`
+      ).toFixed(2)}%`,
     };
 
     const loanToIncomeRatio = Number(
@@ -354,16 +354,16 @@ router.post('/checkLoanApplicationApprovalRate', async (req, res) => {
           100
         ).toFixed(2)
       ),
-      formula: '((Maximum Ratio - Actual Ratio) / Maximum Ratio) × 100',
-      explanation: `Loan Amount: ₱${loan.loan_amount.toLocaleString('en-US', {
+      formula: "((Maximum Ratio - Actual Ratio) / Maximum Ratio) × 100",
+      explanation: `Loan Amount: ₱${loan.loan_amount.toLocaleString("en-US", {
         minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+        maximumFractionDigits: 2,
       })}\nAnnual Income: ₱${(loan.monthly_income * 12).toLocaleString(
-        'en-US',
+        "en-US",
         { minimumFractionDigits: 2, maximumFractionDigits: 2 }
       )}\nActual Ratio: ${loanToIncomeRatio.toFixed(
         2
-      )}%\nMax Allowed: ${maxAllowedRatio.toFixed(2)}%`
+      )}%\nMax Allowed: ${maxAllowedRatio.toFixed(2)}%`,
     };
 
     const employmentCalc = {
@@ -373,13 +373,13 @@ router.post('/checkLoanApplicationApprovalRate', async (req, res) => {
         (employmentYears / param.employment_years) * 100,
         100
       ).toFixed(2),
-      formula: 'Employment Years / Required Years × 100',
+      formula: "Employment Years / Required Years × 100",
       explanation: `${employmentYears} years / ${
         param.employment_years
       } years × 100 = ${(
         (employmentYears / param.employment_years) *
         100
-      ).toFixed(2)}%`
+      ).toFixed(2)}%`,
     };
 
     // Calculate overall percentage with weightage
@@ -387,7 +387,7 @@ router.post('/checkLoanApplicationApprovalRate', async (req, res) => {
       creditScore: 0.3,
       income: 0.25,
       loanToIncome: 0.25,
-      employment: 0.2
+      employment: 0.2,
     };
 
     const overallPercentage =
@@ -402,53 +402,53 @@ router.post('/checkLoanApplicationApprovalRate', async (req, res) => {
       approved,
       overallApprovalPercentage: overallPercentage,
       message: approved
-        ? 'Loan application meets all required criteria'
-        : 'Loan application needs improvement in some areas',
+        ? "Loan application meets all required criteria"
+        : "Loan application needs improvement in some areas",
       breakdown: {
         creditScore: {
           ...creditScoreCalc,
           weight: `${weights.creditScore * 100}%`,
           weightedScore: (
             creditScoreCalc.percentage * weights.creditScore
-          ).toFixed(2)
+          ).toFixed(2),
         },
         income: {
           ...incomeCalc,
           weight: `${weights.income * 100}%`,
-          weightedScore: (incomeCalc.percentage * weights.income).toFixed(2)
+          weightedScore: (incomeCalc.percentage * weights.income).toFixed(2),
         },
         loanToIncome: {
           ...loanToIncomeCalc,
           weight: `${weights.loanToIncome * 100}%`,
           weightedScore: (
             loanToIncomeCalc.percentage * weights.loanToIncome
-          ).toFixed(2)
+          ).toFixed(2),
         },
         employment: {
           ...employmentCalc,
           weight: `${weights.employment * 100}%`,
           weightedScore: (
             employmentCalc.percentage * weights.employment
-          ).toFixed(2)
-        }
-      }
+          ).toFixed(2),
+        },
+      },
     };
 
     res.json({
       success: true,
-      data: { result: response }
+      data: { result: response },
     });
   } catch (error) {
-    console.error('Error in loan evaluation:', error);
+    console.error("Error in loan evaluation:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to evaluate loan application'
+      error: "Failed to evaluate loan application",
     });
   }
 });
 
 router.post(
-  '/create',
+  "/create",
   authenticateUserMiddleware,
 
   async (req, res) => {
@@ -479,7 +479,7 @@ router.post(
       relationship_to_loan_guarantor,
       loan_guarantor,
       employee_monthly_income_amount,
-      employment_years
+      employment_years,
     } = data;
 
     let { user_id } = req.user;
@@ -493,9 +493,9 @@ router.post(
     let repayment_schedule_id = calculatorMonthsToPay;
     let loan_type_value = loan_type || loan_type_specific;
     let interest_rate = calculatorInterestRate;
-    let loan_status = 'Pending';
+    let loan_status = "Pending";
     let purpose = loan_type_specific;
-    let remarks = '';
+    let remarks = "";
 
     try {
       await db.query(
@@ -532,28 +532,28 @@ router.post(
           purpose,
           remarks,
           repayment_schedule_id,
-          employee_monthly_income_amount || income_amount
+          employee_monthly_income_amount || income_amount,
         ]
       );
 
       const loanId = result.insertId;
 
       let mappedKey = {
-        work_name: 'non_employee_work_name',
-        has_business: 'non_employee_has_business',
-        type_of_business: 'non_employee_type_of_business',
-        disbursement_type: 'disbursement_type',
-        disbursement_bank_or_wallet_name: 'disbursement_bank_or_wallet_name',
-        disbursement_account_name: 'disbursement_account_name',
-        disbursement_account_number: 'disbursement_account_number',
-        business_address: 'non_employee_business_address',
-        income_flow: 'non_employee_income_flow',
-        income_amount: 'non_employee_income_amount',
-        numberField: 'non_employee_numberField',
-        loan_security: 'non_employee_loan_security',
+        work_name: "non_employee_work_name",
+        has_business: "non_employee_has_business",
+        type_of_business: "non_employee_type_of_business",
+        disbursement_type: "disbursement_type",
+        disbursement_bank_or_wallet_name: "disbursement_bank_or_wallet_name",
+        disbursement_account_name: "disbursement_account_name",
+        disbursement_account_number: "disbursement_account_number",
+        business_address: "non_employee_business_address",
+        income_flow: "non_employee_income_flow",
+        income_amount: "non_employee_income_amount",
+        numberField: "non_employee_numberField",
+        loan_security: "non_employee_loan_security",
         relationship_to_loan_guarantor:
-          'non_employee_relationship_to_loan_guarantor',
-        loan_guarantor: 'non_employee_loan_guarantor'
+          "non_employee_relationship_to_loan_guarantor",
+        loan_guarantor: "non_employee_loan_guarantor",
       };
 
       await db.query(
@@ -567,7 +567,7 @@ router.post(
         [
           employment_years || 1,
           employee_monthly_income_amount || income_amount,
-          borrower_id
+          borrower_id,
         ]
       );
 
@@ -605,14 +605,14 @@ router.post(
           loan_security,
           relationship_to_loan_guarantor,
           loan_guarantor,
-          loanId // This is the last parameter
+          loanId, // This is the last parameter
         ]
       );
 
       // insert QR CODE
       await db.query(`INSERT INTO qr_code ( code, type) VALUES ( ?, ?)`, [
         loan_application_id,
-        'Loan Application'
+        "Loan Application",
       ]);
 
       const [rows1] = await db.query(
@@ -634,20 +634,20 @@ router.post(
 
       function formatPhoneNumber(phoneNumber) {
         // Remove any non-digit characters
-        let cleaned = phoneNumber.replace(/\D/g, '');
+        let cleaned = phoneNumber.replace(/\D/g, "");
 
         // Check if the number starts with '09' or any other prefix and always convert to '+63'
-        if (cleaned.startsWith('9')) {
-          cleaned = '+63' + cleaned.substring(1); // Replace '0' or '9' with '+63'
-        } else if (cleaned.startsWith('0')) {
-          cleaned = '+63' + cleaned.substring(1); // Replace '0' with '+63'
+        if (cleaned.startsWith("9")) {
+          cleaned = "+63" + cleaned.substring(1); // Replace '0' or '9' with '+63'
+        } else if (cleaned.startsWith("0")) {
+          cleaned = "+63" + cleaned.substring(1); // Replace '0' with '+63'
         }
 
         // Ensure the number has the correct length after conversion
         if (cleaned.length === 13) {
           return cleaned; // Return the correctly formatted number
         } else {
-          return 'Invalid phone number length';
+          return "Invalid phone number length";
         }
       }
 
@@ -656,23 +656,23 @@ router.post(
         firstName: first_name,
         lastName: last_name,
         phoneNumber: formatPhoneNumber(contact_number),
-        messageType: 'loanCreation',
-        additionalData: { loanId: loanId, loanAmount: loan_amount }
+        messageType: "loanCreation",
+        additionalData: { loanId: loanId, loanAmount: loan_amount },
       });
 
       res.status(201).json({
         success: true,
-        message: 'Loan application created successfully',
+        message: "Loan application created successfully",
         data: {
-          loan_application_id
-        }
+          loan_application_id,
+        },
       });
     } catch (err) {
       console.error(err); // Log the error for debugging
       res.status(500).json({
         success: false,
         message:
-          'An error occurred while creating the loan application. Please try again later.'
+          "An error occurred while creating the loan application. Please try again later.",
       });
     }
   }
@@ -680,8 +680,8 @@ router.post(
 
 // Route to handle file uploads
 router.post(
-  '/payments/upload-files',
-  upload.fields([{ name: 'proofOfPayment', maxCount: 1 }]),
+  "/payments/upload-files",
+  upload.fields([{ name: "proofOfPayment", maxCount: 1 }]),
   async (req, res) => {
     try {
       const files = req.files;
@@ -707,15 +707,15 @@ router.post(
         );
       }
 
-      res.status(200).json({ message: 'Files uploaded successfully!' });
+      res.status(200).json({ message: "Files uploaded successfully!" });
     } catch (error) {
-      console.error('Error uploading files:', error);
-      res.status(500).json({ error: 'Failed to upload files.' });
+      console.error("Error uploading files:", error);
+      res.status(500).json({ error: "Failed to upload files." });
     }
   }
 );
 
-router.post('/list', authenticateUserMiddleware, async (req, res) => {
+router.post("/list", authenticateUserMiddleware, async (req, res) => {
   let { user_id, role } = req.user;
 
   console.log({ role });
@@ -735,7 +735,7 @@ router.post('/list', authenticateUserMiddleware, async (req, res) => {
       LEFT  JOIN disbursement_details dd ON la.loan_id = dd.loan_id
       
 
-      ${role === 'Borrower' ? ' WHERE la.borrower_id  = ?' : ''}
+      ${role === "Borrower" ? " WHERE la.borrower_id  = ?" : ""}
 
 
       ORDER BY la.application_date DESC
@@ -755,11 +755,11 @@ router.post('/list', authenticateUserMiddleware, async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ error: 'Error fetching loan list with borrower details' });
+      .json({ error: "Error fetching loan list with borrower details" });
   }
 });
 
-router.get('/:loanId/details', async (req, res) => {
+router.get("/:loanId/details", async (req, res) => {
   try {
     let loanId = req.params.loanId;
     const [rows] = await db.query(
@@ -785,18 +785,18 @@ router.get('/:loanId/details', async (req, res) => {
     if (rows.length > 0) {
       res.status(200).json({ success: true, data: rows[0] });
     } else {
-      res.status(404).json({ message: 'No loans found for this user.' });
+      res.status(404).json({ message: "No loans found for this user." });
     }
   } catch (error) {
     console.log({ error });
     res
       .status(500)
-      .json({ error: 'Error fetching loan list with borrower details' });
+      .json({ error: "Error fetching loan list with borrower details" });
   }
 });
 
 // Create a new payment
-router.post('/:loanId/payment', async (req, res) => {
+router.post("/:loanId/payment", async (req, res) => {
   try {
     let loanId = req.params.loanId;
 
@@ -810,7 +810,7 @@ router.post('/:loanId/payment', async (req, res) => {
       selectedTableRowIndex,
       includes_past_due,
       past_due_amount,
-      original_amount
+      original_amount,
     } = req.body;
 
     // Insert payment with additional fields
@@ -839,19 +839,19 @@ router.post('/:loanId/payment', async (req, res) => {
         selectedTableRowIndex,
         includes_past_due || false,
         past_due_amount || 0,
-        original_amount || payment_amount
+        original_amount || payment_amount,
       ]
     );
 
     res.status(201).json({ success: true });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error creating payment' });
+    res.status(500).json({ error: "Error creating payment" });
   }
 });
 
 // Get payment list with enhanced details
-router.get('/:loanId/paymentList', async (req, res) => {
+router.get("/:loanId/paymentList", async (req, res) => {
   try {
     const { loanId } = req.params;
 
@@ -879,12 +879,12 @@ router.get('/:loanId/paymentList', async (req, res) => {
     res.status(200).json({ success: true, data: rows });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error fetching payment list' });
+    res.status(500).json({ error: "Error fetching payment list" });
   }
 });
 
 // Update payment status route
-router.post('/:loanId/updatePaymentStatus', async (req, res) => {
+router.post("/:loanId/updatePaymentStatus", async (req, res) => {
   try {
     const { loanId } = req.params;
     let { action, remarks, selectedTableRowIndex } = req.body;
@@ -902,7 +902,7 @@ router.post('/:loanId/updatePaymentStatus', async (req, res) => {
     );
 
     // If payment is approved, handle past due updates
-    if (action === 'Approved') {
+    if (action === "Approved") {
       const [paymentRecord] = await db.query(
         `SELECT * FROM payment 
          WHERE loan_id = ? AND selectedTableRowIndex = ?`,
@@ -933,11 +933,11 @@ router.post('/:loanId/updatePaymentStatus', async (req, res) => {
         await sendMessage({
           firstName: loanDetails[0].first_name,
           phoneNumber: loanDetails[0].contact_number,
-          messageType: 'paymentApproved',
+          messageType: "paymentApproved",
           additionalData: {
             paymentAmount: paymentRecord[0].payment_amount,
-            referenceNumber: paymentRecord[0].reference_number
-          }
+            referenceNumber: paymentRecord[0].reference_number,
+          },
         });
       }
     }
@@ -945,14 +945,14 @@ router.post('/:loanId/updatePaymentStatus', async (req, res) => {
     res.status(200).json({ success: true });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error updating payment status' });
+    res.status(500).json({ error: "Error updating payment status" });
   }
 });
 
 // New endpoint to handle payment submission with file upload
 router.post(
-  '/:loanId/submit-payment',
-  upload.single('proof_of_payment'),
+  "/:loanId/submit-payment",
+  upload.single("proof_of_payment"),
   async (req, res) => {
     try {
       const {
@@ -963,7 +963,7 @@ router.post(
         includes_past_due,
         past_due_amount,
         original_amount,
-        remarks
+        remarks,
       } = req.body;
 
       // Insert payment record
@@ -989,17 +989,17 @@ router.post(
           reference_number,
           selectedTableRowIndex,
           req.file?.filename || null,
-          'Pending',
-          includes_past_due === '1',
+          "Pending",
+          includes_past_due === "1",
           past_due_amount || 0,
           original_amount,
           remarks,
-          includes_past_due === '1' // Mark as handled if it includes past due
+          includes_past_due === "1", // Mark as handled if it includes past due
         ]
       );
 
       // If payment includes past due, update previous unpaid payments
-      if (includes_past_due === '1') {
+      if (includes_past_due === "1") {
         await db.query(
           `UPDATE payment   
          SET past_due_handled = 1,
@@ -1026,20 +1026,20 @@ router.post(
 
         function formatPhoneNumber(phoneNumber) {
           // Remove any non-digit characters
-          let cleaned = phoneNumber.replace(/\D/g, '');
+          let cleaned = phoneNumber.replace(/\D/g, "");
 
           // Check if the number starts with '09' or any other prefix and always convert to '+63'
-          if (cleaned.startsWith('9')) {
-            cleaned = '+63' + cleaned.substring(1); // Replace '9' with '+63'
-          } else if (cleaned.startsWith('0')) {
-            cleaned = '+63' + cleaned.substring(1); // Replace '0' with '+63'
+          if (cleaned.startsWith("9")) {
+            cleaned = "+63" + cleaned.substring(1); // Replace '9' with '+63'
+          } else if (cleaned.startsWith("0")) {
+            cleaned = "+63" + cleaned.substring(1); // Replace '0' with '+63'
           }
 
           // Ensure the number has the correct length after conversion
           if (cleaned.length === 13) {
             return cleaned; // Return the correctly formatted number
           } else {
-            return 'Invalid phone number length';
+            return "Invalid phone number length";
           }
         }
 
@@ -1048,28 +1048,28 @@ router.post(
           firstName: first_name,
           lastName: last_name,
           phoneNumber: formatPhoneNumber(contact_number),
-          messageType: 'paymentSubmission',
+          messageType: "paymentSubmission",
           additionalData: {
             paymentAmount: payment_amount,
             referenceNumber: reference_number,
-            paymentMethod: payment_method
-          }
+            paymentMethod: payment_method,
+          },
         });
 
-        console.log('Payment submission notification sent successfully');
+        console.log("Payment submission notification sent successfully");
       }
 
       res.json({
         success: true,
-        message: 'Payment submitted successfully',
-        paymentId: result.insertId
+        message: "Payment submitted successfully",
+        paymentId: result.insertId,
       });
     } catch (error) {
-      console.error('Payment submission error:', error);
+      console.error("Payment submission error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to submit payment',
-        error: error.message
+        message: "Failed to submit payment",
+        error: error.message,
       });
     } finally {
     }
@@ -1077,7 +1077,7 @@ router.post(
 );
 
 // Get all payments for a loan
-router.get('/:loanId/payments', async (req, res) => {
+router.get("/:loanId/payments", async (req, res) => {
   try {
     const { loanId } = req.params;
 
@@ -1090,13 +1090,13 @@ router.get('/:loanId/payments', async (req, res) => {
     const [rows] = await db.query(query, [loanId]);
     res.json(rows);
   } catch (error) {
-    console.error('Error in GET /payments:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in GET /payments:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // Get payment details
-router.get('/:loanId/payments/:paymentId', async (req, res) => {
+router.get("/:loanId/payments/:paymentId", async (req, res) => {
   try {
     const { loanId, paymentId } = req.params;
 
@@ -1111,19 +1111,19 @@ router.get('/:loanId/payments/:paymentId', async (req, res) => {
     const [rows] = await db.query(query, [loanId, paymentId]);
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Payment not found' });
+      return res.status(404).json({ error: "Payment not found" });
     }
 
     res.json(rows[0]);
   } catch (error) {
-    console.error('Error in GET /payments/:paymentId:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in GET /payments/:paymentId:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // Update payment status (for admin/officer approval)
 router.post(
-  '/payments/:paymentId/status',
+  "/payments/:paymentId/status",
   authenticateUserMiddleware,
   async (req, res) => {
     try {
@@ -1132,8 +1132,8 @@ router.post(
       const userId = req.user.id; // From auth middleware
 
       // Validate status
-      if (!['Approved', 'Rejected'].includes(status)) {
-        return res.status(400).json({ error: 'Invalid status' });
+      if (!["Approved", "Rejected"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
       }
 
       const query = `
@@ -1151,100 +1151,100 @@ router.post(
         userId,
         remarks,
         paymentId,
-        loanId
+        loanId,
       ]);
 
       if (result.affectedRows === 0) {
-        return res.status(404).json({ error: 'Payment not found' });
+        return res.status(404).json({ error: "Payment not found" });
       }
 
       res.json({
         message: `Payment ${status.toLowerCase()} successfully`,
-        status: status
+        status: status,
       });
     } catch (error) {
-      console.error('Error updating payment status:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error("Error updating payment status:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   }
 );
 
 // Update the test endpoint to support testing different message types
-router.get('/test-message/:messageType?', async (req, res) => {
+router.get("/test-message/:messageType?", async (req, res) => {
   try {
     function formatPhoneNumber(phoneNumber) {
       // Remove any non-digit characters
-      let cleaned = phoneNumber.replace(/\D/g, '');
+      let cleaned = phoneNumber.replace(/\D/g, "");
 
       // Check if the number starts with '09' or any other prefix and always convert to '+63'
-      if (cleaned.startsWith('9')) {
-        cleaned = '+63' + cleaned.substring(1); // Replace '0' or '9' with '+63'
-      } else if (cleaned.startsWith('0')) {
-        cleaned = '+63' + cleaned.substring(1); // Replace '0' with '+63'
+      if (cleaned.startsWith("9")) {
+        cleaned = "+63" + cleaned.substring(1); // Replace '0' or '9' with '+63'
+      } else if (cleaned.startsWith("0")) {
+        cleaned = "+63" + cleaned.substring(1); // Replace '0' with '+63'
       }
 
       // Ensure the number has the correct length after conversion
       if (cleaned.length === 13) {
         return cleaned; // Return the correctly formatted number
       } else {
-        return 'Invalid phone number length';
+        return "Invalid phone number length";
       }
     }
 
     // Get the message type from the URL parameter, default to 'loanCreation'
-    const messageType = req.params.messageType || 'loanCreation';
+    const messageType = req.params.messageType || "loanCreation";
 
     // Set up testing data for different message types
     const testData = {
-      firstName: 'Test',
-      lastName: 'User',
-      phoneNumber: formatPhoneNumber('09923150633'), // Replace with your test phone number
+      firstName: "Test",
+      lastName: "User",
+      phoneNumber: formatPhoneNumber("09923150633"), // Replace with your test phone number
       messageType: messageType,
-      additionalData: {}
+      additionalData: {},
     };
 
     // Add specific data for each message type
     switch (messageType) {
-      case 'loanCreation':
-        testData.additionalData = { loanId: 'TEST123', loanAmount: '10,000' };
+      case "loanCreation":
+        testData.additionalData = { loanId: "TEST123", loanAmount: "10,000" };
         break;
-      case 'loanApproval':
-        testData.additionalData = { loanId: 'TEST123', loanAmount: '10,000' };
+      case "loanApproval":
+        testData.additionalData = { loanId: "TEST123", loanAmount: "10,000" };
         break;
-      case 'loanRejection':
-        testData.additionalData = { loanId: 'TEST123' };
+      case "loanRejection":
+        testData.additionalData = { loanId: "TEST123" };
         break;
-      case 'loanDisbursement':
+      case "loanDisbursement":
         testData.additionalData = {
-          loanId: 'TEST123',
-          loanAmount: '10,000',
-          paymentMethod: 'Bank Transfer',
-          paymentChannel: 'BDO'
+          loanId: "TEST123",
+          loanAmount: "10,000",
+          paymentMethod: "Bank Transfer",
+          paymentChannel: "BDO",
         };
         break;
-      case 'paymentSubmission':
+      case "paymentSubmission":
         testData.additionalData = {
-          paymentAmount: '1,500',
-          referenceNumber: 'REF12345',
-          paymentMethod: 'GCash'
+          paymentAmount: "1,500",
+          referenceNumber: "REF12345",
+          paymentMethod: "GCash",
         };
         break;
-      case 'loanPaymentAcceptance':
+      case "loanPaymentAcceptance":
         testData.additionalData = {
-          loanId: 'TEST123',
-          paymentAmount: '1,500',
-          paymentDate: '2023-07-15'
+          loanId: "TEST123",
+          paymentAmount: "1,500",
+          paymentDate: "2023-07-15",
         };
         break;
-      case 'loanPaymentRejection':
+      case "loanPaymentRejection":
         testData.additionalData = {
-          loanId: 'TEST123',
-          paymentAmount: '1,500',
-          reason: 'Invalid reference number'
+          loanId: "TEST123",
+          paymentAmount: "1,500",
+          reason: "Invalid reference number",
         };
         break;
       default:
-        return res.status(400).json({ error: 'Invalid message type' });
+        return res.status(400).json({ error: "Invalid message type" });
     }
 
     // Send the test message
@@ -1253,11 +1253,11 @@ router.get('/test-message/:messageType?', async (req, res) => {
     res.json({
       success: true,
       message: `Test ${messageType} message sent successfully`,
-      details: testData
+      details: testData,
     });
   } catch (error) {
-    console.error('Error sending test message:', error);
-    res.status(500).json({ error: 'Failed to send test message' });
+    console.error("Error sending test message:", error);
+    res.status(500).json({ error: "Failed to send test message" });
   }
 });
 
@@ -1265,95 +1265,95 @@ router.get('/test-message/:messageType?', async (req, res) => {
 const XENDIT_SECRET_KEY = config.XENDIT_SECRET_KEY;
 
 const XENDIT_PUBLIC_KEY =
-  'xnd_public_development_Q_gN2p8xdj6WLTSZwzr5ApG9i0ASvbFVaEluXbxHUs7Ud6l5ScmDXxETSJ80oZuH';
+  "xnd_public_development_Q_gN2p8xdj6WLTSZwzr5ApG9i0ASvbFVaEluXbxHUs7Ud6l5ScmDXxETSJ80oZuH";
 const XENDIT_API_URL = config.XENDIT_API_URL;
 
 // Create a payment using Xendit
-router.post('/create-payment', async (req, res) => {
+router.post("/create-payment", async (req, res) => {
   try {
     const { loanId, paymentAmount, paymentIndex, description } = req.body;
 
     if (!loanId || !paymentAmount) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required parameters'
+        message: "Missing required parameters",
       });
     }
 
     // Get loan details to include in payment metadata
     const [loanDetails] = await db.query(
-      'SELECT loan_application_id, borrower_id FROM loan WHERE loan_id = ?',
+      "SELECT loan_application_id, borrower_id FROM loan WHERE loan_id = ?",
       [loanId]
     );
 
     if (!loanDetails.length) {
       return res.status(404).json({
         success: false,
-        message: 'Loan not found'
+        message: "Loan not found",
       });
     }
 
-    // Create unique payment reference
-    const externalId = `LOAN-${
-      loanDetails[0].loan_application_id
-    }-${paymentIndex}-${Date.now()}`;
+    // Create short unique payment reference (~13 characters)
+    const shortRef = `LOAN-${Date.now().toString(36)}${Math.random()
+      .toString(36)
+      .substr(2, 3)}`;
 
     console.log({ loanDetails });
     // Create Xendit invoice
     const invoice = await axios.post(
       `${XENDIT_API_URL}/v2/invoices`,
       {
-        external_id: externalId,
+        external_id: shortRef,
         amount: paymentAmount,
-        payer_email: 'borrower@email.com', // Ideally fetch this from borrower's details
+        payer_email: "borrower@email.com",
         description:
           description ||
           `Loan Payment for ${loanDetails[0].loan_application_id}`,
         invoice_duration: 86400, // 24 hours in seconds
-        success_redirect_url: `${config.REACT_FRONT_END_URL}/app/loan_details/${loanId}?payment=success&reference=${externalId}`,
-        failure_redirect_url: `${config.REACT_FRONT_END_URL}/app/loan_details/${loanId}?payment=failed&reference=${externalId}`,
-        currency: 'PHP',
+        success_redirect_url: `${config.REACT_FRONT_END_URL}/app/loan_details/${loanId}?payment=success&reference=${shortRef}`,
+        failure_redirect_url: `${config.REACT_FRONT_END_URL}/app/loan_details/${loanId}?payment=failed&reference=${shortRef}`,
+        currency: "PHP",
         items: [
           {
             name: `Loan Payment - Month ${paymentIndex}`,
             quantity: 1,
             price: paymentAmount,
-            category: 'Loan Payment'
-          }
+            category: "Loan Payment",
+          },
         ],
         fees: [
           {
-            type: 'Interest',
-            value: 0 // No additional fees
-          }
+            type: "Interest",
+            value: 0, // No additional fees
+          },
         ],
         payment_methods: [
-          'CREDIT_CARD',
-          'GCASH',
-          'PAYMAYA',
-          '7ELEVEN',
-          'CEBUANA'
+          "CREDIT_CARD",
+          "GCASH",
+          "PAYMAYA",
+          "7ELEVEN",
+          "CEBUANA",
         ],
         customer: {
-          given_names: 'Borrower',
-          surname: 'Name',
-          email: 'borrower@email.com',
-          mobile_number: '+639123456789'
+          given_names: "Borrower",
+          surname: "Name",
+          email: "borrower@email.com",
+          mobile_number: "+639123456789",
         },
         customer_notification_preference: {
-          invoice_created: ['email', 'sms'],
-          invoice_reminder: ['email', 'sms'],
-          invoice_paid: ['email', 'sms'],
-          invoice_expired: ['email']
-        }
+          invoice_created: ["email", "sms"],
+          invoice_reminder: ["email", "sms"],
+          invoice_paid: ["email", "sms"],
+          invoice_expired: ["email"],
+        },
       },
       {
         headers: {
-          Authorization: `Basic ${Buffer.from(XENDIT_SECRET_KEY + ':').toString(
-            'base64'
+          Authorization: `Basic ${Buffer.from(XENDIT_SECRET_KEY + ":").toString(
+            "base64"
           )}`,
-          'Content-Type': 'application/json'
-        }
+          "Content-Type": "application/json",
+        },
       }
     );
 
@@ -1361,42 +1361,42 @@ router.post('/create-payment', async (req, res) => {
     await db.query(
       `INSERT INTO payment_attempts (loan_id, payment_index, amount, reference, payment_intent_id, status, created_at) 
        VALUES (?, ?, ?, ?, ?, 'completed', NOW())`,
-      [loanId, paymentIndex, paymentAmount, externalId, invoice.data.id]
+      [loanId, paymentIndex, paymentAmount, shortRef, invoice.data.id]
     );
 
     // Return payment information to client
     res.json({
       success: true,
       invoice: invoice.data,
-      reference: externalId
+      reference: shortRef,
     });
   } catch (error) {
     console.error(
-      'Error creating Xendit payment:',
+      "Error creating Xendit payment:",
       error.response?.data || error.message
     );
     res.status(500).json({
       success: false,
-      message: 'Failed to create payment',
-      error: error.message
+      message: "Failed to create payment",
+      error: error.message,
     });
   }
 });
 
 // Handle Xendit webhook for payment status updates
-router.post('/xendit-webhook', async (req, res) => {
+router.post("/xendit-webhook", async (req, res) => {
   try {
-    console.log('Xendit webhook received:', req.body);
+    console.log("Xendit webhook received:", req.body);
 
-    const xenditHeader = req.headers['x-callback-token'];
+    const xenditHeader = req.headers["x-callback-token"];
     if (xenditHeader !== config.XENDIT_WEBHOOK_VERIFICATION_TOKEN) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     const event = req.body;
 
     // For paid invoices
-    if (event.status === 'PAID') {
+    if (event.status === "PAID") {
       // Extract the external_id which contains our reference
       const externalId = event.external_id;
 
@@ -1409,7 +1409,7 @@ router.post('/xendit-webhook', async (req, res) => {
 
       // Parse the loan_id and payment_index from the external_id
       // Format: LOAN-{loan_application_id}-{paymentIndex}-{timestamp}
-      const parts = externalId.split('-');
+      const parts = externalId.split("-");
       const loanApplicationId = parts[1];
       const selectedTableRowIndex = parseInt(parts[2]);
 
@@ -1457,9 +1457,9 @@ router.post('/xendit-webhook', async (req, res) => {
             [
               loanInfo[0].loan_id,
               event.amount,
-              event.payment_method || 'Xendit',
+              event.payment_method || "Xendit",
               externalId,
-              'Approved',
+              "Approved",
               selectedTableRowIndex,
               JSON.stringify(event), // Store the Xendit response as proof
               isPastDue ? 1 : 0,
@@ -1467,8 +1467,8 @@ router.post('/xendit-webhook', async (req, res) => {
               originalAmount,
               isPastDue ? 1 : 0, // Mark past due as handled if this was a past due payment
               `Payment received via Xendit (${
-                event.payment_channel || 'Online Payment'
-              })`
+                event.payment_channel || "Online Payment"
+              })`,
             ]
           );
 
@@ -1489,13 +1489,13 @@ router.post('/xendit-webhook', async (req, res) => {
                   firstName: borrowerInfo[0].first_name,
                   lastName: borrowerInfo[0].last_name,
                   paymentAmount: event.amount,
-                  paymentDate: new Date().toLocaleDateString()
-                })
+                  paymentDate: new Date().toLocaleDateString(),
+                }),
               });
             }
           } catch (notificationError) {
             console.error(
-              'Error sending payment notification:',
+              "Error sending payment notification:",
               notificationError
             );
             // Continue execution - don't fail the webhook because of notification
@@ -1505,7 +1505,7 @@ router.post('/xendit-webhook', async (req, res) => {
     }
 
     // For expired invoices
-    if (event.status === 'EXPIRED') {
+    if (event.status === "EXPIRED") {
       await db.query(
         `UPDATE payment_attempts SET status = 'failed', error_message = 'Invoice expired', completed_at = NOW() 
          WHERE reference = ?`,
@@ -1515,13 +1515,13 @@ router.post('/xendit-webhook', async (req, res) => {
 
     res.status(200).end();
   } catch (error) {
-    console.error('Error processing webhook:', error);
+    console.error("Error processing webhook:", error);
     res.status(400).end();
   }
 });
 
 // Update the payment-status endpoint
-router.get('/payment-status/:reference', async (req, res) => {
+router.get("/payment-status/:reference", async (req, res) => {
   try {
     const { reference } = req.params;
 
@@ -1543,18 +1543,18 @@ router.get('/payment-status/:reference', async (req, res) => {
       return res.json({
         success: true,
         status:
-          existingPayment[0].payment_status === 'Approved'
-            ? 'completed'
-            : 'failed',
-        paymentId: existingPayment[0].payment_id
+          existingPayment[0].payment_status === "Approved"
+            ? "completed"
+            : "failed",
+        paymentId: existingPayment[0].payment_id,
       });
     }
 
     if (paymentStatus.length > 0) {
       // If we don't have a payment record but have a payment attempt, check with Xendit
       if (
-        paymentStatus[0].status === 'pending' ||
-        paymentStatus[0].status === 'completed'
+        paymentStatus[0].status === "pending" ||
+        paymentStatus[0].status === "completed"
       ) {
         try {
           const xenditResponse = await axios.get(
@@ -1562,19 +1562,19 @@ router.get('/payment-status/:reference', async (req, res) => {
             {
               headers: {
                 Authorization: `Basic ${Buffer.from(
-                  config.XENDIT_SECRET_KEY + ':'
-                ).toString('base64')}`,
-                'Content-Type': 'application/json'
-              }
+                  config.XENDIT_SECRET_KEY + ":"
+                ).toString("base64")}`,
+                "Content-Type": "application/json",
+              },
             }
           );
 
           let newStatus = paymentStatus[0].status;
 
-          if (xenditResponse.data.status === 'PAID') {
+          if (xenditResponse.data.status === "PAID") {
             // Mark as completed if not already
-            if (newStatus !== 'completed') {
-              newStatus = 'completed';
+            if (newStatus !== "completed") {
+              newStatus = "completed";
               await db.query(
                 `UPDATE payment_attempts SET status = 'completed', completed_at = NOW() WHERE reference = ?`,
                 [reference]
@@ -1584,14 +1584,14 @@ router.get('/payment-status/:reference', async (req, res) => {
             // Check if we need to insert a payment record
             if (existingPayment.length === 0) {
               // Parse the loan_id and payment_index from the external_id
-              let parts = xenditResponse.data.external_id.split('-');
+              let parts = xenditResponse.data.external_id.split("-");
 
               // Get loan_id - try both simple and complex formats
               const potentialLoanAppId = parts[1]; // Simple format
               const complexLoanAppId = xenditResponse.data.external_id
-                .split('-')
+                .split("-")
                 .slice(1, 6)
-                .join('-'); // Complex format
+                .join("-"); // Complex format
 
               console.log({ potentialLoanAppId, complexLoanAppId });
               // First try the simple format
@@ -1628,9 +1628,9 @@ router.get('/payment-status/:reference', async (req, res) => {
                   [
                     loanId,
                     xenditResponse.data.amount,
-                    xenditResponse.data.payment_method || 'Xendit',
+                    xenditResponse.data.payment_method || "Xendit",
                     reference,
-                    'Approved',
+                    "Approved",
                     selectedTableRowIndex,
                     JSON.stringify(xenditResponse.data), // Store the Xendit response as proof
                     isPastDue ? 1 : 0,
@@ -1638,14 +1638,14 @@ router.get('/payment-status/:reference', async (req, res) => {
                     originalAmount,
                     isPastDue ? 1 : 0, // Mark past due as handled if this was a past due payment
                     `Payment received via Xendit (${
-                      xenditResponse.data.payment_channel || 'Online Payment'
-                    })`
+                      xenditResponse.data.payment_channel || "Online Payment"
+                    })`,
                   ]
                 );
               }
             }
-          } else if (xenditResponse.data.status === 'EXPIRED') {
-            newStatus = 'failed';
+          } else if (xenditResponse.data.status === "EXPIRED") {
+            newStatus = "failed";
             await db.query(
               `UPDATE payment_attempts SET status = 'failed', error_message = 'Invoice expired', completed_at = NOW() WHERE reference = ?`,
               [reference]
@@ -1656,10 +1656,11 @@ router.get('/payment-status/:reference', async (req, res) => {
             success: true,
             status: newStatus,
             xenditStatus: xenditResponse.data.status,
-            error: newStatus === 'failed' ? 'Payment expired or canceled' : null
+            error:
+              newStatus === "failed" ? "Payment expired or canceled" : null,
           });
         } catch (xenditError) {
-          console.error('Error checking with Xendit:', xenditError);
+          console.error("Error checking with Xendit:", xenditError);
           // Continue with local status if Xendit request fails
         }
       }
@@ -1668,28 +1669,28 @@ router.get('/payment-status/:reference', async (req, res) => {
       res.json({
         success: true,
         status: paymentStatus[0].status,
-        error: paymentStatus[0].error_message || null
+        error: paymentStatus[0].error_message || null,
       });
     } else {
       res.status(404).json({
         success: false,
-        message: 'Payment reference not found'
+        message: "Payment reference not found",
       });
     }
   } catch (error) {
-    console.error('Error checking payment status:', error);
+    console.error("Error checking payment status:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to check payment status'
+      message: "Failed to check payment status",
     });
   }
 });
 
 // Manual webhook trigger for cases when Xendit's webhook doesn't reach us
-router.post('/manual-process-payment/:reference', async (req, res) => {
+router.post("/manual-process-payment/:reference", async (req, res) => {
   try {
     const { reference } = req.params;
-    console.log('Manual processing payment with reference:', reference);
+    console.log("Manual processing payment with reference:", reference);
 
     // Check if payment is already processed
     const [existingPayment] = await db.query(
@@ -1697,13 +1698,13 @@ router.post('/manual-process-payment/:reference', async (req, res) => {
       [reference]
     );
 
-    console.log('Existing payment check:', existingPayment);
+    console.log("Existing payment check:", existingPayment);
 
     if (existingPayment.length > 0) {
       return res.json({
         success: true,
-        message: 'Payment already processed',
-        paymentId: existingPayment[0].payment_id
+        message: "Payment already processed",
+        paymentId: existingPayment[0].payment_id,
       });
     }
 
@@ -1714,21 +1715,21 @@ router.post('/manual-process-payment/:reference', async (req, res) => {
       [reference]
     );
 
-    console.log('Payment attempt data:', paymentAttempt);
+    console.log("Payment attempt data:", paymentAttempt);
 
     if (!paymentAttempt.length) {
       return res.status(404).json({
         success: false,
-        message: 'Payment attempt not found'
+        message: "Payment attempt not found",
       });
     }
 
     // If payment is already marked as completed in attempts, but not in payments table
-    if (paymentAttempt[0].status === 'completed') {
+    if (paymentAttempt[0].status === "completed") {
       try {
         // Get payment info from Xendit
         console.log(
-          'Fetching payment info from Xendit for:',
+          "Fetching payment info from Xendit for:",
           paymentAttempt[0].payment_intent_id
         );
         const xenditResponse = await axios.get(
@@ -1736,29 +1737,29 @@ router.post('/manual-process-payment/:reference', async (req, res) => {
           {
             headers: {
               Authorization: `Basic ${Buffer.from(
-                config.XENDIT_SECRET_KEY + ':'
-              ).toString('base64')}`,
-              'Content-Type': 'application/json'
-            }
+                config.XENDIT_SECRET_KEY + ":"
+              ).toString("base64")}`,
+              "Content-Type": "application/json",
+            },
           }
         );
 
-        console.log('Xendit response:', {
+        console.log("Xendit response:", {
           status: xenditResponse.data.status,
           external_id: xenditResponse.data.external_id,
-          amount: xenditResponse.data.amount
+          amount: xenditResponse.data.amount,
         });
 
         // Only process if paid
-        if (xenditResponse.data.status === 'PAID') {
+        if (xenditResponse.data.status === "PAID") {
           // Get loan_id directly from payment_attempts if available
           let loanId = paymentAttempt[0].loan_id;
           let selectedTableRowIndex = paymentAttempt[0].payment_index;
 
           // If not available in payment_attempts, parse from external_id
           if (!loanId || !selectedTableRowIndex) {
-            const parts = xenditResponse.data.external_id.split('-');
-            console.log('External ID parts:', parts);
+            const parts = xenditResponse.data.external_id.split("-");
+            console.log("External ID parts:", parts);
 
             // If external_id has format: payment-{loan_application_id}-{index}
             // OR a more complex format with multiple segments
@@ -1768,13 +1769,13 @@ router.post('/manual-process-payment/:reference', async (req, res) => {
                 // This approach supports both simple and complex formats
                 const potentialLoanAppId = parts[1]; // Simple format
                 const complexLoanAppId = xenditResponse.data.external_id
-                  .split('-')
+                  .split("-")
                   .slice(1, 6)
-                  .join('-'); // Complex format
+                  .join("-"); // Complex format
 
-                console.log('Potential loan app IDs:', {
+                console.log("Potential loan app IDs:", {
                   simple: potentialLoanAppId,
-                  complex: complexLoanAppId
+                  complex: complexLoanAppId,
                 });
 
                 // First try the simple format
@@ -1791,7 +1792,7 @@ router.post('/manual-process-payment/:reference', async (req, res) => {
                   );
                 }
 
-                console.log('Loan info:', loanInfo);
+                console.log("Loan info:", loanInfo);
 
                 if (loanInfo.length > 0) {
                   loanId = loanInfo[0].loan_id;
@@ -1800,18 +1801,18 @@ router.post('/manual-process-payment/:reference', async (req, res) => {
                 }
               }
             } catch (parseError) {
-              console.error('Error parsing external_id:', parseError);
+              console.error("Error parsing external_id:", parseError);
             }
           }
 
-          console.log('Found loan_id and index:', {
+          console.log("Found loan_id and index:", {
             loanId,
-            selectedTableRowIndex
+            selectedTableRowIndex,
           });
 
           if (loanId && selectedTableRowIndex) {
             console.log(
-              'Found valid loan_id and payment index, processing payment'
+              "Found valid loan_id and payment index, processing payment"
             );
 
             // Default values for payment details
@@ -1820,7 +1821,7 @@ router.post('/manual-process-payment/:reference', async (req, res) => {
             const pastDueAmount = 0;
 
             // Insert payment with the correct schema
-            console.log('Inserting payment record for loan:', loanId);
+            console.log("Inserting payment record for loan:", loanId);
             await db.query(
               `INSERT INTO payment 
                (loan_id, payment_amount, payment_date, payment_method, reference_number, 
@@ -1830,9 +1831,9 @@ router.post('/manual-process-payment/:reference', async (req, res) => {
               [
                 loanId,
                 xenditResponse.data.amount,
-                xenditResponse.data.payment_method || 'Xendit',
+                xenditResponse.data.payment_method || "Xendit",
                 reference,
-                'Approved',
+                "Approved",
                 selectedTableRowIndex,
                 JSON.stringify(xenditResponse.data), // Store the Xendit response as proof
                 isPastDue ? 1 : 0,
@@ -1840,58 +1841,58 @@ router.post('/manual-process-payment/:reference', async (req, res) => {
                 originalAmount,
                 isPastDue ? 1 : 0, // Mark past due as handled if this was a past due payment
                 `Payment received via Xendit (${
-                  xenditResponse.data.payment_channel || 'Online Payment'
-                }) - Manual Processing`
+                  xenditResponse.data.payment_channel || "Online Payment"
+                }) - Manual Processing`,
               ]
             );
 
             return res.json({
               success: true,
-              message: 'Payment manually processed successfully'
+              message: "Payment manually processed successfully",
             });
           } else {
-            console.error('Could not determine loan_id or payment index');
+            console.error("Could not determine loan_id or payment index");
             return res.status(400).json({
               success: false,
               message:
-                'Could not determine loan ID or payment index from reference'
+                "Could not determine loan ID or payment index from reference",
             });
           }
         } else {
-          console.log('Payment not marked as PAID in Xendit');
+          console.log("Payment not marked as PAID in Xendit");
           return res.json({
             success: false,
-            message: `Payment not marked as paid in Xendit (status: ${xenditResponse.data.status})`
+            message: `Payment not marked as paid in Xendit (status: ${xenditResponse.data.status})`,
           });
         }
       } catch (xenditError) {
-        console.error('Error checking with Xendit:', xenditError);
+        console.error("Error checking with Xendit:", xenditError);
         return res.status(500).json({
           success: false,
-          message: 'Error communicating with Xendit API'
+          message: "Error communicating with Xendit API",
         });
       }
-    } else if (paymentAttempt[0].status === 'pending') {
+    } else if (paymentAttempt[0].status === "pending") {
       // Similar logic for pending payments, with appropriate modifications
       // [Code omitted for brevity - would be similar to the 'completed' case above]
       // ...
 
       return res.json({
         success: false,
-        message: 'Payment is still pending in our system'
+        message: "Payment is still pending in our system",
       });
     }
 
     return res.json({
       success: false,
-      message: 'Payment could not be processed manually',
-      status: paymentAttempt[0].status
+      message: "Payment could not be processed manually",
+      status: paymentAttempt[0].status,
     });
   } catch (error) {
-    console.error('Error in manual payment processing:', error);
+    console.error("Error in manual payment processing:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to process payment manually'
+      message: "Failed to process payment manually",
     });
   }
 });
