@@ -57,13 +57,13 @@ router.post("/send-verification-email", async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "lendease528@gmail.com",
-        pass: "imng htwr nicb hafv",
+        user: process.env.EMAIL,
+        pass: process.env.APP_PASSWORD,
       },
     });
 
     const mailOptions = {
-      from: "lendease528@gmail.com",
+      from: process.env.EMAIL,
       to: email,
       subject: "Your Temporary Password",
       html: `
@@ -254,14 +254,14 @@ router.post("/forgetPassword", async (req, res, next) => {
       const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
-          user: "lendease528@gmail.com", // Replace with your email
-          pass: "imng htwr nicb hafv", // Replace with your email password
+          user: process.env.EMAIL, // Replace with your email
+          pass: process.env.APP_PASSWORD, // Replace with your email password
         },
       });
 
       // Email configuration
       const mailOptions = {
-        from: "lendease528@gmail.com",
+        from: process.env.EMAIL,
         to: email,
         subject: "Reset Password",
         html: `<h1>Reset Your Password</h1>
