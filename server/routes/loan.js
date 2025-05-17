@@ -28,7 +28,6 @@ const upload = multer({
 });
 let firebaseStorage = config.firebaseStorage;
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-
 const accountSid = config.accountSid; // Replace with your Twilio Account SID
 const authToken = config.authToken; // Replace with your Twilio Auth Token
 import twilio from "twilio"; // Use import statement for Twilio
