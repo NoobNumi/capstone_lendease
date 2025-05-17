@@ -36,12 +36,6 @@ let firebaseStorage;
 
 try {
   getDbConnection = async () => {
-    // $hostname = 'aiks1r.stackhero-network.com';
-    // $port = '3934';
-    // $user = 'root';
-    // $password = 'de5Jtt5OaQr5QY0mS5Cfb1jRQUDddlPD';
-    // $database = 'root'; //
-
     const pool = await mysql.createPool({
       port: process.env.DB_PORT,
       host: process.env.DB_HOST,
@@ -52,23 +46,8 @@ try {
       waitForConnections: true,
       connectionLimit: 100000,
       queueLimit: 0,
-      // ssl: {
-      //   rejectUnauthorized: true,
-      // },
       timezone: "+08:00",
     });
-
-    // const pool = await mysql.createPool({
-    //   host: 'jcqlf1.stackhero-network.com',
-    //   user: 'root',
-    //   password: 'OwhHbxDtBwsDB9VlClLwfkzw9MTBr70m',
-    //   database: 'final_bu',
-    //   port: 4300,
-    //   waitForConnections: true,
-    //   connectionLimit: 0, // Max number of connections in the pool
-    //   queueLimit: 0,
-    //   ssl: false // Disable SSL connection
-    // });
 
     return pool;
   };
@@ -97,17 +76,6 @@ try {
 }
 
 let cypherQuerySession = `1`;
-
-// let session = driver.session({ database: 'neo4j' });
-
-// let cypherQuerySessionDriver = session;
-
-// assert(PORT, 'Port is required');
-// assert(HOST, 'Host is required');
-// config
-//config
-
-let gmailEmailpassword = "dqeq ukrn hvjg vnyx";
 
 // Update database relationships
 const dbRelationships = {
