@@ -6,6 +6,8 @@ import mysql from "mysql2/promise";
 
 import { initializeApp } from "firebase/app";
 import { getStorage } from "firebase/storage";
+import fs from "fs";
+import path from "path";
 
 //import mysql from 'promise-mysql';
 dotenv.config();
@@ -58,9 +60,10 @@ try {
       waitForConnections: true,
       connectionLimit: 0, // Max number of connections in the pool
       queueLimit: 0,
-      // ssl: {
-      //   rejectUnauthorized: true,
-      // },
+      ssl: {
+        rejectUnauthorized: true,
+        ca: fs.readFileSync(path.join(__dirname, "certs", "isrgrootx1.pem")),
+      },
       timezone: "Asia/Manila",
     });
 
@@ -178,7 +181,7 @@ export default {
   defaultDBName: "mysql",
   mySqlDriver: mySqlDriver,
   firebaseStorage,
-  REACT_FRONT_END_URL: "https://lendease-jeqd.onrender.com/",
+  REACT_FRONT_END_URL: "https://lendease.vercel.app/",
   // REACT_FRONT_END_URL: 'http://localhost:5173',
   VONAGE_apiKey: process.env.VONAGE_API_KEY,
   VONAGE_apiSecret: process.env.VONAGE_API_SECRET,
