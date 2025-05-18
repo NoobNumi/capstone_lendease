@@ -62,7 +62,6 @@ try {
       queueLimit: 0,
       ssl: {
         rejectUnauthorized: true,
-        ca: fs.readFileSync(path.join(__dirname, "certs", "isrgrootx1.pem")),
       },
       timezone: "Asia/Manila",
     });
