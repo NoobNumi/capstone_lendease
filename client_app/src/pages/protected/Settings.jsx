@@ -1103,7 +1103,6 @@ function InternalPage() {
     // Accounts: <AccountSettingsTab />,
     // "Record Management": <RecordManagementTab />,
     // "Audit Trail": <AuditTrailTab />,
-    SMS Editor: <PricingTab />,
   };
 
   useEffect(() => {
