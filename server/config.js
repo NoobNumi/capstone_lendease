@@ -58,7 +58,10 @@ try {
       waitForConnections: true,
       connectionLimit: 0, // Max number of connections in the pool
       queueLimit: 0,
-      ssl: false, // Disable SSL connection
+      ssl: {
+        rejectUnauthorized: true,
+      },
+      timezone: "+08:00",
     });
 
     return pool;
