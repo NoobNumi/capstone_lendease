@@ -994,7 +994,7 @@ function LoanApplication() {
               <div>
                 <div className="bg-white p-1 rounded-full shadow-lg bg-gradient-to-r from-gray-200 to-gray-300 z-10 text-blue-950 border bg-white rounded flex items-center space-x-4">
                   <img
-                    src="/LOGO.png"
+                    src="/LOGO.jpeg"
                     alt="Logo"
                     className="w-20 h-20 rounded-full border-2 border-blue-950"
                   />

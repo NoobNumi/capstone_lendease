@@ -146,7 +146,7 @@ function PaymentHistory() {
             };
 
             try {
-              const logoData = await getBase64ImageFromURL("/LOGO.png");
+              const logoData = await getBase64ImageFromURL("/LOGO.jpeg");
               doc.addImage(logoData, "PNG", 90, 10, 30, 30);
             } catch (e) {}
 

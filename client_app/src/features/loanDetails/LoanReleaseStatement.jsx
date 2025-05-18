@@ -397,7 +397,7 @@ const LoanReleaseStatement = ({
       {/* Header */}
       <div className="text-center p-6 bg-gradient-to-r from-blue-50 to-blue-100 border-b">
         <div className="flex items-center justify-center gap-3 mb-2">
-          <img src="/LOGO.png" alt="RAZV Logo" className="w-12 h-12" />
+          <img src="/LOGO.jpeg" alt="RAZV Logo" className="w-12 h-12" />
           <h1 className="text-2xl font-bold text-blue-900">
             RAZV LENDING CORPORATION
           </h1>

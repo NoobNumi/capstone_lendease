@@ -47,7 +47,7 @@ const LandingPage = () => {
             {/* Logo */}
             <div className="flex items-center space-x-2">
               <div className="w-40 h-16 bg-white/10 rounded-lg flex items-center justify-center">
-                <img src={"/LOGO_LOGO.png"} alt="logo" className="w-30 h-16" />
+                <img src={"/LOGO_LOGO.jpeg"} alt="logo" className="w-30 h-16" />
               </div>
             </div>
 
