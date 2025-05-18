@@ -52,17 +52,20 @@ try {
     // });
 
     const pool = await mysql.createPool({
-      host: "lendease-db-lendease.k.aivencloud.com",
-      user: "avnadmin",
-      password: "AVNS_yqLSDznxWnNrfp8FTzM",
-      database: "lendease",
-      port: 13074,
+      host: process.env.AIVEN_DB_HOST,
+      user: process.env.AIVEN_DB_USER,
+      password: process.env.AIVEN_DB_PASSWORD,
+      database: process.env.AIVEN_DB_NAME,
+      port: process.env.AIVEN_DB_PORT,
       waitForConnections: true,
       connectionLimit: 0, // Max number of connections in the pool
       queueLimit: 0,
       ssl: {
         rejectUnauthorized: true,
-        ca: fs.readFileSync(path.join(__dirname, "../db/ca-cert.pem"), "utf-8"),
+        ca: fs.readFileSync(
+          path.join(__dirname, process.env.AIVEN_DB_SSL_CERT),
+          "utf-8"
+        ),
       },
       timezone: "Asia/Manila",
     });
