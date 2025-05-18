@@ -58,9 +58,9 @@ try {
       waitForConnections: true,
       connectionLimit: 0, // Max number of connections in the pool
       queueLimit: 0,
-      ssl: {
-        rejectUnauthorized: true,
-      },
+      // ssl: {
+      //   rejectUnauthorized: true,
+      // },
       timezone: "Asia/Manila",
     });
 
