@@ -163,7 +163,7 @@ export default {
   defaultDBName: "mysql",
   mySqlDriver: mySqlDriver,
   firebaseStorage,
-  REACT_FRONT_END_URL: "http://localhost:5173/",
+  REACT_FRONT_END_URL: "https://lendease-jeqd.onrender.com/",
   // REACT_FRONT_END_URL: 'http://localhost:5173',
   VONAGE_apiKey: process.env.VONAGE_API_KEY,
   VONAGE_apiSecret: process.env.VONAGE_API_SECRET,
