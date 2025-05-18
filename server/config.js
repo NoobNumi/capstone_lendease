@@ -52,16 +52,17 @@ try {
     // });
 
     const pool = await mysql.createPool({
-      host: "i5n14z.stackhero-network.com",
-      user: "root",
-      password: "9BRo3OabPJ8wFd1FMr4Q1Yc29Ec2oYH3",
+      host: "lendease-db-lendease.k.aivencloud.com",
+      user: "avnadmin",
+      password: "AVNS_yqLSDznxWnNrfp8FTzM",
       database: "lendease",
-      port: 7273,
+      port: 13074,
       waitForConnections: true,
       connectionLimit: 0, // Max number of connections in the pool
       queueLimit: 0,
       ssl: {
         rejectUnauthorized: true,
+        ca: fs.readFileSync(path.join(__dirname, "../db/ca-cert.pem"), "utf-8"),
       },
       timezone: "Asia/Manila",
     });
@@ -180,8 +181,8 @@ export default {
   defaultDBName: "mysql",
   mySqlDriver: mySqlDriver,
   firebaseStorage,
-  REACT_FRONT_END_URL: "https://lendease.vercel.app/",
-  // REACT_FRONT_END_URL: 'http://localhost:5173',
+  // REACT_FRONT_END_URL: "https://lendease.vercel.app/",
+  REACT_FRONT_END_URL: "http://localhost:5173",
   VONAGE_apiKey: process.env.VONAGE_API_KEY,
   VONAGE_apiSecret: process.env.VONAGE_API_SECRET,
   accountSid: process.env.ACCOUNT_SID,
