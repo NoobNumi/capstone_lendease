@@ -50,11 +50,11 @@ try {
     // });
 
     const pool = await mysql.createPool({
-      host: "aiks1r.stackhero-network.com",
+      host: "i5n14z.stackhero-network.com",
       user: "root",
-      password: "de5Jtt5OaQr5QY0mS5Cfb1jRQUDddlPD",
+      password: "9BRo3OabPJ8wFd1FMr4Q1Yc29Ec2oYH3",
       database: "lendease",
-      port: 3934,
+      port: 7273,
       waitForConnections: true,
       connectionLimit: 0, // Max number of connections in the pool
       queueLimit: 0,
