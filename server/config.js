@@ -61,7 +61,6 @@ try {
       ssl: {
         rejectUnauthorized: true,
       },
-      timezone: "+08:00",
     });
 
     return pool;
