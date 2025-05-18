@@ -72,7 +72,6 @@
     "theme-change": "^2.5.0",
     "tw-elements": "^2.0.0",
     "tw-elements-react": "^1.0.0-alpha2",
-    "vite": "^6.3.5",
     "web-vitals": "^4.2.3",
     "xlsx": "^0.18.5",
     "yup": "^1.4.0"
@@ -122,6 +121,7 @@
     "autoprefixer": "^10.4.20",
     "daisyui": "^4.12.10",
     "postcss": "^8.4.41",
-    "tailwindcss": "^3.4.10"
+    "tailwindcss": "^3.4.10",
+    "vite": "^6.3.5"
   }
 }
