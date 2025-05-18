@@ -97,7 +97,7 @@
   "bugs": {
     "url": ""
   },
-  "homepage": "",
+  "homepage": "/client_app",
   "eslintConfig": {
     "extends": [
       "react-app",
