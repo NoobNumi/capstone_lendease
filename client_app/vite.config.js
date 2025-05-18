@@ -12,4 +12,5 @@ export default defineConfig({
     sourcemap: true, // Generate source maps for easier debugging
   },
   plugins: [{ enforce: "pre" }, react({ include: /\.(js|jsx|ts|tsx)$/ })],
+  base: "/",
 });
