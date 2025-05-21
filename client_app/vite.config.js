@@ -7,10 +7,10 @@ export default defineConfig({
     port: 5173, // Ensure this is the correct port
   },
   build: {
-    outDir: "./", // Output directory for the build
     emptyOutDir: true, // Clear the output directory before building
     sourcemap: true, // Generate source maps for easier debugging
   },
   plugins: [{ enforce: "pre" }, react({ include: /\.(js|jsx|ts|tsx)$/ })],
   base: "/",
 });
+``

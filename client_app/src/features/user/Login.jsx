@@ -147,9 +147,14 @@ function Login() {
                       Forgot Password?
                     </a>
                   </div>
-                  <div className="text-center text-blue-950 text-sm">
-                    <a href="/register" className="hover:underline">
-                      Don't have an account? Register
+                  <div className="text-center text-blue-950 text-sm flex justify-center">
+                    <p>Don't have an account? Email us to apply </p>
+                    <a
+                      href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=lendease528@gmail.com"
+                      target="_blankñ"
+                      className="text-blue-950 underline ml-1"
+                    >
+                      here
                     </a>
                   </div>
                 </Form>

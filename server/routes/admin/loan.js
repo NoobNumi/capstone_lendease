@@ -130,7 +130,7 @@ const sendMessage = async ({
     ? templates[messageType]({ firstName, lastName, ...additionalData })
     : "No valid message type provided.";
 
-  const from = "+639221200298"; // Set your company name or short code as sender
+  const from = "+639221200715"; // Set your company name or short code as sender
   const to = phoneNumber;
 
   try {
@@ -576,7 +576,7 @@ router.post(
         ba.borrower_id 
         where la.loan_id = ?
   
-           `,
+        `,
         [loanId]
       );
 
@@ -662,38 +662,62 @@ router.post(
   }
 );
 
-// Add these endpoints for dashboard stats
+// Route to fetch dashboard stats
 router.get("/dashboard-stats", async (req, res) => {
   try {
+    const { start_date, end_date } = req.query;
+
+    const start = start_date ? `${start_date} 00:00:00` : null;
+    const end = end_date ? `${end_date} 23:59:59` : null;
+
+    // Fetch global stats (unfiltered)
     const [stats] = await db.query(`
       SELECT 
-        (SELECT COUNT(*) FROM loan) as total_loans,
-        (SELECT COUNT(*) FROM loan WHERE loan_status = 'Pending') as pending_loans,
-        (SELECT COUNT(*) FROM loan WHERE loan_status = 'Approved') as approved_loans,
-        (SELECT COUNT(*) FROM loan WHERE loan_status = 'Disbursed') as disbursed_loans,
-        (SELECT COUNT(*) FROM borrower_account) as total_borrowers,
-        (SELECT SUM(loan_amount) FROM loan WHERE loan_status = 'Disbursed') as total_disbursed_amount,
-        (SELECT SUM(payment_amount) FROM payment WHERE payment_status = 'Approved') as total_collected_amount
+        (SELECT COUNT(*) FROM loan) AS total_loans,
+        (SELECT COUNT(*) FROM borrower_account) AS total_borrowers,
+        (SELECT SUM(loan_amount) FROM loan WHERE loan_status = 'Disbursed') AS total_disbursed_amount,
+        (SELECT SUM(payment_amount) FROM payment WHERE payment_status = 'Approved') AS total_collected_amount
     `);
 
-    // Get monthly disbursement data
+    // Fetch filtered status breakdown only if both start and end are provided
+    let filteredStatusStats = {
+      filtered_pending_loans: 0,
+      filtered_approved_loans: 0,
+      filtered_disbursed_loans: 0,
+    };
+
+    if (start && end) {
+      const [filtered] = await db.query(
+        `
+        SELECT
+          (SELECT COUNT(*) FROM loan WHERE loan_status = 'Pending' AND approval_date BETWEEN ? AND ?) AS filtered_pending_loans,
+          (SELECT COUNT(*) FROM loan WHERE loan_status = 'Approved' AND approval_date BETWEEN ? AND ?) AS filtered_approved_loans,
+          (SELECT COUNT(*) FROM loan WHERE loan_status = 'Disbursed' AND approval_date BETWEEN ? AND ?) AS filtered_disbursed_loans
+      `,
+        [start, end, start, end, start, end]
+      );
+
+      filteredStatusStats = filtered[0];
+    }
+
+    // Monthly disbursements
     const [monthlyDisbursements] = await db.query(`
       SELECT 
-        DATE_FORMAT(disbursement_date, '%Y-%m') as month,
-        COUNT(*) as count,
-        SUM(amount) as total_amount
+        DATE_FORMAT(disbursement_date, '%Y-%m') AS month,
+        COUNT(*) AS count,
+        SUM(amount) AS total_amount
       FROM disbursement_details
       GROUP BY DATE_FORMAT(disbursement_date, '%Y-%m')
       ORDER BY month DESC
       LIMIT 12
     `);
 
-    // Get payment collection stats
+    // Payment stats
     const [paymentStats] = await db.query(`
       SELECT 
-        DATE_FORMAT(payment_date, '%Y-%m') as month,
-        COUNT(*) as count,
-        SUM(payment_amount) as total_amount,
+        DATE_FORMAT(payment_date, '%Y-%m') AS month,
+        COUNT(*) AS count,
+        SUM(payment_amount) AS total_amount,
         payment_status
       FROM payment
       GROUP BY DATE_FORMAT(payment_date, '%Y-%m'), payment_status
@@ -702,7 +726,10 @@ router.get("/dashboard-stats", async (req, res) => {
     `);
 
     res.json({
-      stats: stats[0],
+      stats: {
+        ...stats[0],
+        ...filteredStatusStats,
+      },
       monthlyDisbursements,
       paymentStats,
     });
@@ -713,3 +740,4 @@ router.get("/dashboard-stats", async (req, res) => {
 });
 
 export default router;
+

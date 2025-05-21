@@ -452,6 +452,7 @@ const PricingTab = () => {
                     <InputText
                       label="Minimum Credit Score"
                       name="minCreditScore"
+                      className="font-medium p-3"
                       type="number"
                       placeholder=""
                       value={values.minCreditScore}
@@ -461,10 +462,11 @@ const PricingTab = () => {
                   <h1 className="text-2xl font-bold text-orange-300 mt-4">
                     Employment
                   </h1>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3 ">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3 relative w-full">
                     <InputText
                       label="Min Monthly Income"
                       name="minMonthlyIncome"
+                      className="font-medium p-3 w-full"
                       type="number"
                       placeholder=""
                       value={values.minMonthlyIncome}
@@ -474,6 +476,7 @@ const PricingTab = () => {
                     <InputText
                       label="Max Loan to Income Ratio"
                       name="maxLoanToIncomeRatio"
+                      className="font-medium p-3 w-full"
                       type="number"
                       placeholder=""
                       value={values.maxLoanToIncomeRatio}
@@ -482,6 +485,7 @@ const PricingTab = () => {
                     <InputText
                       label="Min Employment Years"
                       name="minEmploymentYears"
+                      className="font-medium p-3 w-full"
                       type="number"
                       placeholder=""
                       value={values.minEmploymentYears}
@@ -495,6 +499,7 @@ const PricingTab = () => {
                     <InputText
                       label="Interest Rate (%)"
                       name="interestRate"
+                      className="font-medium p-3"
                       type="number"
                       placeholder=""
                       value={values.interestRate}
@@ -519,569 +524,774 @@ const PricingTab = () => {
     )
   );
 };
-const NotificationsTab = () => {
-  const [notifications, setNotifications] = useState([]);
-  const [error, setError] = useState(null);
+
+const SMSTab = () => {
+  const [smsTemplates, setSmsTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const notificationsPerPage = 5;
-  const [isVisible, setIsVisible] = useState(false); // State to manage visibility
+  const [error, setError] = useState(null);
+  const [formValues, setFormValues] = useState({});
+  const [formErrors, setFormErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
-    const fetchNotifications = async () => {
-      setError(null); // Reset error before fetching
-      setLoading(true); // Set loading true when fetching
+    const fetchSmsTemplates = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const response = await axios.get("/notification/list", {
-          params: { page: currentPage, limit: notificationsPerPage },
+        const res = await axios.get("settings/sms-templates");
+        setSmsTemplates(res.data.data || []);
+        // Initialize form values
+        const initialValues = {};
+        (res.data.data || []).forEach((template) => {
+          initialValues[template.id] = template.message || "";
         });
-        setNotifications((prevNotifications) => [
-          ...prevNotifications,
-          ...response.data.data,
-        ]);
+        setFormValues(initialValues);
       } catch (err) {
-        setError("Failed to fetch notifications");
+        setError("Failed to fetch SMS templates");
+        toast.error("Failed to fetch SMS templates");
       } finally {
         setLoading(false);
       }
     };
+    fetchSmsTemplates();
+  }, []);
 
-    fetchNotifications();
-  }, [currentPage]);
+  // Separate templates by type
+  const reminderTemplates = smsTemplates.filter(
+    (template) => template.type === "confirmation"
+  );
+  const overdueTemplates = smsTemplates.filter(
+    (template) => template.type === "due_notification"
+  );
 
-  const markAllAsRead = () => {
-    const updatedNotifications = notifications.map((notification) => ({
-      ...notification,
-      is_read: true,
+  const validate = async () => {
+    const schemaShape = {};
+    smsTemplates.forEach((template) => {
+      schemaShape[template.id] = Yup.string()
+        .trim()
+        .required("Template message cannot be empty");
+    });
+
+    const schema = Yup.object().shape(schemaShape);
+
+    try {
+      await schema.validate(formValues, { abortEarly: false });
+      setFormErrors({});
+      return true;
+    } catch (err) {
+      if (err.inner) {
+        const errors = {};
+        err.inner.forEach((e) => {
+          errors[e.path] = e.message;
+        });
+        setFormErrors(errors);
+      }
+      return false;
+    }
+  };
+
+  const messageSchema = Yup.string()
+    .trim()
+    .required("Template message cannot be empty");
+
+  const handleChange = async (id, value) => {
+    setFormValues((prev) => ({
+      ...prev,
+      [id]: value,
     }));
-    setNotifications(updatedNotifications);
-  };
 
-  const LayawayReminder = forwardRef(
-    ({ id, customerId, customerName, dueDate, remainingBalance }, ref) => {
-      return (
-        <dialog
-          id="createCodeModal"
-          className="modal modal-bottom sm:modal-middle"
-        >
-          <div
-            ref={ref}
-            id={`layaway-reminder-${id}`}
-            className={`max-w-lg mx-auto p-6 bg-white shadow-lg rounded-lg`}
-          >
-            <header className="text-center mb-6">
-              <h1 className="text-2xl font-bold text-gray-700">
-                A.V. De Asis Jewelry
-              </h1>
-            </header>
-
-            <div className="text-left space-y-2">
-              <p className="text-gray-700">
-                <strong>Customer ID:</strong> {customerId}
-              </p>
-              <p className="text-gray-700">
-                <strong>Customer Name:</strong> {customerName}
-              </p>
-              <p className="text-gray-700">
-                <strong>Due Date:</strong> {dueDate}
-              </p>
-              <p className="text-gray-700">
-                <strong>Remaining Balance:</strong> ₱{remainingBalance}
-              </p>
-            </div>
-
-            <div className="mt-4 text-gray-700">
-              <p>
-                We kindly remind you to make your scheduled payments to avoid
-                any inconvenience.
-              </p>
-              <p>
-                If you have any questions or need assistance regarding your
-                layaway plan, feel free to contact our team.
-              </p>
-            </div>
-
-            <footer className="mt-6 text-right">
-              <p className="text-gray-700">Best regards,</p>
-              <p className="text-gray-700 font-bold">A.V. De Asis Jewelry</p>
-            </footer>
-          </div>
-        </dialog>
-      );
-    }
-  );
-
-  const exportNotifications = (notification) => {
-    setIsVisible(true);
-
-    const reminderDiv = document.getElementById(
-      `layaway-reminder-${notification.id}`
-    );
-    if (reminderDiv) {
-      reminderDiv.style.display = "block";
-
-      domtoimage
-        .toPng(reminderDiv, {
-          filter: (node) => {
-            // Ignore link elements that load external styles
-            return !(
-              node.tagName === "LINK" &&
-              node.href &&
-              node.href.includes("fonts.googleapis.com")
-            );
-          },
-        })
-        .then((dataUrl) => {
-          reminderDiv.style.display = "";
-          const link = document.createElement("a");
-          link.href = dataUrl;
-          link.download = "exported_image.png";
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        })
-        .catch((error) => {
-          console.error("Failed to export image:", error);
-        });
+    try {
+      await messageSchema.validate(value);
+      setFormErrors((prev) => ({
+        ...prev,
+        [id]: undefined,
+      }));
+    } catch (err) {
+      setFormErrors((prev) => ({
+        ...prev,
+        [id]: err.message,
+      }));
     }
   };
 
-  const handleCheckboxChange = (id) => {
-    const updatedNotifications = notifications.map((notification) =>
-      notification.id === id
-        ? { ...notification, selected: !notification.selected }
-        : notification
-    );
-    setNotifications(updatedNotifications);
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const isValid = await validate();
+    if (!isValid) {
+      toast.error("Please fill in all template messages.");
+      return;
+    }
 
-  const handleSeeMore = () => {
-    setCurrentPage((prevPage) => prevPage + 1); // Increment the page number
+    setSubmitting(true);
+    try {
+      // Prepare payload: array of {id, message}
+      const updatedTemplates = smsTemplates.map((template) => ({
+        id: template.id,
+        message: formValues[template.id],
+        type: template.type,
+      }));
+      await axios.post("settings/sms-templates/update", {
+        templates: updatedTemplates,
+      });
+      toast.success("Templates updated successfully!");
+    } catch (err) {
+      toast.error("Failed to update templates.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center">
-        <span className="loader">Loading...</span>
+      <div className="w-full bg-white shadow-md rounded-lg p-4">
+        Loading SMS templates...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full bg-white shadow-md rounded-lg p-4">
+        <div className="text-red-500">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="w-full bg-white shadow-md rounded-lg p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Notifications</h2>
-        <div>
-          <button
-            onClick={markAllAsRead}
-            className="text-orange-300 hover:text-orange-400 transition-colors mr-2"
-          >
-            Mark All as Read
-          </button>
-        </div>
-      </div>
-      <ul className="divide-y divide-gray-200">
-        {notifications.map((notification) => {
-          const briefMessage = notification.message.split(".")[0];
-          return (
-            <li
-              key={notification.id}
-              className={`flex justify-between p-2 ${
-                notification.is_read === 0 ? "bg-gray-100" : "bg-white"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={notification.selected}
-                onChange={() => handleCheckboxChange(notification.id)}
-                className="mr-2"
-                aria-label={`Select notification for ${notification.message}`}
-              />
-              <p
-                className={`font-semibold text-sm ${
-                  notification.is_read ? "text-gray-500" : "text-gray-800"
+    <form
+      className="w-full bg-white shadow-md rounded-lg p-4"
+      onSubmit={handleSubmit}
+    >
+      <h2 className="text-2xl font-bold text-orange-300 mb-3">SMS Templates</h2>
+      <div className="mb-6">
+        <label className="block font-bold mb-2 text-gray-700">
+          Confirmation Template
+        </label>
+        {reminderTemplates.length > 0 ? (
+          reminderTemplates.map((template) => (
+            <div key={template.id} className="mb-2">
+              <textarea
+                className={`w-full border rounded p-2 text-gray-700 font-medium ${
+                  formErrors[template.id] ? "border-red-500" : ""
                 }`}
-              >
-                {briefMessage}
-              </p>
-              <LayawayReminder
-                id={notification.id}
-                ref={createRef()}
-                {...JSON.parse(notification.messageData)}
+                value={formValues[template.id] || ""}
+                rows={3}
+                name="message"
+                onChange={(e) => handleChange(template.id, e.target.value)}
               />
-              <button
-                onClick={() => exportNotifications(notification)}
-                className="ml-2 bg-orange-500 text-white py-1 px-2 rounded hover:bg-orange-600 transition-colors"
-              >
-                <i class="fa-solid fa-file-export"></i>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-      <button
-        onClick={handleSeeMore}
-        className="text-center mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors"
-      >
-        See More
-      </button>
-      {error && <p className="text-red-500 mt-2">{error}</p>}
-    </div>
-  );
-};
-const AccountSettingsTab = () => {
-  // Sample data for demonstration purposes
-  const [acccountSetttings, setAccountSettings] = useState([]);
-
-  const [actions, setActions] = useState([]);
-
-  const fetchAccountSettings = async () => {
-    let res = await axios({
-      method: "GET",
-      url: `settings/accounts/get`,
-    });
-    let result = res.data.data;
-
-    console.log({ result });
-
-    setActions(
-      result.filter(
-        (item) => item.name === "Edit Details" || item.name === "Password Reset"
-      )
-    );
-
-    // setSelectedEmployee(user[0]);
-    // setIsLoaded(true);
-  };
-
-  useEffect(() => {
-    // fetchAccountSettings()
-  }, []);
-
-  // Handle checkbox change
-  const handleCheckboxChange = (index, role) => {
-    setActions((prevActions) => {
-      const updatedActions = [...prevActions];
-      updatedActions[index][role] = !updatedActions[index][role];
-      return updatedActions;
-    });
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      let res = await axios({
-        method: "post",
-        url: `settings/accounts`,
-        data: actions,
-      });
-
-      toast.success("Updated Successfully", {
-        position: "top-right",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-    } catch (error) {
-      console.log({ error });
-    } finally {
-    }
-
-    // You can replace this alert with your submission logic (e.g., API call)
-    //alert('Data submitted: ' + JSON.stringify(actions));
-  };
-
-  console.log({ actions });
-  return (
-    <div className="overflow-x-auto shadow-lg">
-      <header className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-700">Accounts</h1>
-      </header>
-      <form onSubmit={handleSubmit}>
-        <table className="min-w-full bg-white border border-gray-300">
-          <thead>
-            <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-              <th className="py-3 px-6 text-left">Action</th>
-              <th className="py-3 px-6 text-left">Super Admin</th>
-              <th className="py-3 px-6 text-left">Admin</th>
-            </tr>
-          </thead>
-          <tbody className="text-gray-700 text-sm font-light">
-            {actions.map((action, index) => (
-              <tr
-                key={index}
-                className="border-b border-gray-200 hover:bg-gray-100"
-              >
-                <td className="py-3 px-6 text-left">{action.name}</td>
-                <td className="py-3 px-6 text-left">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={action.super_admin}
-                      onChange={() =>
-                        handleCheckboxChange(index, "super_admin")
-                      }
-                      className="form-checkbox"
-                      aria-label={`Toggle ${action.name} for Super Admin`}
-                    />
-                  </div>
-                </td>
-                <td className="py-3 px-6 text-left">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={action.admin}
-                      onChange={() => handleCheckboxChange(index, "admin")}
-                      className="form-checkbox"
-                      aria-label={`Toggle ${action.name} for Admin`}
-                    />
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="mt-4 text-right p-4">
-          <button
-            type="submit"
-            className="m-2 px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition duration-200"
-          >
-            Update
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-};
-
-const RecordManagementTab = () => {
-  // Sample data for demonstration purposes
-  const [actions, setActions] = useState([]);
-
-  const fetchAccountSettings = async () => {
-    let res = await axios({
-      method: "GET",
-      url: `settings/accounts/get`,
-    });
-    let result = res.data.data;
-
-    console.log({ result });
-    const token = checkAuth();
-    const decoded = jwtDecode(token);
-    let details = result.filter(
-      (item) => item.name !== "Edit Details" && item.name !== "Password Reset"
-    );
-
-    console.log({ details });
-    setActions(details);
-
-    // setSelectedEmployee(user[0]);
-    // setIsLoaded(true);
-  };
-
-  useEffect(() => {
-    fetchAccountSettings();
-  }, []);
-
-  // Handle checkbox change
-  const handleCheckboxChange = (index, role) => {
-    setActions((prevActions) => {
-      const updatedActions = [...prevActions];
-      updatedActions[index][role] = !updatedActions[index][role];
-      return updatedActions;
-    });
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      let res = await axios({
-        method: "post",
-        url: `settings/accounts`,
-        data: actions,
-      });
-
-      toast.success("Updated Successfully", {
-        position: "top-right",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-    } catch (error) {
-      console.log({ error });
-    } finally {
-    }
-
-    // You can replace this alert with your submission logic (e.g., API call)
-    //alert('Data submitted: ' + JSON.stringify(actions));
-  };
-
-  return (
-    <div className="overflow-x-auto shadow-lg">
-      <header className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-700">Accounts</h1>
-      </header>
-      <form onSubmit={handleSubmit}>
-        <table className="min-w-full bg-white border border-gray-300">
-          <thead>
-            <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-              <th className="py-3 px-6 text-left">Action</th>
-              <th className="py-3 px-6 text-left">Super Admin</th>
-              <th className="py-3 px-6 text-left">Admin</th>
-            </tr>
-          </thead>
-          <tbody className="text-gray-700 text-sm font-light">
-            {actions.map((action, index) => (
-              <tr
-                key={index}
-                className="border-b border-gray-200 hover:bg-gray-100"
-              >
-                <td className="py-3 px-6 text-left">{action.name}</td>
-                <td className="py-3 px-6 text-left">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={action.super_admin}
-                      onChange={() =>
-                        handleCheckboxChange(index, "super_admin")
-                      }
-                      className="form-checkbox"
-                      aria-label={`Toggle ${action.name} for Super Admin`}
-                    />
-                  </div>
-                </td>
-                <td className="py-3 px-6 text-left">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={action.admin}
-                      onChange={() => handleCheckboxChange(index, "admin")}
-                      className="form-checkbox"
-                      aria-label={`Toggle ${action.name} for Admin`}
-                    />
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="mt-4 text-right p-4">
-          <button
-            type="submit"
-            className="m-2 px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition duration-200"
-          >
-            Update
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-};
-
-const AuditTrailTab = () => {
-  const [auditTrailList, setAuditTrail] = useState([]);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const notificationsPerPage = 5;
-  const [isVisible, setIsVisible] = useState(false); // State to manage visibility
-  useEffect(() => {
-    const fetchAuditTrail = async () => {
-      setError(null); // Reset error before fetching
-      setLoading(true); // Set loading true when fetching
-      try {
-        const response = await axios.get("/settings/auditTrail/list");
-        setAuditTrail(response.data.data);
-      } catch (err) {
-        setError("Failed to fetch notifications");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAuditTrail();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center">
-        <span className="loader">Loading...</span>
-      </div>
-    );
-  }
-
-  const columns = [
-    {
-      Header: "Employee ID",
-      accessor: "employeeId",
-      Cell: ({ row, value }) => {
-        return <span className="text-gray-600">{value}</span>;
-      },
-    },
-
-    {
-      Header: "First Name",
-      accessor: "Admin_Fname",
-      Cell: ({ row, value }) => {
-        return <span className="text-gray-600">{value}</span>;
-      },
-    },
-    {
-      Header: "Last Name",
-      accessor: "Admin_Lname",
-      Cell: ({ row, value }) => {
-        return <span className="text-gray-600">{value}</span>;
-      },
-    },
-    {
-      Header: "Date Time",
-      accessor: "dateTime",
-      Cell: ({ row, value }) => {
-        return (
-          <span className="text-gray-600">
-            {format(value, "MMM dd, yyyy hh:mm:ss a")}
-          </span>
-        );
-      },
-    },
-    {
-      Header: "Action",
-      accessor: "action",
-      Cell: ({ row, value }) => {
-        return <span className="text-yellow-500">{value}</span>;
-      },
-    },
-  ];
-
-  return (
-    <div className="w-full bg-white shadow-md rounded-lg p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Audit Trail</h2>
+              {formErrors[template.id] && (
+                <div className="text-red-500 text-sm">
+                  {formErrors[template.id]}
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="text-gray-400">No reminder templates found.</div>
+        )}
       </div>
       <div>
-        <Table
-          style={{ overflow: "wrap" }}
-          className="table-sm"
-          columns={columns}
-          data={auditTrailList || []}
-        />
+        <label className="block font-bold mb-2 text-gray-700">
+          Overdue Template
+        </label>
+        {overdueTemplates.length > 0 ? (
+          overdueTemplates.map((template) => (
+            <div key={template.id} className="mb-2">
+              <textarea
+                className={`w-full border rounded p-2 text-gray-700 font-medium ${
+                  formErrors[template.id] ? "border-red-500" : ""
+                }`}
+                value={formValues[template.id] || ""}
+                rows={3}
+                name="message"
+                onChange={(e) => handleChange(template.id, e.target.value)}
+              />
+              {formErrors[template.id] && (
+                <div className="text-red-500 text-sm">
+                  {formErrors[template.id]}
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="text-gray-400">No overdue templates found.</div>
+        )}
       </div>
-
-      {error && <p className="text-red-500 mt-2">{error}</p>}
-    </div>
+      <button
+        type="submit"
+        className="btn mt-4 shadow-lg bg-buttonPrimary font-bold text-white"
+        disabled={submitting || Object.values(formErrors).some(Boolean)}
+      >
+        {submitting ? "Updating..." : "Update Templates"}
+      </button>
+    </form>
   );
 };
+
+// const NotificationsTab = () => {
+//   const [notifications, setNotifications] = useState([]);
+//   const [error, setError] = useState(null);
+//   const [loading, setLoading] = useState(true);
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const notificationsPerPage = 5;
+//   const [isVisible, setIsVisible] = useState(false); // State to manage visibility
+//   useEffect(() => {
+//     const fetchNotifications = async () => {
+//       setError(null); // Reset error before fetching
+//       setLoading(true); // Set loading true when fetching
+//       try {
+//         const response = await axios.get("/notification/list", {
+//           params: { page: currentPage, limit: notificationsPerPage },
+//         });
+//         setNotifications((prevNotifications) => [
+//           ...prevNotifications,
+//           ...response.data.data,
+//         ]);
+//       } catch (err) {
+//         setError("Failed to fetch notifications");
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchNotifications();
+//   }, [currentPage]);
+
+//   const markAllAsRead = () => {
+//     const updatedNotifications = notifications.map((notification) => ({
+//       ...notification,
+//       is_read: true,
+//     }));
+//     setNotifications(updatedNotifications);
+//   };
+
+//   const LayawayReminder = forwardRef(
+//     ({ id, customerId, customerName, dueDate, remainingBalance }, ref) => {
+//       return (
+//         <dialog
+//           id="createCodeModal"
+//           className="modal modal-bottom sm:modal-middle"
+//         >
+//           <div
+//             ref={ref}
+//             id={`layaway-reminder-${id}`}
+//             className={`max-w-lg mx-auto p-6 bg-white shadow-lg rounded-lg`}
+//           >
+//             <header className="text-center mb-6">
+//               <h1 className="text-2xl font-bold text-gray-700">
+//                 A.V. De Asis Jewelry
+//               </h1>
+//             </header>
+
+//             <div className="text-left space-y-2">
+//               <p className="text-gray-700">
+//                 <strong>Customer ID:</strong> {customerId}
+//               </p>
+//               <p className="text-gray-700">
+//                 <strong>Customer Name:</strong> {customerName}
+//               </p>
+//               <p className="text-gray-700">
+//                 <strong>Due Date:</strong> {dueDate}
+//               </p>
+//               <p className="text-gray-700">
+//                 <strong>Remaining Balance:</strong> ₱{remainingBalance}
+//               </p>
+//             </div>
+
+//             <div className="mt-4 text-gray-700">
+//               <p>
+//                 We kindly remind you to make your scheduled payments to avoid
+//                 any inconvenience.
+//               </p>
+//               <p>
+//                 If you have any questions or need assistance regarding your
+//                 layaway plan, feel free to contact our team.
+//               </p>
+//             </div>
+
+//             <footer className="mt-6 text-right">
+//               <p className="text-gray-700">Best regards,</p>
+//               <p className="text-gray-700 font-bold">A.V. De Asis Jewelry</p>
+//             </footer>
+//           </div>
+//         </dialog>
+//       );
+//     }
+//   );
+
+//   const exportNotifications = (notification) => {
+//     setIsVisible(true);
+
+//     const reminderDiv = document.getElementById(
+//       `layaway-reminder-${notification.id}`
+//     );
+//     if (reminderDiv) {
+//       reminderDiv.style.display = "block";
+
+//       domtoimage
+//         .toPng(reminderDiv, {
+//           filter: (node) => {
+//             // Ignore link elements that load external styles
+//             return !(
+//               node.tagName === "LINK" &&
+//               node.href &&
+//               node.href.includes("fonts.googleapis.com")
+//             );
+//           },
+//         })
+//         .then((dataUrl) => {
+//           reminderDiv.style.display = "";
+//           const link = document.createElement("a");
+//           link.href = dataUrl;
+//           link.download = "exported_image.png";
+//           document.body.appendChild(link);
+//           link.click();
+//           document.body.removeChild(link);
+//         })
+//         .catch((error) => {
+//           console.error("Failed to export image:", error);
+//         });
+//     }
+//   };
+
+//   const handleCheckboxChange = (id) => {
+//     const updatedNotifications = notifications.map((notification) =>
+//       notification.id === id
+//         ? { ...notification, selected: !notification.selected }
+//         : notification
+//     );
+//     setNotifications(updatedNotifications);
+//   };
+
+//   const handleSeeMore = () => {
+//     setCurrentPage((prevPage) => prevPage + 1); // Increment the page number
+//   };
+
+//   if (loading) {
+//     return (
+//       <div className="flex justify-center items-center">
+//         <span className="loader">Loading...</span>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="w-full bg-white shadow-md rounded-lg p-4">
+//       <div className="flex justify-between items-center mb-4">
+//         <h2 className="text-lg font-semibold">Notifications</h2>
+//         <div>
+//           <button
+//             onClick={markAllAsRead}
+//             className="text-orange-300 hover:text-orange-400 transition-colors mr-2"
+//           >
+//             Mark All as Read
+//           </button>
+//         </div>
+//       </div>
+//       <ul className="divide-y divide-gray-200">
+//         {notifications.map((notification) => {
+//           const briefMessage = notification.message.split(".")[0];
+//           return (
+//             <li
+//               key={notification.id}
+//               className={`flex justify-between p-2 ${
+//                 notification.is_read === 0 ? "bg-gray-100" : "bg-white"
+//               }`}
+//             >
+//               <input
+//                 type="checkbox"
+//                 checked={notification.selected}
+//                 onChange={() => handleCheckboxChange(notification.id)}
+//                 className="mr-2"
+//                 aria-label={`Select notification for ${notification.message}`}
+//               />
+//               <p
+//                 className={`font-semibold text-sm ${
+//                   notification.is_read ? "text-gray-500" : "text-gray-800"
+//                 }`}
+//               >
+//                 {briefMessage}
+//               </p>
+//               <LayawayReminder
+//                 id={notification.id}
+//                 ref={createRef()}
+//                 {...JSON.parse(notification.messageData)}
+//               />
+//               <button
+//                 onClick={() => exportNotifications(notification)}
+//                 className="ml-2 bg-orange-500 text-white py-1 px-2 rounded hover:bg-orange-600 transition-colors"
+//               >
+//                 <i class="fa-solid fa-file-export"></i>
+//               </button>
+//             </li>
+//           );
+//         })}
+//       </ul>
+//       <button
+//         onClick={handleSeeMore}
+//         className="text-center mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors"
+//       >
+//         See More
+//       </button>
+//       {error && <p className="text-red-500 mt-2">{error}</p>}
+//     </div>
+//   );
+// };
+// const AccountSettingsTab = () => {
+//   // Sample data for demonstration purposes
+//   const [acccountSetttings, setAccountSettings] = useState([]);
+
+//   const [actions, setActions] = useState([]);
+
+//   const fetchAccountSettings = async () => {
+//     let res = await axios({
+//       method: "GET",
+//       url: `settings/accounts/get`,
+//     });
+//     let result = res.data.data;
+
+//     console.log({ result });
+
+//     setActions(
+//       result.filter(
+//         (item) => item.name === "Edit Details" || item.name === "Password Reset"
+//       )
+//     );
+
+//     // setSelectedEmployee(user[0]);
+//     // setIsLoaded(true);
+//   };
+
+//   useEffect(() => {
+//     // fetchAccountSettings()
+//   }, []);
+
+//   // Handle checkbox change
+//   const handleCheckboxChange = (index, role) => {
+//     setActions((prevActions) => {
+//       const updatedActions = [...prevActions];
+//       updatedActions[index][role] = !updatedActions[index][role];
+//       return updatedActions;
+//     });
+//   };
+
+//   // Handle form submission
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+
+//     try {
+//       let res = await axios({
+//         method: "post",
+//         url: `settings/accounts`,
+//         data: actions,
+//       });
+
+//       toast.success("Updated Successfully", {
+//         position: "top-right",
+//         autoClose: 2000,
+//         hideProgressBar: false,
+//         closeOnClick: true,
+//         pauseOnHover: true,
+//         draggable: true,
+//         progress: undefined,
+//         theme: "light",
+//       });
+//     } catch (error) {
+//       console.log({ error });
+//     } finally {
+//     }
+
+//     // You can replace this alert with your submission logic (e.g., API call)
+//     //alert('Data submitted: ' + JSON.stringify(actions));
+//   };
+
+//   console.log({ actions });
+//   return (
+//     <div className="overflow-x-auto shadow-lg">
+//       <header className="text-center mb-6">
+//         <h1 className="text-2xl font-bold text-gray-700">Accounts</h1>
+//       </header>
+//       <form onSubmit={handleSubmit}>
+//         <table className="min-w-full bg-white border border-gray-300">
+//           <thead>
+//             <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+//               <th className="py-3 px-6 text-left">Action</th>
+//               <th className="py-3 px-6 text-left">Super Admin</th>
+//               <th className="py-3 px-6 text-left">Admin</th>
+//             </tr>
+//           </thead>
+//           <tbody className="text-gray-700 text-sm font-light">
+//             {actions.map((action, index) => (
+//               <tr
+//                 key={index}
+//                 className="border-b border-gray-200 hover:bg-gray-100"
+//               >
+//                 <td className="py-3 px-6 text-left">{action.name}</td>
+//                 <td className="py-3 px-6 text-left">
+//                   <div className="flex items-center space-x-2">
+//                     <input
+//                       type="checkbox"
+//                       checked={action.super_admin}
+//                       onChange={() =>
+//                         handleCheckboxChange(index, "super_admin")
+//                       }
+//                       className="form-checkbox"
+//                       aria-label={`Toggle ${action.name} for Super Admin`}
+//                     />
+//                   </div>
+//                 </td>
+//                 <td className="py-3 px-6 text-left">
+//                   <div className="flex items-center space-x-2">
+//                     <input
+//                       type="checkbox"
+//                       checked={action.admin}
+//                       onChange={() => handleCheckboxChange(index, "admin")}
+//                       className="form-checkbox"
+//                       aria-label={`Toggle ${action.name} for Admin`}
+//                     />
+//                   </div>
+//                 </td>
+//               </tr>
+//             ))}
+//           </tbody>
+//         </table>
+//         <div className="mt-4 text-right p-4">
+//           <button
+//             type="submit"
+//             className="m-2 px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition duration-200"
+//           >
+//             Update
+//           </button>
+//         </div>
+//       </form>
+//     </div>
+//   );
+// };
+
+// const RecordManagementTab = () => {
+//   // Sample data for demonstration purposes
+//   const [actions, setActions] = useState([]);
+
+//   const fetchAccountSettings = async () => {
+//     let res = await axios({
+//       method: "GET",
+//       url: `settings/accounts/get`,
+//     });
+//     let result = res.data.data;
+
+//     console.log({ result });
+//     const token = checkAuth();
+//     const decoded = jwtDecode(token);
+//     let details = result.filter(
+//       (item) => item.name !== "Edit Details" && item.name !== "Password Reset"
+//     );
+
+//     console.log({ details });
+//     setActions(details);
+
+//     // setSelectedEmployee(user[0]);
+//     // setIsLoaded(true);
+//   };
+
+//   useEffect(() => {
+//     fetchAccountSettings();
+//   }, []);
+
+//   // Handle checkbox change
+//   const handleCheckboxChange = (index, role) => {
+//     setActions((prevActions) => {
+//       const updatedActions = [...prevActions];
+//       updatedActions[index][role] = !updatedActions[index][role];
+//       return updatedActions;
+//     });
+//   };
+
+//   // Handle form submission
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+
+//     try {
+//       let res = await axios({
+//         method: "post",
+//         url: `settings/accounts`,
+//         data: actions,
+//       });
+
+//       toast.success("Updated Successfully", {
+//         position: "top-right",
+//         autoClose: 2000,
+//         hideProgressBar: false,
+//         closeOnClick: true,
+//         pauseOnHover: true,
+//         draggable: true,
+//         progress: undefined,
+//         theme: "light",
+//       });
+//     } catch (error) {
+//       console.log({ error });
+//     } finally {
+//     }
+
+//     // You can replace this alert with your submission logic (e.g., API call)
+//     //alert('Data submitted: ' + JSON.stringify(actions));
+//   };
+
+//   return (
+//     <div className="overflow-x-auto shadow-lg">
+//       <header className="text-center mb-6">
+//         <h1 className="text-2xl font-bold text-gray-700">Accounts</h1>
+//       </header>
+//       <form onSubmit={handleSubmit}>
+//         <table className="min-w-full bg-white border border-gray-300">
+//           <thead>
+//             <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+//               <th className="py-3 px-6 text-left">Action</th>
+//               <th className="py-3 px-6 text-left">Super Admin</th>
+//               <th className="py-3 px-6 text-left">Admin</th>
+//             </tr>
+//           </thead>
+//           <tbody className="text-gray-700 text-sm font-light">
+//             {actions.map((action, index) => (
+//               <tr
+//                 key={index}
+//                 className="border-b border-gray-200 hover:bg-gray-100"
+//               >
+//                 <td className="py-3 px-6 text-left">{action.name}</td>
+//                 <td className="py-3 px-6 text-left">
+//                   <div className="flex items-center space-x-2">
+//                     <input
+//                       type="checkbox"
+//                       checked={action.super_admin}
+//                       onChange={() =>
+//                         handleCheckboxChange(index, "super_admin")
+//                       }
+//                       className="form-checkbox"
+//                       aria-label={`Toggle ${action.name} for Super Admin`}
+//                     />
+//                   </div>
+//                 </td>
+//                 <td className="py-3 px-6 text-left">
+//                   <div className="flex items-center space-x-2">
+//                     <input
+//                       type="checkbox"
+//                       checked={action.admin}
+//                       onChange={() => handleCheckboxChange(index, "admin")}
+//                       className="form-checkbox"
+//                       aria-label={`Toggle ${action.name} for Admin`}
+//                     />
+//                   </div>
+//                 </td>
+//               </tr>
+//             ))}
+//           </tbody>
+//         </table>
+//         <div className="mt-4 text-right p-4">
+//           <button
+//             type="submit"
+//             className="m-2 px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition duration-200"
+//           >
+//             Update
+//           </button>
+//         </div>
+//       </form>
+//     </div>
+//   );
+// };
+
+// const AuditTrailTab = () => {
+//   const [auditTrailList, setAuditTrail] = useState([]);
+//   const [error, setError] = useState(null);
+//   const [loading, setLoading] = useState(true);
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const notificationsPerPage = 5;
+//   const [isVisible, setIsVisible] = useState(false); // State to manage visibility
+//   useEffect(() => {
+//     const fetchAuditTrail = async () => {
+//       setError(null); // Reset error before fetching
+//       setLoading(true); // Set loading true when fetching
+//       try {
+//         const response = await axios.get("/settings/auditTrail/list");
+//         setAuditTrail(response.data.data);
+//       } catch (err) {
+//         setError("Failed to fetch notifications");
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchAuditTrail();
+//   }, []);
+
+//   if (loading) {
+//     return (
+//       <div className="flex justify-center items-center">
+//         <span className="loader">Loading...</span>
+//       </div>
+//     );
+//   }
+
+//   const columns = [
+//     {
+//       Header: "Employee ID",
+//       accessor: "employeeId",
+//       Cell: ({ row, value }) => {
+//         return <span className="text-gray-600">{value}</span>;
+//       },
+//     },
+
+//     {
+//       Header: "First Name",
+//       accessor: "Admin_Fname",
+//       Cell: ({ row, value }) => {
+//         return <span className="text-gray-600">{value}</span>;
+//       },
+//     },
+//     {
+//       Header: "Last Name",
+//       accessor: "Admin_Lname",
+//       Cell: ({ row, value }) => {
+//         return <span className="text-gray-600">{value}</span>;
+//       },
+//     },
+//     {
+//       Header: "Date Time",
+//       accessor: "dateTime",
+//       Cell: ({ row, value }) => {
+//         return (
+//           <span className="text-gray-600">
+//             {format(value, "MMM dd, yyyy hh:mm:ss a")}
+//           </span>
+//         );
+//       },
+//     },
+//     {
+//       Header: "Action",
+//       accessor: "action",
+//       Cell: ({ row, value }) => {
+//         return <span className="text-yellow-500">{value}</span>;
+//       },
+//     },
+//   ];
+
+//   return (
+//     <div className="w-full bg-white shadow-md rounded-lg p-4">
+//       <div className="flex justify-between items-center mb-4">
+//         <h2 className="text-lg font-semibold">Audit Trail</h2>
+//       </div>
+//       <div>
+//         <Table
+//           style={{ overflow: "wrap" }}
+//           className="table-sm"
+//           columns={columns}
+//           data={auditTrailList || []}
+//         />
+//       </div>
+
+//       {error && <p className="text-red-500 mt-2">{error}</p>}
+//     </div>
+//   );
+// };
+
 function InternalPage() {
   const dispatch = useDispatch();
   const [selectedTab, setSelectedTab] = useState("Settings");
@@ -1103,6 +1313,7 @@ function InternalPage() {
     // Accounts: <AccountSettingsTab />,
     // "Record Management": <RecordManagementTab />,
     // "Audit Trail": <AuditTrailTab />,
+    "SMS Editor": <SMSTab />,
   };
 
   useEffect(() => {

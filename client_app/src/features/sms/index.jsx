@@ -35,10 +35,24 @@ function SmsForm({ onSendSms, getSMS, borrowerList }) {
 
         }
     })
-    const messageTemplates = {
-        Confirmation: "Your loan application has been successfully confirmed. Thank you for choosing us!",
-        "Due Notification": "Reminder: Your loan payment is due. Please make the payment by the due date to avoid penalties."
-    };
+    const [messageTemplates, setMessageTemplates] = useState({});
+
+    useEffect(() => {
+        const fetchTemplates = async () => {
+            try {
+                const res = await axios.get('/message_templates');
+                const templates = {};
+                res.data.data.forEach(t => {
+                    templates[t.type] = t.message;
+                });
+                setMessageTemplates(templates);
+            } catch (err) {
+                // Optionally handle error
+                setMessageTemplates({});
+            }
+        };
+        fetchTemplates();
+    }, []);
 
     const formikConfig = {
         initialValues: {
