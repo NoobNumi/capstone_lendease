@@ -21,6 +21,7 @@ import Table, {
 } from "../../pages/protected/DataTables/Table"; // new
 
 import { format, formatDistance, formatRelative, subDays } from "date-fns";
+import { Button } from "./DataTables/shared/Button";
 
 const Tab1Content = () => {
   const token = checkAuth();
@@ -563,6 +564,9 @@ const SMSTab = () => {
   const overdueTemplates = smsTemplates.filter(
     (template) => template.type === "due_notification"
   );
+  const loanCreationTemplates = smsTemplates.filter(
+    (template) => template.type === "loan_creation"
+  );
 
   const validate = async () => {
     const schemaShape = {};
@@ -690,7 +694,7 @@ const SMSTab = () => {
           <div className="text-gray-400">No reminder templates found.</div>
         )}
       </div>
-      <div>
+      <div className="mb-6">
         <label className="block font-bold mb-2 text-gray-700">
           Overdue Template
         </label>
@@ -715,6 +719,53 @@ const SMSTab = () => {
           ))
         ) : (
           <div className="text-gray-400">No overdue templates found.</div>
+        )}
+      </div>
+      <div>
+        <div className="flex items-center mb-4 justify-between">
+          <label className="block font-bold text-gray-700">
+            Loan Creation Template
+          </label>
+          <Button className="btn bg-orange-300 text-white font-bold">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="size-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+              />
+            </svg>
+            Modify Template
+          </Button>
+        </div>
+        {loanCreationTemplates.length > 0 ? (
+          loanCreationTemplates.map((template) => (
+            <div key={template.id} className="mb-2">
+              <textarea
+                className={`w-full border rounded p-2 text-gray-700 font-medium bg-slate-100 ${
+                  formErrors[template.id] ? "border-red-500" : ""
+                }`}
+                value={formValues[template.id] || ""}
+                rows={8}
+                name="message"
+                readOnly
+                onChange={(e) => handleChange(template.id, e.target.value)}
+              />
+              {formErrors[template.id] && (
+                <div className="text-red-500 text-sm">
+                  {formErrors[template.id]}
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="text-gray-400">No loan creation templates found.</div>
         )}
       </div>
       <button

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: May 17, 2025 at 11:48 PM
+-- Generation Time: May 21, 2025 at 05:14 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.4.1
 
@@ -28,12 +28,12 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `address` (
-  `address_id` int NOT NULL PRIMARY KEY,
-    `borrower_id` int DEFAULT NULL,
-    `street` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `city` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `state` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `zip_code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
+  `address_id` int NOT NULL PRIMARY KEY, 
+  `borrower_id` int DEFAULT NULL,
+  `street` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `city` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `state` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `zip_code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -110,8 +110,9 @@ CREATE TABLE `borrower_account` (
 --
 
 INSERT INTO `borrower_account` (`borrower_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `age`, `contact_number`, `email`, `date_of_birth`, `birth_place`, `civil_status`, `residence_type`, `valid_id`, `gender`, `nationality`, `religion`, `address_region`, `address_province`, `address_city`, `address_barangay`, `zip_code`, `employment_type`, `employment_years`, `monthly_income`, `credit_score`, `registration_date`, `profile_pic`, `work_type`, `position`, `status`) VALUES
-(58, 13, 'Nina', 'Guiriba', 'Villamin', NULL, '09123355384', 'ninagillianvillamin1128@gmail.com', '2001-11-28', 'Dimasalang, Masbate', 'single', 'own', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/valid_id%2F1747067698122-Campground%20Owner%20Dashboard.pdf?alt=media&token=72405845-7a53-4b75-bb6c-638d4e9d4c40', 'Female', 'Filipino', NULL, '05', '0541', '054108', '054108012', '04161', 'Nonemployed', 3.00, 40000.00, NULL, NULL, 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Fuser%2F13%2Fprofile_pic%2Fhitori-gotou-happy.webp?alt=media&token=c5813815-7a0b-4fad-879f-e986b445c011', NULL, NULL, NULL),
-(59, 14, 'Gisselle', 'Williamson', 'Veum-Olson', NULL, '22', 'numinum1128@gmail.com', '2024-08-18', '53409 Dibbert Cliff', 'single', 'own', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/valid_id%2F1747492579794-receipt_LOAN-mar242dc2lr_June%202025.pdf?alt=media&token=36ab091e-d684-40cd-b2a4-4d2f4d2ec7f7', 'Female', 'West Jordan', NULL, '14', '1411', '141111', '141111011', '53424-5808', 'Employed', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+(58, 13, 'Nina', 'Guiriba', 'Villamin', NULL, '09123355384', 'ninagillianvillamin1128@gmail.com', '2001-11-28', 'Dimasalang, Masbate', 'single', 'own', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/valid_id%2F1747067698122-Campground%20Owner%20Dashboard.pdf?alt=media&token=72405845-7a53-4b75-bb6c-638d4e9d4c40', 'Female', 'Filipino', NULL, '05', '0541', '054108', '054108012', '04161', 'Nonemployed', 2.00, 20000.00, NULL, '2025-05-01 23:46:00', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Fuser%2F13%2Fprofile_pic%2Fhitori-gotou-happy.webp?alt=media&token=c5813815-7a0b-4fad-879f-e986b445c011', NULL, NULL, NULL),
+(59, 14, 'Gisselle', 'Williamson', 'Veum-Olson', NULL, '22', 'numinum1128@gmail.com', '2024-08-18', '53409 Dibbert Cliff', 'single', 'own', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/valid_id%2F1747492579794-receipt_LOAN-mar242dc2lr_June%202025.pdf?alt=media&token=36ab091e-d684-40cd-b2a4-4d2f4d2ec7f7', 'Female', 'West Jordan', NULL, '14', '1411', '141111', '141111011', '53424-5808', 'Employed', NULL, NULL, NULL, '2024-05-07 23:46:03', NULL, NULL, NULL, NULL),
+(60, 15, 'Terry', 'Crews', 'Stracke', NULL, '141', 'ninagv090522@gmail.com', '2024-12-23', '970 Shanon Shoals', 'single', 'own', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/valid_id%2F1747782475426-receipt_LOAN-maqwqjbqf26_May%202025.pdf?alt=media&token=80861270-c4e8-435a-88ca-43bdd1bf9911', 'Female', 'Sterling Heights', NULL, '03', '0314', '031417', '031417019', '49112', 'Employed', NULL, NULL, NULL, '2023-07-02 23:46:19', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -134,7 +135,10 @@ CREATE TABLE `collateral` (
 --
 
 CREATE TABLE `collector_account` (
-  `collector_id` int NOT NULL PRIMARY KEY,
+  `collector_id` int NOT NULl PRIMARY KEY,
+  `first_name` int NOT NULL,
+  `middle_name` int NOT NULL,
+  `last_name` int NOT NULL,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `department` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `contact_number` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
@@ -147,8 +151,8 @@ CREATE TABLE `collector_account` (
 -- Dumping data for table `collector_account`
 --
 
-INSERT INTO `collector_account` (`collector_id`, `name`, `department`, `contact_number`, `email`, `username`, `password`) VALUES
-(1, 'Bob Johnson', 'Collections', '09123456789', 'bob.johnson@example.com', 'bobjohnson', 'securepassword');
+INSERT INTO `collector_account` (`collector_id`, `first_name`, `middle_name`, `last_name`, `name`, `department`, `contact_number`, `email`, `username`, `password`) VALUES
+(1, 0, 0, 0, 'Bob Johnson', 'Collections', '09123456789', 'bob.johnson@example.com', 'bobjohnson', 'securepassword');
 
 -- --------------------------------------------------------
 
@@ -180,7 +184,8 @@ INSERT INTO `disbursement_details` (`id`, `loan_id`, `recipient_name`, `recipien
 (7, 34, 'null', 'null', 20000.00, '2025-05-04 08:42:31', 'E-WALLET/BANK TRANSFER', 'GCash', '', '2025-05-04 08:42:31', '2025-05-04 08:50:07', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F34%2Fproof_of_disbursement%2F49.jpeg?alt=media&token=c7cfeb6a-50a6-4418-9722-ee163fb0e051'),
 (8, 35, 'null', 'null', 15000.00, '2025-05-04 08:45:09', 'CASH', 'GCash', '', '2025-05-04 08:45:09', '2025-05-04 08:50:11', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F35%2Fproof_of_disbursement%2F11.jpeg?alt=media&token=a4d932e7-60e4-433f-b9ea-9da4f5dcadf3'),
 (11, 40, 'Nina Villamin', '09123355384', 20000.00, '2025-05-04 09:39:11', 'E-WALLET/BANK TRANSFER', 'GCash', '', '2025-05-04 09:39:11', '2025-05-04 09:39:55', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F40%2Fproof_of_disbursement%2F42.jpeg?alt=media&token=7a6d6bff-c3bf-4373-b97e-5c6e7e5d6a2f'),
-(12, 39, 'Zoren Madridano', '09275478620', 20000.00, '2025-05-04 09:40:12', 'E-WALLET/BANK TRANSFER', 'Gcash', '', '2025-05-04 09:40:12', '2025-05-04 09:40:12', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F39%2Fproof_of_disbursement%2F42.jpeg?alt=media&token=6739da31-15d0-4617-8ac1-91a71f7aab16');
+(12, 39, 'Zoren Madridano', '09275478620', 20000.00, '2025-05-04 09:40:12', 'E-WALLET/BANK TRANSFER', 'Gcash', '', '2025-05-04 09:40:12', '2025-05-04 09:40:12', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F39%2Fproof_of_disbursement%2F42.jpeg?alt=media&token=6739da31-15d0-4617-8ac1-91a71f7aab16'),
+(13, 41, 'Nina Villamin', '09123355384', 20000.00, '2025-05-21 14:46:18', 'CASH', '', '', '2025-05-21 14:46:18', '2025-05-21 14:46:18', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F41%2Fproof_of_disbursement%2Fimage%20(7).png?alt=media&token=63e46061-5242-4660-81a1-b73d150aa84b');
 
 -- --------------------------------------------------------
 
@@ -232,7 +237,8 @@ INSERT INTO `employed_details` (`employed_id`, `borrower_id`, `work_type`, `posi
 (39, 55, 'government', 'Web Designer', 'Contractual', 'PourPal', 40000, 2, 'Bicol University', '4384 3843 8483 9483', '43940309'),
 (40, 56, 'government', 'Web Designer', 'Contractual', 'PourPal', 40000, 2, 'Bicol University', '4384 3843 8483 9483', '43940309'),
 (41, 57, 'government', 'Front End Developer', 'Contractual', 'PourPal', 40000, 3, 'Bicol University', '4384 9384 3904 8904', '3899043483984'),
-(42, 59, 'government', 'Web Designer', 'Contractual', 'PourPal', 30000, 2, 'Bicol University', '4384 3843 8483 9483', '3424343');
+(42, 59, 'government', 'Web Designer', 'Contractual', 'PourPal', 30000, 2, 'Bicol University', '4384 3843 8483 9483', '3424343'),
+(43, 60, 'government', 'Web Designer', 'Contractual', 'PourPal', 30000, 3, 'Bicol University', '4805 8490 5493 0589', '849058439584958');
 
 -- --------------------------------------------------------
 
@@ -325,7 +331,15 @@ INSERT INTO `loan` (`loan_id`, `loan_application_id`, `borrower_id`, `loan_type_
 (38, 'cae3d163-154b-4a4a-b489-28e1620ff5d7', 1, NULL, 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN', 26000.00, 7.00, 'Rejected', '2025-01-16 09:18:18', '2025-01-16 09:18:18', 6, 'HOUSING LOAN', 'rejected no id', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Fcae3d163-154b-4a4a-b489-28e1620ff5d7%2F49e7128e-0aca-4e94-b3cc-9726d3edd51b.jpg?alt=media&token=14090b52-1e43-423a-bb60-bb2ee9c9fec0', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Fcae3d163-154b-4a4a-b489-28e1620ff5d7%2F49e7128e-0aca-4e94-b3cc-9726d3edd51b.jpg?alt=media&token=fa466e6b-9a03-4a60-9a6f-288492e60e75', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Fcae3d163-154b-4a4a-b489-28e1620ff5d7%2Fcool_16876150.png?alt=media&token=d5e5e1eb-ccf5-4d18-8b81-4d38e518fc65', 1, NULL, '', '', NULL, '', '', 0.00, 0.00, '', '', '', '', NULL, NULL, NULL, 0),
 (39, '7731a096-cdb6-443c-8ed1-baa3765d624a', 1, NULL, 'NON-EMPLOYEE LOAN', 20000.00, 3.00, 'Approved', '2025-01-23 11:57:31', '2025-01-23 11:57:31', 6, '', 'approved', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F7731a096-cdb6-443c-8ed1-baa3765d624a%2FWedding%20Invitation.png?alt=media&token=ddc6f20f-17c9-490e-850f-b2e289065d49', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F7731a096-cdb6-443c-8ed1-baa3765d624a%2FWedding%20Invitation.png?alt=media&token=0a638dde-9f89-4f98-9da8-88a8da4f6419', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F7731a096-cdb6-443c-8ed1-baa3765d624a%2FBlue%20White%20Aesthetic%20Wedding%20Invitation.png?alt=media&token=fc39a3bf-be1a-44cf-8b00-ceaafd8c4128', 1, NULL, 'tindera', 'YES', 'Corporation', 'pawa legazpi city', 'MONTHLY', 19999.00, 123.00, '123', 'SPOUSE', 'jam', 'E-WALLET/BANK TRANSFER', 'Gcash', 'Dexter Miranda', '09275478620', 0),
 (40, 'e890c2b8-4656-4200-b263-f894a50ed06e', 14, NULL, 'NON-EMPLOYEE LOAN', 20000.00, 3.00, 'Approved', '2025-01-24 01:43:37', '2025-05-04 09:38:56', 6, '', 'Test1', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Fe890c2b8-4656-4200-b263-f894a50ed06e%2FBlue%20White%20Aesthetic%20Wedding%20Invitation.png?alt=media&token=a03d546c-ce58-4123-879c-a753c0cc562f', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Fe890c2b8-4656-4200-b263-f894a50ed06e%2FWedding%20Invitation.png?alt=media&token=86cdbf3d-8fa2-4a05-a432-8a84e5e7d4e6', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Fe890c2b8-4656-4200-b263-f894a50ed06e%2FWedding%20Invitation.png?alt=media&token=03e51082-dd8f-4b16-a2c9-96769421aa34', 6, NULL, 'tindera', 'YES', 'Corporation', '5th wave', 'MONTHLY', 150000.00, 1.00, '1', 'SPOUSE', 'jam', 'CASH', '', '', '', 0),
-(41, 'ac7c41bb-1028-4f6d-9432-b907d74972e3', 58, NULL, 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN', 20000.00, 3.00, 'Approved', '2025-05-14 00:13:29', '2025-05-13 17:03:58', 6, 'HOUSING LOAN', 'This is now approved', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Fac7c41bb-1028-4f6d-9432-b907d74972e3%2FSample_image.png?alt=media&token=265c268c-8e71-4b73-9649-3156fa69a716', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Fac7c41bb-1028-4f6d-9432-b907d74972e3%2FSample_image.png?alt=media&token=7fef06d8-3264-4767-b86b-1bbe13c9cc4b', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Fac7c41bb-1028-4f6d-9432-b907d74972e3%2FSample_image.png?alt=media&token=8212bde7-ba2d-4eb1-a896-8672beee59bc', 2, NULL, NULL, NULL, '', NULL, NULL, NULL, 12000.00, '323323', NULL, NULL, 'CASH', '', '', '', 40000);
+(41, 'ac7c41bb-1028-4f6d-9432-b907d74972e3', 58, NULL, 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN', 20000.00, 3.00, 'Approved', '2025-05-14 00:13:29', '2025-05-13 17:03:58', 6, 'HOUSING LOAN', 'This is now approved', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Fac7c41bb-1028-4f6d-9432-b907d74972e3%2FSample_image.png?alt=media&token=265c268c-8e71-4b73-9649-3156fa69a716', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Fac7c41bb-1028-4f6d-9432-b907d74972e3%2FSample_image.png?alt=media&token=7fef06d8-3264-4767-b86b-1bbe13c9cc4b', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Fac7c41bb-1028-4f6d-9432-b907d74972e3%2FSample_image.png?alt=media&token=8212bde7-ba2d-4eb1-a896-8672beee59bc', 2, NULL, NULL, NULL, '', NULL, NULL, NULL, 12000.00, '323323', NULL, NULL, 'CASH', '', '', '', 40000),
+(42, '5da9532e-e460-4b32-86ca-4ec1508f273a', NULL, NULL, 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN', 20000.00, 3.00, 'Pending', '2025-05-21 20:57:06', '2025-05-21 12:57:06', 6, 'OTHERS', '', '', '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 40000),
+(43, 'a1b6de74-1159-4ac7-8bae-036fc4f788f6', NULL, NULL, 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN', 20000.00, 3.00, 'Pending', '2025-05-21 20:57:14', '2025-05-21 12:57:14', 6, 'OTHERS', '', '', '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 40000),
+(44, '25a691e0-62b5-47cf-8ccc-efc8919ccbfd', NULL, NULL, 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN', 20000.00, 3.00, 'Pending', '2025-05-21 21:16:29', '2025-05-21 13:16:29', 6, 'OTHERS', '', '', '', '', NULL, NULL, NULL, NULL, '', NULL, NULL, NULL, 12000.00, '55454354546546', NULL, NULL, 'E-WALLET/BANK TRANSFER', 'Gcash', 'Nina Villamin', '09123355384', 40000),
+(45, '94db8588-8f11-4ba8-afce-e396f35c1ec2', NULL, NULL, 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN', 20000.00, 3.00, 'Pending', '2025-05-21 21:32:20', '2025-05-21 13:32:20', 6, 'HOUSING LOAN', '', '', '', '', NULL, NULL, NULL, NULL, '', NULL, NULL, NULL, 123.00, '323323', NULL, NULL, 'CASH', '', '', '', 40000),
+(46, '4a428414-8f77-4676-a275-c896d880e30d', NULL, NULL, 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN', 20000.00, 3.00, 'Pending', '2025-05-21 21:43:41', '2025-05-21 13:43:41', 6, 'HOUSING LOAN', '', '', '', '', NULL, NULL, NULL, NULL, '', NULL, NULL, NULL, 123.00, '323323', NULL, NULL, 'CASH', '', '', '', 40000),
+(47, '3d83757e-e7c0-48c5-a48f-e8f7a771593d', 58, NULL, 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN', 20000.00, 3.00, 'Approved', '2025-05-21 22:29:44', '2025-05-21 17:01:41', 6, 'HOUSING LOAN', 'This is to confirm', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F3d83757e-e7c0-48c5-a48f-e8f7a771593d%2Freceipt_LOAN-maqwqjbqf26_May%202025.pdf?alt=media&token=f43e4eef-977f-4884-94fd-33414aea0410', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F3d83757e-e7c0-48c5-a48f-e8f7a771593d%2Freceipt_LOAN-maqwqjbqf26_May%202025.pdf?alt=media&token=7c532c15-9d68-4320-ae54-ab9138a72c42', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F3d83757e-e7c0-48c5-a48f-e8f7a771593d%2Freceipt_LOAN-maqwqjbqf26_May%202025.pdf?alt=media&token=cb0e0524-4296-4d71-bd33-d0b5ccdfce65', 6, NULL, NULL, NULL, '', NULL, NULL, NULL, 123.00, '323323', NULL, NULL, 'CASH', '', '', '', 40000),
+(48, '52685d93-ed6c-4ce2-9369-4a7a0cda5af4', 58, NULL, 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN', 20000.00, 3.00, 'Approved', '2025-05-21 22:58:10', '2025-05-21 17:07:04', 6, 'HOUSING LOAN', 'Test', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F52685d93-ed6c-4ce2-9369-4a7a0cda5af4%2Floan_details%20(1).pdf?alt=media&token=04fdfe92-039c-4fe5-8321-7dbe2d9f6af5', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F52685d93-ed6c-4ce2-9369-4a7a0cda5af4%2Floan_details%20(1).pdf?alt=media&token=1d775f8c-0873-435b-b936-61e03fb7c026', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2F52685d93-ed6c-4ce2-9369-4a7a0cda5af4%2Floan_details%20(1).pdf?alt=media&token=3553f89c-2cb4-48b2-9b4c-695b2e902438', 6, NULL, NULL, NULL, '', NULL, NULL, NULL, 123.00, '324324324324', NULL, NULL, 'CASH', '', '', '', 400000),
+(49, 'f962bd7b-cfce-4572-8c01-8469c2b92f39', 58, NULL, 'GOVERNMENT AND PRIVATE EMPLOYEES LOAN', 20000.00, 3.00, 'Approved', '2025-05-21 23:00:05', '2025-05-21 17:02:44', 6, 'HOUSING LOAN', 'Test', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Ff962bd7b-cfce-4572-8c01-8469c2b92f39%2Floan_details-1.pdf?alt=media&token=ac574039-1e8d-4cec-af7b-a26298b9f6a3', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Ff962bd7b-cfce-4572-8c01-8469c2b92f39%2Floan_details-1.pdf?alt=media&token=83d13e3d-45ed-497b-b5fd-f07e4127f473', 'https://firebasestorage.googleapis.com/v0/b/avdeasis-4b5c7.appspot.com/o/lendease%2Floans%2Ff962bd7b-cfce-4572-8c01-8469c2b92f39%2Floan_details-1.pdf?alt=media&token=17850c0e-c86e-4d8d-984c-208ff5d31082', 6, NULL, NULL, NULL, '', NULL, NULL, NULL, 123.00, '1234324324325', NULL, NULL, 'CASH', '', '', '', 20000);
 
 -- --------------------------------------------------------
 
@@ -334,7 +348,7 @@ INSERT INTO `loan` (`loan_id`, `loan_application_id`, `borrower_id`, `loan_type_
 --
 
 CREATE TABLE `loan_application` (
-  `application_id` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL PRIMARY KEY,
+  `application_id` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `borrower_id` int DEFAULT NULL,
   `loan_amount` decimal(10,2) DEFAULT NULL,
   `application_date` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -352,19 +366,26 @@ INSERT INTO `loan_application` (`application_id`, `borrower_id`, `loan_amount`, 
 ('16ad1e21-914d-47d3-a77f-8e993e8eee29', 58, 20000.00, '2025-05-14 00:01:18', 'Pending', 1),
 ('18b7fc42-b6c5-47b8-869b-ae26aeb8bfe0', 1, 20000.00, '2024-12-25 03:31:08', 'Pending', 1),
 ('20a1d791-aa7e-4ae4-a221-a9594caa338b', 58, 20000.00, '2025-05-13 00:48:27', 'Pending', 1),
+('25a691e0-62b5-47cf-8ccc-efc8919ccbfd', NULL, 20000.00, '2025-05-21 21:16:29', 'Pending', 1),
 ('29b22ec7-fe7a-409a-920f-355316e85e24', NULL, 20000.00, '2025-05-10 00:34:52', 'Pending', 1),
 ('2b805a17-a00a-4dd2-bc01-bc26884b56e2', 1, 20000.00, '2024-12-25 03:34:00', 'Pending', 1),
 ('307ea93b-fe98-46b8-99f5-a50af5ac6d3b', NULL, 20000.00, '2025-05-11 15:51:51', 'Pending', 1),
 ('319a5019-33c9-40ee-a9ce-57d859c997cd', 1, 20000.00, '2024-12-25 03:35:03', 'Pending', 1),
 ('35cf1603-b12d-42ee-8b37-c96fabe9a45b', 1, 20000.00, '2024-12-25 03:30:41', 'Pending', 1),
+('3d83757e-e7c0-48c5-a48f-e8f7a771593d', 58, 20000.00, '2025-05-21 22:29:44', 'Approved', 1),
+('4a428414-8f77-4676-a275-c896d880e30d', NULL, 20000.00, '2025-05-21 21:43:41', 'Pending', 1),
+('52685d93-ed6c-4ce2-9369-4a7a0cda5af4', 58, 20000.00, '2025-05-21 22:58:10', 'Approved', 1),
 ('58b8f105-81f1-4132-ba60-7218d2e00e99', NULL, 20000.00, '2025-05-11 15:51:30', 'Pending', 1),
+('5da9532e-e460-4b32-86ca-4ec1508f273a', NULL, 20000.00, '2025-05-21 20:57:06', 'Pending', 1),
 ('7731a096-cdb6-443c-8ed1-baa3765d624a', 1, 20000.00, '2025-01-23 11:57:31', 'Approved', 1),
 ('77cb7ef5-6db3-43fa-a011-923ffc188413', 58, 20000.00, '2025-05-13 00:47:12', 'Pending', 1),
 ('7a0a06db-640c-4900-b8b6-bbd5548b67e7', NULL, 20000.00, '2025-05-09 06:15:18', 'Pending', 1),
 ('7c5c0bd2-da00-464a-89d5-feb412b2d76a', 58, 20000.00, '2025-05-13 23:44:42', 'Pending', 1),
 ('895448c8-0f1e-4392-a322-64a6d5324002', 58, 20000.00, '2025-05-13 00:48:03', 'Pending', 1),
+('94db8588-8f11-4ba8-afce-e396f35c1ec2', NULL, 20000.00, '2025-05-21 21:32:20', 'Pending', 1),
 ('98f18e78-22dd-411f-9da1-4d367c3c4387', 1, 20000.00, '2024-12-25 03:33:00', 'Pending', 1),
 ('9df84a54-2832-41f2-8fa5-8dc565060293', 4, 15000.00, '2024-12-28 06:15:02', 'Approved', 1),
+('a1b6de74-1159-4ac7-8bae-036fc4f788f6', NULL, 20000.00, '2025-05-21 20:57:14', 'Pending', 1),
 ('ac7c41bb-1028-4f6d-9432-b907d74972e3', 58, 20000.00, '2025-05-14 00:13:29', 'Approved', 1),
 ('c04c5b1f-bec7-42eb-8ea9-57d891096faa', NULL, 20000.00, '2025-05-11 16:35:09', 'Pending', 1),
 ('c56de879-f3b5-41b3-a3b0-c55f8b9e39c1', 1, 20000.00, '2024-12-29 14:02:04', 'Rejected', 1),
@@ -377,7 +398,8 @@ INSERT INTO `loan_application` (`application_id`, `borrower_id`, `loan_amount`, 
 ('db7b6325-d1bc-4472-a9d7-b261f319dc10', 1, 26000.00, '2025-01-16 09:17:49', 'Pending', 1),
 ('e700d005-55d6-4953-8591-18301120b93d', 1, 20000.00, '2024-12-25 03:35:25', 'Approved', 1),
 ('e890c2b8-4656-4200-b263-f894a50ed06e', 1, 20000.00, '2025-01-24 01:43:36', 'Approved', 1),
-('eea79389-6ea9-4a58-a59d-7562b20f2aa3', 58, 20000.00, '2025-05-13 22:23:28', 'Pending', 1);
+('eea79389-6ea9-4a58-a59d-7562b20f2aa3', 58, 20000.00, '2025-05-13 22:23:28', 'Pending', 1),
+('f962bd7b-cfce-4572-8c01-8469c2b92f39', 58, 20000.00, '2025-05-21 23:00:05', 'Approved', 1);
 
 -- --------------------------------------------------------
 
@@ -386,7 +408,7 @@ INSERT INTO `loan_application` (`application_id`, `borrower_id`, `loan_amount`, 
 --
 
 CREATE TABLE `loan_officer` (
-  `officer_id` int NOT NULL PRIMARY KEY,
+  `officer_id` int NOT NULL,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `contact_number` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
@@ -408,7 +430,7 @@ INSERT INTO `loan_officer` (`officer_id`, `name`, `contact_number`, `email`, `us
 --
 
 CREATE TABLE `loan_setting_parameters` (
-  `id` int NOT NULL PRIMARY KEY,
+  `id` int NOT NULL,
   `loan_type` varchar(50) NOT NULL,
   `interest_rate` decimal(10,2) NOT NULL,
   `min_credit_score` int NOT NULL,
@@ -433,7 +455,7 @@ INSERT INTO `loan_setting_parameters` (`id`, `loan_type`, `interest_rate`, `min_
 --
 
 CREATE TABLE `logs` (
-  `log_id` int NOT NULL PRIMARY KEY,
+  `log_id` int NOT NULL,
   `user_id` int NOT NULL,
   `action` varchar(255) DEFAULT NULL,
   `log_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP
@@ -442,11 +464,32 @@ CREATE TABLE `logs` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `message_templates`
+--
+
+CREATE TABLE `message_templates` (
+  `id` int NOT NULL,
+  `message` text NOT NULL,
+  `type` enum('confirmation','due_notification') NOT NULL,
+  `updated_at` timestamp NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `message_templates`
+--
+
+INSERT INTO `message_templates` (`id`, `message`, `type`, `updated_at`) VALUES
+(1, 'Your loan application has been successfully confirmed. Thank you for choosing us!', 'confirmation', '2025-05-20 21:52:56'),
+(2, 'Reminder: Your loan payment is due. Please make the payment by the due date to avoid penalties.', 'due_notification', '2025-05-20 21:52:56');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `nonemployed_details`
 --
 
 CREATE TABLE `nonemployed_details` (
-  `nonemployed_id` int NOT NULL PRIMARY KEY,
+  `nonemployed_id` int NOT NULL,
   `borrower_id` int NOT NULL,
   `income_source` enum('Business','Self-Employed','Unemployed','Pensioner') NOT NULL,
   `income_proof` varchar(1000) NOT NULL,
@@ -487,7 +530,8 @@ INSERT INTO `nonemployed_details` (`nonemployed_id`, `borrower_id`, `income_sour
 --
 
 CREATE TABLE `notification` (
-  `notification_id` int NOT NULL PRIMARY KEY,
+  `notification_id` int NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`notification_id`),
   `borrower_id` int DEFAULT NULL,
   `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `date_sent` datetime DEFAULT NULL,
@@ -508,7 +552,8 @@ INSERT INTO `notification` (`notification_id`, `borrower_id`, `message`, `date_s
 --
 
 CREATE TABLE `notification_template` (
-  `template_id` int NOT NULL PRIMARY KEY,
+  `template_id` int NOT NULL,
+  PRIMARY KEY (`template_id`),
   `template_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `template_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -527,7 +572,8 @@ INSERT INTO `notification_template` (`template_id`, `template_name`, `template_c
 --
 
 CREATE TABLE `password_recovery_req` (
-  `recovery_id` int NOT NULL PRIMARY KEY,
+  `recovery_id` int NOT NULL,
+  PRIMARY KEY (`recovery_id`),
   `user_id` int DEFAULT NULL,
   `token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `expiration_date` datetime DEFAULT NULL,
@@ -577,7 +623,7 @@ INSERT INTO `payment` (`payment_id`, `loan_id`, `payment_amount`, `payment_date`
 --
 
 CREATE TABLE `payment_attempts` (
-  `id` int NOT NULL PRIMARY KEY,
+  `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `loan_id` int NOT NULL,
   `payment_index` int NOT NULL,
   `amount` decimal(10,2) NOT NULL,
@@ -616,7 +662,7 @@ INSERT INTO `payment_attempts` (`id`, `loan_id`, `payment_index`, `amount`, `ref
 --
 
 CREATE TABLE `payment_method` (
-  `method_id` int NOT NULL,
+  `method_id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `method_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -637,7 +683,7 @@ INSERT INTO `payment_method` (`method_id`, `method_name`) VALUES
 --
 
 CREATE TABLE `qr_code` (
-  `qr_code_id` int NOT NULL,
+  `qr_code_id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -684,7 +730,13 @@ INSERT INTO `qr_code` (`qr_code_id`, `code`, `type`) VALUES
 (38, 'cae3d163-154b-4a4a-b489-28e1620ff5d7', 'Loan Application'),
 (39, '7731a096-cdb6-443c-8ed1-baa3765d624a', 'Loan Application'),
 (40, 'e890c2b8-4656-4200-b263-f894a50ed06e', 'Loan Application'),
-(41, 'ac7c41bb-1028-4f6d-9432-b907d74972e3', 'Loan Application');
+(41, 'ac7c41bb-1028-4f6d-9432-b907d74972e3', 'Loan Application'),
+(42, '25a691e0-62b5-47cf-8ccc-efc8919ccbfd', 'Loan Application'),
+(43, '94db8588-8f11-4ba8-afce-e396f35c1ec2', 'Loan Application'),
+(44, '4a428414-8f77-4676-a275-c896d880e30d', 'Loan Application'),
+(45, '3d83757e-e7c0-48c5-a48f-e8f7a771593d', 'Loan Application'),
+(46, '52685d93-ed6c-4ce2-9369-4a7a0cda5af4', 'Loan Application'),
+(47, 'f962bd7b-cfce-4572-8c01-8469c2b92f39', 'Loan Application');
 
 -- --------------------------------------------------------
 
@@ -721,7 +773,7 @@ INSERT INTO `sms` (`sms_id`, `sender`, `receiver`, `message`, `date_sent`, `stat
 --
 
 CREATE TABLE `staff_salaries` (
-  `salary_id` int NOT NULL,
+  `salary_id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `staff_id` int NOT NULL,
   `salary_amount` decimal(10,2) NOT NULL,
   `payment_date` date NOT NULL,
@@ -735,7 +787,7 @@ CREATE TABLE `staff_salaries` (
 --
 
 CREATE TABLE `transaction` (
-  `transaction_id` int NOT NULL,
+  `transaction_id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `payment_id` int DEFAULT NULL,
   `method_id` int DEFAULT NULL,
   `transaction_amount` decimal(10,2) DEFAULT NULL,
@@ -789,7 +841,8 @@ INSERT INTO `user_account` (`user_id`, `username`, `password`, `role_id`, `borro
 (6, 'admin@gmail.com', 'password', 1, NULL, NULL, 1, NULL, 1),
 (8, 'collector@gmail.com', 'password', 3, NULL, 1, NULL, NULL, 1),
 (13, 'ninagillianvillamin1128@gmail.com', 'dsadsasasas', 4, 58, NULL, NULL, NULL, 1),
-(14, 'numinum1128@gmail.com', 'z38a2x8f', 4, 59, NULL, NULL, NULL, 1);
+(14, 'numinum1128@gmail.com', 'z38a2x8f', 4, 59, NULL, NULL, NULL, 1),
+(15, 'ninagv090522@gmail.com', 't92whetr', 4, 60, NULL, NULL, NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -870,6 +923,7 @@ ALTER TABLE `collateral`
 --
 ALTER TABLE `collector_account`
   ADD PRIMARY KEY (`collector_id`),
+  ADD UNIQUE KEY `collector_id` (`collector_id`),
   ADD UNIQUE KEY `username` (`username`);
 
 --
@@ -933,6 +987,12 @@ ALTER TABLE `loan_setting_parameters`
 ALTER TABLE `logs`
   ADD PRIMARY KEY (`log_id`),
   ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `message_templates`
+--
+ALTER TABLE `message_templates`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `nonemployed_details`
@@ -1048,19 +1108,19 @@ ALTER TABLE `user_role`
 -- AUTO_INCREMENT for table `borrower_account`
 --
 ALTER TABLE `borrower_account`
-  MODIFY `borrower_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
+  MODIFY `borrower_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
 -- AUTO_INCREMENT for table `disbursement_details`
 --
 ALTER TABLE `disbursement_details`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `employed_details`
 --
 ALTER TABLE `employed_details`
-  MODIFY `employed_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+  MODIFY `employed_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
 
 --
 -- AUTO_INCREMENT for table `inventory`
@@ -1072,7 +1132,7 @@ ALTER TABLE `inventory`
 -- AUTO_INCREMENT for table `loan`
 --
 ALTER TABLE `loan`
-  MODIFY `loan_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `loan_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
 
 --
 -- AUTO_INCREMENT for table `loan_setting_parameters`
@@ -1085,6 +1145,12 @@ ALTER TABLE `loan_setting_parameters`
 --
 ALTER TABLE `logs`
   MODIFY `log_id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `message_templates`
+--
+ALTER TABLE `message_templates`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `nonemployed_details`
@@ -1108,7 +1174,7 @@ ALTER TABLE `payment_attempts`
 -- AUTO_INCREMENT for table `qr_code`
 --
 ALTER TABLE `qr_code`
-  MODIFY `qr_code_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `qr_code_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT for table `sms`
@@ -1132,7 +1198,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_account`
 --
 ALTER TABLE `user_account`
-  MODIFY `user_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `user_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- Constraints for dumped tables

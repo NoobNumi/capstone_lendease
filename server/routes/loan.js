@@ -33,7 +33,6 @@ const authToken = config.authToken; // Replace with your Twilio Auth Token
 import twilio from "twilio"; // Use import statement for Twilio
 import { Vonage } from "@vonage/server-sdk";
 
-console.log({ accountSid, authToken });
 const vonage = new Vonage({
   apiKey: config.VONAGE_apiKey,
   apiSecret: config.VONAGE_apiSecret,
