@@ -348,7 +348,7 @@ INSERT INTO `loan` (`loan_id`, `loan_application_id`, `borrower_id`, `loan_type_
 --
 
 CREATE TABLE `loan_application` (
-  `application_id` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `application_id` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL PRIMARY KEY,
   `borrower_id` int DEFAULT NULL,
   `loan_amount` decimal(10,2) DEFAULT NULL,
   `application_date` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -408,7 +408,7 @@ INSERT INTO `loan_application` (`application_id`, `borrower_id`, `loan_amount`, 
 --
 
 CREATE TABLE `loan_officer` (
-  `officer_id` int NOT NULL,
+  `officer_id` int NOT NULL PRMARY KEY,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `contact_number` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
@@ -430,8 +430,8 @@ INSERT INTO `loan_officer` (`officer_id`, `name`, `contact_number`, `email`, `us
 --
 
 CREATE TABLE `loan_setting_parameters` (
-  `id` int NOT NULL,
-  `loan_type` varchar(50) NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `loan_type` varchar(50) NOT NULL ,
   `interest_rate` decimal(10,2) NOT NULL,
   `min_credit_score` int NOT NULL,
   `min_monthly_income` decimal(10,2) NOT NULL,
@@ -455,7 +455,7 @@ INSERT INTO `loan_setting_parameters` (`id`, `loan_type`, `interest_rate`, `min_
 --
 
 CREATE TABLE `logs` (
-  `log_id` int NOT NULL,
+  `log_id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `user_id` int NOT NULL,
   `action` varchar(255) DEFAULT NULL,
   `log_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP
@@ -468,9 +468,9 @@ CREATE TABLE `logs` (
 --
 
 CREATE TABLE `message_templates` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `message` text NOT NULL,
-  `type` enum('confirmation','due_notification') NOT NULL,
+  `type` varchar(255) NOT NULL,
   `updated_at` timestamp NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -481,6 +481,12 @@ CREATE TABLE `message_templates` (
 INSERT INTO `message_templates` (`id`, `message`, `type`, `updated_at`) VALUES
 (1, 'Your loan application has been successfully confirmed. Thank you for choosing us!', 'confirmation', '2025-05-20 21:52:56'),
 (2, 'Reminder: Your loan payment is due. Please make the payment by the due date to avoid penalties.', 'due_notification', '2025-05-20 21:52:56');
+(3, 'Dear {{firstName}} {{lastName}}, Your loan application (Loan ID: {{loanId}}) for the amount of {{loanAmount}} has been successfully created. Our team will review your application and get back to you shortly.Thank you for choosing us!', 'loan_creation', '2025-05-22 20:37:00')
+(4, 'Dear {{firstName}} {{lastName}}, Your loan application (Loan ID: {{loanId}}) has been rejected.
+
+Thank you for choosing us!', 'loan_rejected', '2025-05-22 20:37:00')
+(5, 'Dear {{firstName}} {{lastName}}, Your loan application (Loan ID: {{loanId}}) for the amount of {{loanAmount}} has been successfully created. Our team will review your application and get back to you shortly.Thank you for choosing us!', 'loan_creation', '2025-05-22 20:37:00')
+
 
 -- --------------------------------------------------------
 
@@ -489,7 +495,7 @@ INSERT INTO `message_templates` (`id`, `message`, `type`, `updated_at`) VALUES
 --
 
 CREATE TABLE `nonemployed_details` (
-  `nonemployed_id` int NOT NULL,
+  `nonemployed_id` int NOT NULL PRIMARY KEY AUTO_INCREMENT,
   `borrower_id` int NOT NULL,
   `income_source` enum('Business','Self-Employed','Unemployed','Pensioner') NOT NULL,
   `income_proof` varchar(1000) NOT NULL,
