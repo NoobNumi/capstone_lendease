@@ -839,8 +839,8 @@ function LoanApplication({ role }) {
               >✕</button>
             </form>
             <h1 className="font-bold text-lg  p-4 bg-gradient-to-r from-gray-200 to-gray-300
-      z-10 text-blue-950 border bg-white
-             text-blue-950 rounded-lg">New Account</h1>
+              z-10 text-blue-950 border bg-white
+             rounded-lg">New Account</h1>
             <p className="text-sm text-gray-500 mt-1 font-bold"></p>
             <div className="p-2 space-y-4 md:space-y-6 sm:p-4">
               {/* {(!selectedLoan.officer_id || !selectedLoan.collector_id) &&
