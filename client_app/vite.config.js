@@ -11,5 +11,5 @@ export default defineConfig({
     sourcemap: true,
   },
   plugins: [react({ include: /\.(js|jsx|ts|tsx)$/ })],
-  base: "/",
+  base: "./",
 });
