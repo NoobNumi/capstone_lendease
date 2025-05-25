@@ -22,92 +22,134 @@ const accountSid = config.accountSid; // Replace with your Twilio Account SID
 const authToken = config.authToken; // Replace with your Twilio Auth Token
 import twilio from "twilio"; // Use import statement for Twilio
 
-const loanApprovalMessage = ({
-  firstName,
-  lastName,
-  loanAmount,
-  loanId,
-}) => `Dear ${firstName} ${lastName},
+// const loanApprovalMessage = ({
+//   firstName,
+//   lastName,
+//   loanAmount,
+//   loanId,
+// }) => `Dear ${firstName} ${lastName},
 
-Congratulations! Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been approved. Our team will contact you with the next steps.
+// Congratulations! Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been approved. Our team will contact you with the next steps.
 
-Thank you for choosing us!`;
+// Thank you for choosing us!`;
 
-const loanRejectionMessage = ({
-  firstName,
-  lastName,
-  loanId,
-}) => `Dear ${firstName} ${lastName},
+// const loanRejectionMessage = ({
+//   firstName,
+//   lastName,
+//   loanId,
+// }) => `Dear ${firstName} ${lastName},
 
-We regret to inform you that your loan application (Loan ID: ${loanId}) has been declined after careful review. Please contact us for further details.
+// We regret to inform you that your loan application (Loan ID: ${loanId}) has been declined after careful review. Please contact us for further details.
 
-Thank you for your understanding.`;
+// Thank you for your understanding.`;
 
-const loanAdvancePaymentMessage = ({
-  firstName,
-  lastName,
-  dueAmount,
-  dueDate,
-}) => `Dear ${firstName} ${lastName},
+// const loanAdvancePaymentMessage = ({
+//   firstName,
+//   lastName,
+//   dueAmount,
+//   dueDate,
+// }) => `Dear ${firstName} ${lastName},
 
-This is a reminder that your loan advance payment of ${dueAmount} is due on ${dueDate}. Please ensure timely payment to avoid penalties.
+// This is a reminder that your loan advance payment of ${dueAmount} is due on ${dueDate}. Please ensure timely payment to avoid penalties.
 
-Thank you for your cooperation.`;
+// Thank you for your cooperation.`;
 
-const loanPaymentAcceptanceMessage = ({
-  firstName,
-  lastName,
-  paymentAmount,
-  paymentDate,
-  loanId,
-}) => `Dear ${firstName} ${lastName},
+// const loanPaymentAcceptanceMessage = ({
+//   firstName,
+//   lastName,
+//   paymentAmount,
+//   paymentDate,
+//   loanId,
+// }) => `Dear ${firstName} ${lastName},
 
-We have successfully received your payment of ${paymentAmount} for 
-(Loan ID: ${loanId}) on ${paymentDate}. Thank you for your timely payment.
+// We have successfully received your payment of ${paymentAmount} for
+// (Loan ID: ${loanId}) on ${paymentDate}. Thank you for your timely payment.
 
-Best regards,
-[Your Company Name]`;
+// Best regards,
+// [Your Company Name]`;
 
-const loanPaymentRejectionMessage = ({
-  firstName,
-  lastName,
-  paymentAmount,
-  reason,
-  loanId,
-}) => `Dear ${firstName} ${lastName},
+// const loanPaymentRejectionMessage = ({
+//   firstName,
+//   lastName,
+//   paymentAmount,
+//   reason,
+//   loanId,
+// }) => `Dear ${firstName} ${lastName},
 
-We regret to inform you that your payment of ${paymentAmount} for 
-(Loan ID: ${loanId}) could not be processed. Please contact us to resolve this issue.
+// We regret to inform you that your payment of ${paymentAmount} for
+// (Loan ID: ${loanId}) could not be processed. Please contact us to resolve this issue.
 
-Thank you.`;
+// Thank you.`;
 
-const loanCreationMessage = ({
-  firstName,
-  lastName,
-  loanAmount,
-  loanId,
-}) => `Dear ${firstName} ${lastName},
+// const loanCreationMessage = ({
+//   firstName,
+//   lastName,
+//   loanAmount,
+//   loanId,
+// }) => `Dear ${firstName} ${lastName},
 
-Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been successfully created. Our team will review your application and get back to you shortly.
+// Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been successfully created. Our team will review your application and get back to you shortly.
 
-Thank you for choosing us!`;
+// Thank you for choosing us!`;
 
-const loanDisbursementMessage = ({
-  firstName,
-  lastName,
-  loanAmount,
-  loanId,
-  paymentMethod,
-  paymentChannel,
-}) => `Dear ${firstName} ${lastName},
+// const loanDisbursementMessage = ({
+//   firstName,
+//   lastName,
+//   loanAmount,
+//   loanId,
+//   paymentMethod,
+//   paymentChannel,
+// }) => `Dear ${firstName} ${lastName},
 
-Good news! Your loan (ID: ${loanId}) for the amount of ${loanAmount} has been successfully disbursed via ${paymentMethod}${
-  paymentChannel ? " through " + paymentChannel : ""
-}.
+// Good news! Your loan (ID: ${loanId}) for the amount of ${loanAmount} has been successfully disbursed via ${paymentMethod}${
+//   paymentChannel ? " through " + paymentChannel : ""
+// }.
 
-Please check your account for the funds. If you have any questions, feel free to contact us.
+// Please check your account for the funds. If you have any questions, feel free to contact us.
 
-Thank you for choosing our services!`;
+// Thank you for choosing our services!`;
+
+// const sendMessage = async ({
+//   firstName,
+//   lastName,
+//   phoneNumber,
+//   messageType,
+//   additionalData = {},
+// }) => {
+//   const client = twilio(accountSid, authToken);
+//   const templates = {
+//     loanCreation: loanCreationMessage,
+//     loanApproval: loanApprovalMessage,
+//     loanRejection: loanRejectionMessage,
+//     loanPaymentAcceptance: loanPaymentAcceptanceMessage,
+//     loanPaymentRejection: loanPaymentRejectionMessage,
+//     loanDisbursement: loanDisbursementMessage,
+//   };
+
+//   const text = templates[messageType]
+//     ? templates[messageType]({ firstName, lastName, ...additionalData })
+//     : "No valid message type provided.";
+
+//   const from = "+639221200715"; // Set your company name or short code as sender
+//   const to = phoneNumber;
+
+//   try {
+//     console.log({ to, from, text });
+//     // Replace Vonage implementation with Twilio
+//     await client.messages
+//       .create({
+//         body: text,
+//         from: from,
+//         to: to,
+//       })
+//       .then((message) => {
+//         console.log("Message sent successfully with Twilio");
+//         console.log("Message SID:", message.sid);
+//       });
+//   } catch (error) {
+//     console.error("Error occurred while sending message with Twilio:", error);
+//   }
+// };
 
 const sendMessage = async ({
   firstName,
@@ -117,37 +159,56 @@ const sendMessage = async ({
   additionalData = {},
 }) => {
   const client = twilio(accountSid, authToken);
-  const templates = {
-    loanCreation: loanCreationMessage,
-    loanApproval: loanApprovalMessage,
-    loanRejection: loanRejectionMessage,
-    loanPaymentAcceptance: loanPaymentAcceptanceMessage,
-    loanPaymentRejection: loanPaymentRejectionMessage,
-    loanDisbursement: loanDisbursementMessage,
-  };
 
-  const text = templates[messageType]
-    ? templates[messageType]({ firstName, lastName, ...additionalData })
-    : "No valid message type provided.";
+  const normalizedType = messageType
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .toLowerCase();
 
-  const from = "+639221200715"; // Set your company name or short code as sender
+  const from = process.env.TWILIO_PHONE_NUMBER;
   const to = phoneNumber;
 
   try {
-    console.log({ to, from, text });
-    // Replace Vonage implementation with Twilio
-    await client.messages
-      .create({
-        body: text,
-        from: from,
-        to: to,
-      })
-      .then((message) => {
-        console.log("Message sent successfully with Twilio");
-        console.log("Message SID:", message.sid);
-      });
+    const [rows] = await db.execute(
+      "SELECT message FROM message_templates WHERE type = ? LIMIT 1",
+      [normalizedType]
+    );
+
+    if (!rows || rows.length === 0) {
+      throw new Error(`No message template found for type: ${messageType}`);
+    }
+
+    let message = rows[0].message;
+    const data = { firstName, lastName, ...additionalData };
+
+    message = message.replace(/{{\s*(\w+)\s*}}/g, (_, key) => {
+      return data[key] ?? `[missing ${key}]`;
+    });
+
+    console.log({ to, from, message });
+
+    await client.messages.create({
+      body: message,
+      from,
+      to,
+    });
+
+    await db.execute(
+      `INSERT INTO sms (sender, receiver, message, status) VALUES (?, ?, ?, ?)`,
+      [from, to, message, "Pending"]
+    );
+
+    console.log("Message sent successfully with Twilio");
   } catch (error) {
     console.error("Error occurred while sending message with Twilio:", error);
+
+    try {
+      await db.execute(
+        `INSERT INTO sms (sender, receiver, message, status) VALUES (?, ?, ?, ?)`,
+        [from, to, `Failed to send: ${error.message}`, "Failed"]
+      );
+    } catch (logErr) {
+      console.error("Failed to log failed SMS:", logErr);
+    }
   }
 };
 
@@ -740,4 +801,3 @@ router.get("/dashboard-stats", async (req, res) => {
 });
 
 export default router;
-

@@ -1,8 +1,21 @@
-import { useEffect, useState, forwardRef, createRef, useMemo } from "react";
+import {
+  useEffect,
+  useState,
+  forwardRef,
+  createRef,
+  useMemo,
+  useRef,
+} from "react";
 import { useDispatch } from "react-redux";
 import { setPageTitle } from "../../features/common/headerSlice";
 import Settings from "../../features/layaway";
 import InputText from "../../components/Input/InputText";
+import Quill from "quill";
+import "quill/dist/quill.core.css";
+import "quill/dist/quill.snow.css";
+import "quill/dist/quill.bubble.css";
+const Inline = Quill.import("blots/inline");
+const Embed = Quill.import("blots/embed");
 
 import Dropdown from "../../components/Input/Dropdown";
 import { Formik, useField, useFormik, Form } from "formik";
@@ -22,6 +35,48 @@ import Table, {
 
 import { format, formatDistance, formatRelative, subDays } from "date-fns";
 import { Button } from "./DataTables/shared/Button";
+
+class TokenBlot extends Embed {
+  static create(value) {
+    const node = super.create();
+    node.setAttribute("data-token", value);
+    node.setAttribute("contenteditable", "false");
+
+    // Style as chip
+    node.classList.add(
+      "inline-block",
+      "bg-orange-200",
+      "text-orange-800",
+      "rounded-full",
+      "px-2",
+      "py-1",
+      "text-xs",
+      "font-semibold",
+      "mr-1",
+      "cursor-default",
+      "ql-token-chip"
+    );
+
+    node.innerText = TokenBlot.formatLabel(value);
+    return node;
+  }
+
+  static value(node) {
+    return node.getAttribute("data-token");
+  }
+
+  static formatLabel(token) {
+    return token
+      .replace(/[{}]/g, "")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+  }
+}
+
+TokenBlot.blotName = "token";
+TokenBlot.tagName = "span";
+
+Quill.register(TokenBlot);
 
 const Tab1Content = () => {
   const token = checkAuth();
@@ -533,6 +588,38 @@ const SMSTab = () => {
   const [formValues, setFormValues] = useState({});
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [selectedTemplateContent, setSelectedTemplateContent] = useState("");
+  const [selectedTemplateType, setSelectedTemplateType] = useState("");
+  const quillRef = useRef(null);
+  const tokensByTemplate = {
+    loan_creation: ["{firstName}", "{lastName}", "{loanAmount}", "{loanId}"],
+    loan_approval: ["{firstName}", "{lastName}", "{loanAmount}", "{loanId}"],
+    loan_rejected: ["{firstName}", "{lastName}", "{loanId}"],
+    loan_acceptance: [
+      "{firstName}",
+      "{lastName}",
+      "{paymentAmount}",
+      "{paymentDate}",
+    ],
+    loan_payment_rejection: [
+      "{firstName}",
+      "{lastName}",
+      "{paymentAmount}",
+      "{reason}",
+    ],
+    payment_submission: [
+      "{firstName}",
+      "{paymentAmount}",
+      "{referenceNumber}",
+      "{paymentMethod}",
+    ],
+  };
+
+  useEffect(() => {
+    if (selectedTemplateContent) {
+      document.getElementById("modifyTemplateModal").showModal();
+    }
+  }, [selectedTemplateContent]);
 
   useEffect(() => {
     const fetchSmsTemplates = async () => {
@@ -567,6 +654,62 @@ const SMSTab = () => {
   const loanCreationTemplates = smsTemplates.filter(
     (template) => template.type === "loan_creation"
   );
+
+  const loanApprovalTemplates = smsTemplates.filter(
+    (template) => template.type === "loan_approval"
+  );
+
+  const loanRejectedTemplates = smsTemplates.filter(
+    (template) => template.type === "loan_rejected"
+  );
+
+  const loanAcceptanceTemplates = smsTemplates.filter(
+    (template) => template.type === "loan_acceptance"
+  );
+
+  const loanPaymentRejectionTemplates = smsTemplates.filter(
+    (template) => template.type === "loan_payment_rejection"
+  );
+
+  const paymentSubmissionTemplates = smsTemplates.filter(
+    (template) => template.type === "payment_submission"
+  );
+
+  const getEditorContentWithTokens = (quill) => {
+    const delta = quill.getContents();
+    let result = "";
+
+    delta.ops.forEach((op) => {
+      if (typeof op.insert === "string") {
+        result += op.insert;
+      } else if (op.insert.token) {
+        result += `{{${op.insert.token}}}`;
+      }
+    });
+
+    return result;
+  };
+
+  const handleSaveTemplate = () => {
+    if (quillRef.current && quillRef.current.__quill) {
+      const quill = quillRef.current.__quill;
+      const content = getEditorContentWithTokens(quill);
+
+      const updatedTemplate = smsTemplates.find(
+        (t) => t.type === selectedTemplateType
+      );
+      if (updatedTemplate) {
+        setFormValues((prev) => ({
+          ...prev,
+          [updatedTemplate.id]: content.trim(),
+        }));
+      }
+
+      document.getElementById("modifyTemplateModal").close();
+      setSelectedTemplateContent("");
+      setSelectedTemplateType("");
+    }
+  };
 
   const validate = async () => {
     const schemaShape = {};
@@ -618,6 +761,131 @@ const SMSTab = () => {
     }
   };
 
+  function loadTemplateWithTokens(quill, template) {
+    quill.deleteText(0, quill.getLength()); // clear current content
+
+    const tokenRegex = /{{\s*([^}]+)\s*}}/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = tokenRegex.exec(template)) !== null) {
+      const index = match.index;
+      const token = match[0]; // e.g. "{{firstName}}"
+      const tokenName = match[1]; // e.g. "firstName"
+
+      // Insert the text before the token as normal text
+      if (index > lastIndex) {
+        quill.insertText(
+          quill.getLength() - 1,
+          template.substring(lastIndex, index)
+        );
+      }
+
+      // Insert the token as an embed chip
+      quill.insertEmbed(quill.getLength() - 1, "token", tokenName);
+
+      lastIndex = index + token.length;
+    }
+
+    // Insert remaining text after last token
+    if (lastIndex < template.length) {
+      quill.insertText(quill.getLength() - 1, template.substring(lastIndex));
+    }
+  }
+
+  const ModifyTemplateModal = () => {
+    useEffect(() => {
+      if (quillRef.current && !quillRef.current.__quill) {
+        const quill = new Quill(quillRef.current, {
+          theme: "snow",
+          modules: {
+            toolbar: false,
+          },
+        });
+        quillRef.current.__quill = quill;
+      }
+    }, []);
+
+    useEffect(() => {
+      if (quillRef.current && quillRef.current.__quill) {
+        const quill = quillRef.current.__quill;
+        if (selectedTemplateContent) {
+          loadTemplateWithTokens(quill, selectedTemplateContent);
+        } else {
+          quill.setText("");
+        }
+      }
+    }, [selectedTemplateContent]);
+
+    return (
+      <dialog
+        id="modifyTemplateModal"
+        className="modal modal-bottom sm:modal-middle"
+      >
+        <div className="modal-box w-11/12 max-w-5xl">
+          <button
+            className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+            onClick={() => {
+              document.getElementById("modifyTemplateModal").close();
+            }}
+          >
+            ✕
+          </button>
+
+          <h1 className="font-bold text-lg z-10 mb-4 bg-white rounded-lg">
+            Modify Template
+          </h1>
+
+          <div
+            className="flex w-full h-full justify-between relative"
+            style={{ height: "100%" }}
+          >
+            <div
+              ref={quillRef}
+              className="w-full outline-none border rounded p-2 text-gray-700 font-medium bg-slate-100 h-full"
+              style={{ minHeight: "200px" }}
+            />
+            <div className="w-auto px-3 border-1">
+              <p className="font-medium text-sm z-10 mb-2 bg-white rounded-lg">
+                Customization Tokens
+              </p>
+              <p className="text-sm font-normal mb-4">
+                Click on these tokens to insert them into your sms template.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {(tokensByTemplate[selectedTemplateType] || []).map((token) => (
+                  <span
+                    key={token}
+                    className="cursor-pointer bg-orange-200 text-orange-800 rounded-full px-3 py-1 text-xs font-semibold mb-1 hover:bg-orange-300 transition"
+                    onClick={() => {
+                      if (quillRef.current && quillRef.current.__quill) {
+                        const quill = quillRef.current.__quill;
+                        const range = quill.getSelection(true);
+                        const index = range ? range.index : 0;
+
+                        const cleanedToken = token.replace(/[{}]/g, "");
+                        quill.insertEmbed(index, "token", cleanedToken);
+                        quill.setSelection(index + cleanedToken.length);
+                      }
+                    }}
+                  >
+                    {token}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <button
+            className="btn bg-orange-300 text-white font-bold float-right mt-7"
+            onClick={handleSaveTemplate}
+          >
+            Save template
+          </button>
+        </div>
+      </dialog>
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const isValid = await validate();
@@ -662,120 +930,426 @@ const SMSTab = () => {
   }
 
   return (
-    <form
-      className="w-full bg-white shadow-md rounded-lg p-4"
-      onSubmit={handleSubmit}
-    >
-      <h2 className="text-2xl font-bold text-orange-300 mb-3">SMS Templates</h2>
-      <div className="mb-6">
-        <label className="block font-bold mb-2 text-gray-700">
-          Confirmation Template
-        </label>
-        {reminderTemplates.length > 0 ? (
-          reminderTemplates.map((template) => (
-            <div key={template.id} className="mb-2">
-              <textarea
-                className={`w-full border rounded p-2 text-gray-700 font-medium ${
-                  formErrors[template.id] ? "border-red-500" : ""
-                }`}
-                value={formValues[template.id] || ""}
-                rows={3}
-                name="message"
-                onChange={(e) => handleChange(template.id, e.target.value)}
-              />
-              {formErrors[template.id] && (
-                <div className="text-red-500 text-sm">
-                  {formErrors[template.id]}
-                </div>
-              )}
-            </div>
-          ))
-        ) : (
-          <div className="text-gray-400">No reminder templates found.</div>
-        )}
-      </div>
-      <div className="mb-6">
-        <label className="block font-bold mb-2 text-gray-700">
-          Overdue Template
-        </label>
-        {overdueTemplates.length > 0 ? (
-          overdueTemplates.map((template) => (
-            <div key={template.id} className="mb-2">
-              <textarea
-                className={`w-full border rounded p-2 text-gray-700 font-medium ${
-                  formErrors[template.id] ? "border-red-500" : ""
-                }`}
-                value={formValues[template.id] || ""}
-                rows={3}
-                name="message"
-                onChange={(e) => handleChange(template.id, e.target.value)}
-              />
-              {formErrors[template.id] && (
-                <div className="text-red-500 text-sm">
-                  {formErrors[template.id]}
-                </div>
-              )}
-            </div>
-          ))
-        ) : (
-          <div className="text-gray-400">No overdue templates found.</div>
-        )}
-      </div>
-      <div>
-        <div className="flex items-center mb-4 justify-between">
-          <label className="block font-bold text-gray-700">
-            Loan Creation Template
-          </label>
-          <Button className="btn bg-orange-300 text-white font-bold">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              class="size-6"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-              />
-            </svg>
-            Modify Template
-          </Button>
-        </div>
-        {loanCreationTemplates.length > 0 ? (
-          loanCreationTemplates.map((template) => (
-            <div key={template.id} className="mb-2">
-              <textarea
-                className={`w-full border rounded p-2 text-gray-700 font-medium bg-slate-100 ${
-                  formErrors[template.id] ? "border-red-500" : ""
-                }`}
-                value={formValues[template.id] || ""}
-                rows={8}
-                name="message"
-                readOnly
-                onChange={(e) => handleChange(template.id, e.target.value)}
-              />
-              {formErrors[template.id] && (
-                <div className="text-red-500 text-sm">
-                  {formErrors[template.id]}
-                </div>
-              )}
-            </div>
-          ))
-        ) : (
-          <div className="text-gray-400">No loan creation templates found.</div>
-        )}
-      </div>
-      <button
-        type="submit"
-        className="btn mt-4 shadow-lg bg-buttonPrimary font-bold text-white"
-        disabled={submitting || Object.values(formErrors).some(Boolean)}
+    <div>
+      <form
+        className="w-full bg-white shadow-md rounded-lg p-4 h-[80vh] overflow-auto"
+        onSubmit={handleSubmit}
       >
-        {submitting ? "Updating..." : "Update Templates"}
-      </button>
-    </form>
+        <h2 className="text-2xl font-bold text-orange-300 mb-3">
+          SMS Templates
+        </h2>
+        <div className="mb-6">
+          <label className="block font-bold mb-2 text-gray-700">
+            Confirmation Template
+          </label>
+          {reminderTemplates.length > 0 ? (
+            reminderTemplates.map((template) => (
+              <div key={template.id} className="mb-2">
+                <textarea
+                  className={`w-full border rounded p-2 text-gray-700 font-medium ${
+                    formErrors[template.id] ? "border-red-500" : ""
+                  }`}
+                  value={formValues[template.id] || ""}
+                  rows={3}
+                  name="message"
+                  onChange={(e) => handleChange(template.id, e.target.value)}
+                />
+                {formErrors[template.id] && (
+                  <div className="text-red-500 text-sm">
+                    {formErrors[template.id]}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-400">No reminder templates found.</div>
+          )}
+        </div>
+        <div className="mb-6">
+          <label className="block font-bold mb-2 text-gray-700">
+            Overdue Template
+          </label>
+          {overdueTemplates.length > 0 ? (
+            overdueTemplates.map((template) => (
+              <div key={template.id} className="mb-2">
+                <textarea
+                  className={`w-full border rounded p-2 text-gray-700 font-medium ${
+                    formErrors[template.id] ? "border-red-500" : ""
+                  }`}
+                  value={formValues[template.id] || ""}
+                  rows={3}
+                  name="message"
+                  onChange={(e) => handleChange(template.id, e.target.value)}
+                />
+                {formErrors[template.id] && (
+                  <div className="text-red-500 text-sm">
+                    {formErrors[template.id]}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-400">No overdue templates found.</div>
+          )}
+        </div>
+        <div className="mb-6">
+          <div className="flex items-center mb-4 justify-between">
+            <label className="block font-bold text-gray-700">
+              Loan Creation Template
+            </label>
+            <button
+              className="btn bg-orange-300 text-white font-bold"
+              type="button"
+              onClick={() => {
+                setSelectedTemplateContent(
+                  loanCreationTemplates[0]?.message || ""
+                );
+                setSelectedTemplateType("loan_creation");
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                />
+              </svg>
+              Modify Template
+            </button>
+          </div>
+          {loanCreationTemplates.length > 0 ? (
+            loanCreationTemplates.map((template) => (
+              <div key={template.id} className="mb-2">
+                <textarea
+                  className={`w-full border rounded p-2 text-gray-700 font-medium bg-slate-100 ${
+                    formErrors[template.id] ? "border-red-500" : ""
+                  }`}
+                  value={formValues[template.id] || ""}
+                  rows={8}
+                  name="message"
+                  readOnly
+                  onChange={(e) => handleChange(template.id, e.target.value)}
+                />
+                {formErrors[template.id] && (
+                  <div className="text-red-500 text-sm">
+                    {formErrors[template.id]}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-400">
+              No loan creation templates found.
+            </div>
+          )}
+        </div>
+        <div className="mb-6">
+          <div className="flex items-center mb-4 justify-between">
+            <label className="block font-bold text-gray-700">
+              Loan Approval Template
+            </label>
+            <button
+              className="btn bg-orange-300 text-white font-bold"
+              type="button"
+              onClick={() => {
+                setSelectedTemplateContent(
+                  loanApprovalTemplates[0]?.message || ""
+                );
+                setSelectedTemplateType("loan_approval");
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                />
+              </svg>
+              Modify Template
+            </button>
+          </div>
+          {loanApprovalTemplates.length > 0 ? (
+            loanApprovalTemplates.map((template) => (
+              <div key={template.id} className="mb-2">
+                <textarea
+                  className={`w-full border rounded p-2 text-gray-700 font-medium bg-slate-100 ${
+                    formErrors[template.id] ? "border-red-500" : ""
+                  }`}
+                  value={formValues[template.id] || ""}
+                  rows={8}
+                  name="message"
+                  readOnly
+                  onChange={(e) => handleChange(template.id, e.target.value)}
+                />
+                {formErrors[template.id] && (
+                  <div className="text-red-500 text-sm">
+                    {formErrors[template.id]}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-400">
+              No loan creation templates found.
+            </div>
+          )}
+        </div>
+        <div className="mb-6">
+          <div className="flex items-center mb-4 justify-between">
+            <label className="block font-bold text-gray-700">
+              Loan Rejection Template
+            </label>
+            <button
+              className="btn bg-orange-300 text-white font-bold"
+              type="button"
+              onClick={() => {
+                setSelectedTemplateContent(
+                  loanRejectedTemplates[0]?.message || ""
+                );
+                setSelectedTemplateType("loan_rejected");
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                />
+              </svg>
+              Modify Template
+            </button>
+          </div>
+          {loanRejectedTemplates.length > 0 ? (
+            loanRejectedTemplates.map((template) => (
+              <div key={template.id} className="mb-2">
+                <textarea
+                  className={`w-full border rounded p-2 text-gray-700 font-medium bg-slate-100 ${
+                    formErrors[template.id] ? "border-red-500" : ""
+                  }`}
+                  value={formValues[template.id] || ""}
+                  rows={8}
+                  name="message"
+                  readOnly
+                  onChange={(e) => handleChange(template.id, e.target.value)}
+                />
+                {formErrors[template.id] && (
+                  <div className="text-red-500 text-sm">
+                    {formErrors[template.id]}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-400">
+              No loan creation templates found.
+            </div>
+          )}
+        </div>
+        <div className="mb-6">
+          <div className="flex items-center mb-4 justify-between">
+            <label className="block font-bold text-gray-700">
+              Loan Acceptance Template
+            </label>
+            <button
+              className="btn bg-orange-300 text-white font-bold"
+              type="button"
+              onClick={() => {
+                setSelectedTemplateContent(
+                  loanAcceptanceTemplates[0]?.message || ""
+                );
+                setSelectedTemplateType("loan_acceptance");
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                />
+              </svg>
+              Modify Template
+            </button>
+          </div>
+          {loanAcceptanceTemplates.length > 0 ? (
+            loanAcceptanceTemplates.map((template) => (
+              <div key={template.id} className="mb-2">
+                <textarea
+                  className={`w-full border rounded p-2 text-gray-700 font-medium bg-slate-100 ${
+                    formErrors[template.id] ? "border-red-500" : ""
+                  }`}
+                  value={formValues[template.id] || ""}
+                  rows={8}
+                  name="message"
+                  readOnly
+                  onChange={(e) => handleChange(template.id, e.target.value)}
+                />
+                {formErrors[template.id] && (
+                  <div className="text-red-500 text-sm">
+                    {formErrors[template.id]}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-400">
+              No loan creation templates found.
+            </div>
+          )}
+        </div>
+        <div className="mb-6">
+          <div className="flex items-center mb-4 justify-between">
+            <label className="block font-bold text-gray-700">
+              Loan Payment Rejection Template
+            </label>
+            <button
+              className="btn bg-orange-300 text-white font-bold"
+              type="button"
+              onClick={() => {
+                setSelectedTemplateContent(
+                  loanPaymentRejectionTemplates[0]?.message || ""
+                );
+                setSelectedTemplateType("loan_payment_rejection");
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                />
+              </svg>
+              Modify Template
+            </button>
+          </div>
+          {loanPaymentRejectionTemplates.length > 0 ? (
+            loanPaymentRejectionTemplates.map((template) => (
+              <div key={template.id} className="mb-2">
+                <textarea
+                  className={`w-full border rounded p-2 text-gray-700 font-medium bg-slate-100 ${
+                    formErrors[template.id] ? "border-red-500" : ""
+                  }`}
+                  value={formValues[template.id] || ""}
+                  rows={8}
+                  name="message"
+                  readOnly
+                  onChange={(e) => handleChange(template.id, e.target.value)}
+                />
+                {formErrors[template.id] && (
+                  <div className="text-red-500 text-sm">
+                    {formErrors[template.id]}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-400">
+              No loan creation templates found.
+            </div>
+          )}
+        </div>
+        <div className="mb-6">
+          <div className="flex items-center mb-4 justify-between">
+            <label className="block font-bold text-gray-700">
+              Loan Payment Rejection Template
+            </label>
+            <button
+              className="btn bg-orange-300 text-white font-bold"
+              type="button"
+              onClick={() => {
+                setSelectedTemplateContent(
+                  paymentSubmissionTemplates[0]?.message || ""
+                );
+                setSelectedTemplateType("payment_submission");
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                />
+              </svg>
+              Modify Template
+            </button>
+          </div>
+          {paymentSubmissionTemplates.length > 0 ? (
+            paymentSubmissionTemplates.map((template) => (
+              <div key={template.id} className="mb-2">
+                <textarea
+                  className={`w-full border rounded p-2 text-gray-700 font-medium bg-slate-100 ${
+                    formErrors[template.id] ? "border-red-500" : ""
+                  }`}
+                  value={formValues[template.id] || ""}
+                  rows={8}
+                  name="message"
+                  readOnly
+                  onChange={(e) => handleChange(template.id, e.target.value)}
+                />
+                {formErrors[template.id] && (
+                  <div className="text-red-500 text-sm">
+                    {formErrors[template.id]}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-400">
+              No loan creation templates found.
+            </div>
+          )}
+        </div>
+        <button
+          type="submit"
+          className="btn mt-4 shadow-lg bg-buttonPrimary font-bold text-white"
+          disabled={submitting || Object.values(formErrors).some(Boolean)}
+        >
+          {submitting ? "Updating..." : "Update Templates"}
+        </button>
+      </form>
+      <ModifyTemplateModal selectedTemplateContent={selectedTemplateContent} />
+    </div>
   );
 };
 

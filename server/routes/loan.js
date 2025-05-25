@@ -1,7 +1,5 @@
 import express from "express";
-
 import config from "../config.js";
-
 import {
   authenticateUserMiddleware,
   auditTrailMiddleware,
@@ -38,75 +36,75 @@ const vonage = new Vonage({
   apiSecret: config.VONAGE_apiSecret,
 });
 
-const loanCreationMessage = ({
-  firstName,
-  lastName,
-  loanAmount,
-  loanId,
-}) => `Dear ${firstName} ${lastName},
+// const loanCreationMessage = ({
+//   firstName,
+//   lastName,
+//   loanAmount,
+//   loanId,
+// }) => `Dear ${firstName} ${lastName},
 
-Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been successfully created. Our team will review your application and get back to you shortly.
+// Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been successfully created. Our team will review your application and get back to you shortly.
 
-Thank you for choosing us!`;
+// Thank you for choosing us!`;
 
-const loanApprovalMessage = ({
-  firstName,
-  lastName,
-  loanAmount,
-  loanId,
-}) => `Dear ${firstName} ${lastName},
+// const loanApprovalMessage = ({
+//   firstName,
+//   lastName,
+//   loanAmount,
+//   loanId,
+// }) => `Dear ${firstName} ${lastName},
 
-Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been approved. Our team will proceed with the disbursement process.
+// Your loan application (Loan ID: ${loanId}) for the amount of ${loanAmount} has been approved. Our team will proceed with the disbursement process.
 
-Thank you for choosing us!`;
+// Thank you for choosing us!`;
 
-const loanRejectionMessage = ({
-  firstName,
-  lastName,
-  loanId,
-}) => `Dear ${firstName} ${lastName},
+// const loanRejectionMessage = ({
+//   firstName,
+//   lastName,
+//   loanId,
+// }) => `Dear ${firstName} ${lastName},
 
-Your loan application (Loan ID: ${loanId}) has been rejected.
+// Your loan application (Loan ID: ${loanId}) has been rejected.
 
-Thank you for choosing us!`;
+// Thank you for choosing us!`;
 
-const loanPaymentAcceptanceMessage = ({
-  firstName,
-  lastName,
-  paymentAmount,
-  paymentDate,
-}) => `Dear ${firstName} ${lastName},
+// const loanPaymentAcceptanceMessage = ({
+//   firstName,
+//   lastName,
+//   paymentAmount,
+//   paymentDate,
+// }) => `Dear ${firstName} ${lastName},
 
-Your payment of ${paymentAmount} has been successfully processed on ${paymentDate}.
+// Your payment of ${paymentAmount} has been successfully processed on ${paymentDate}.
 
-Thank you for your prompt payment!`;
+// Thank you for your prompt payment!`;
 
-const loanPaymentRejectionMessage = ({
-  firstName,
-  lastName,
-  paymentAmount,
-  reason,
-}) => `Dear ${firstName} ${lastName},
+// const loanPaymentRejectionMessage = ({
+//   firstName,
+//   lastName,
+//   paymentAmount,
+//   reason,
+// }) => `Dear ${firstName} ${lastName},
 
-Your payment of ${paymentAmount} has been rejected.
+// Your payment of ${paymentAmount} has been rejected.
 
-Reason: ${reason}
+// Reason: ${reason}
 
-Thank you for your prompt payment!`;
+// Thank you for your prompt payment!`;
 
-const paymentSubmissionMessage = ({
-  firstName,
-  lastName,
-  paymentAmount,
-  referenceNumber,
-  paymentMethod,
-}) => `Dear ${firstName} ${lastName},
+// const paymentSubmissionMessage = ({
+//   firstName,
+//   lastName,
+//   paymentAmount,
+//   referenceNumber,
+//   paymentMethod,
+// }) => `Dear ${firstName} ${lastName},
 
-Thank you for your payment of ${paymentAmount}. Your payment with reference number ${referenceNumber} via ${paymentMethod} has been received and is now being processed.
+// Thank you for your payment of ${paymentAmount}. Your payment with reference number ${referenceNumber} via ${paymentMethod} has been received and is now being processed.
 
-You will receive another notification once your payment has been verified and approved.
+// You will receive another notification once your payment has been verified and approved.
 
-Thank you for your prompt payment!`;
+// Thank you for your prompt payment!`;
 
 const sendMessage = async ({
   firstName,
@@ -116,37 +114,56 @@ const sendMessage = async ({
   additionalData = {},
 }) => {
   const client = twilio(accountSid, authToken);
-  const templates = {
-    loanCreation: loanCreationMessage,
-    loanApproval: loanApprovalMessage,
-    loanRejection: loanRejectionMessage,
-    loanPaymentAcceptance: loanPaymentAcceptanceMessage,
-    loanPaymentRejection: loanPaymentRejectionMessage,
-    paymentSubmission: paymentSubmissionMessage,
-  };
-
-  const text = templates[messageType]
-    ? templates[messageType]({ firstName, lastName, ...additionalData })
-    : "No valid message type provided.";
-
-  const from = process.env.TWILIO_PHONE_NUMBER; // Set your company name or short code as sender
+  const from = process.env.TWILIO_PHONE_NUMBER;
   const to = phoneNumber;
 
+  const normalizedType = messageType
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .toLowerCase();
+
   try {
+    const [rows] = await db.execute(
+      "SELECT message FROM message_templates WHERE type = ? LIMIT 1",
+      [normalizedType]
+    );
+
+    if (!rows || rows.length === 0) {
+      throw new Error(`No message template found for type: ${messageType}`);
+    }
+
+    let template = rows[0].message;
+    const variables = { firstName, lastName, ...additionalData };
+
+    const text = template.replace(/{{\s*([\w]+)\s*}}/g, (_, key) => {
+      return variables[key] ?? `[missing ${key}]`;
+    });
+
     console.log({ to, from, text });
-    // Replace Vonage implementation with Twilio
-    await client.messages
-      .create({
-        body: text,
-        from: from,
-        to: to,
-      })
-      .then((message) => {
-        console.log("Message sent successfully with Twilio");
-        console.log("Message SID:", message.sid);
-      });
+
+    const message = await client.messages.create({
+      body: text,
+      from: from,
+      to: to,
+    });
+
+    console.log("Message sent successfully with Twilio");
+    console.log("Message SID:", message.sid);
+
+    await db.execute(
+      `INSERT INTO sms (sender, receiver, message, status) VALUES (?, ?, ?, ?)`,
+      [from, to, text, "Pending"]
+    );
   } catch (error) {
     console.error("Error occurred while sending message with Twilio:", error);
+
+    try {
+      await db.execute(
+        `INSERT INTO sms (sender, receiver, message, status) VALUES (?, ?, ?, ?)`,
+        [from, to, `Failed to send: ${error.message}`, "Failed"]
+      );
+    } catch (logErr) {
+      console.error("Error logging failed SMS:", logErr);
+    }
   }
 };
 
