@@ -55,11 +55,19 @@ const AppRoutes = () => {
       }
 
       if (role === "Collector") {
-        newRoutes = [{ path: "/app/loan_management", name: "Loan Management" }];
+        newRoutes = [
+          { path: "/app/dashboard", name: "Dashboard" },
+          {
+            path: "/app/collections",
+            name: "Collections",
+            icon: <UsersIcon className="h-6 w-6" />,
+          },
+        ];
       }
 
       if (role === "Loan Officer") {
         newRoutes = [
+          { path: "/app/dashboard", name: "Dashboard" },
           { path: "/app/loan_management", name: "Loan Management" },
           { path: "/app/disbursement", name: "Disbursement" },
           { path: "/app/detailed_borrowers", name: "Borrower Accounts" },

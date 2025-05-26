@@ -67,6 +67,8 @@ const FinancialManagement = lazy(() =>
   import("../pages/protected/FinancialManagement")
 );
 
+const Collections = lazy(() => import("../pages/protected/Collections"));
+
 const token = checkAuth();
 
 const decoded = jwtDecode(token);
@@ -206,6 +208,10 @@ routes = [
   {
     path: "/payment_history",
     component: PaymentHistory,
+  },
+  {
+    path: "/collections",
+    component: Collections,
   },
 ];
 

@@ -92,11 +92,11 @@ function LeftSidebar() {
               <label className="text-white">
                 Hello,{" "}
                 <span className="font-bold">
-                  {selectedUser.first_name} {selectedUser.first_name}
+                  {selectedUser.first_name || "User"}
                 </span>
               </label>
               <label className="bg-customBrown text-white rounded-lg text-xs p-1">
-                <span className="border-lg text-xs">{selectedUser.role}</span>
+                <span className="border-lg text-xs">{selectedUser?.role}</span>
               </label>
             </li>
           )}
