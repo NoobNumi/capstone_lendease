@@ -156,4 +156,61 @@ router.post("/sms-templates/update", async (req, res) => {
   }
 });
 
+// Get all company funds
+router.get("/total-company-fund", async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT id, amount FROM total_company_fund");
+    res.status(200).json({
+      success: true,
+      message: "Company funds retrieved successfully",
+      data: rows,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message:
+        "An error occurred while retrieving the company funds. Please try again later.",
+    });
+  }
+});
+
+//update company fund
+router.put("/total-company-fund/update", async (req, res) => {
+  const { id, amount } = req.body;
+
+  if (!id || !amount) {
+    return res.status(400).json({
+      success: false,
+      message: "ID and amount are required.",
+    });
+  }
+
+  try {
+    const [result] = await db.query(
+      `UPDATE total_company_fund SET amount = ? WHERE id = ?`,
+      [amount, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Company fund not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Company fund updated successfully",
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message:
+        "An error occurred while updating the company fund. Please try again later.",
+    });
+  }
+});
+
 export default router;

@@ -71,7 +71,7 @@ const FinancialManagement = () => {
 
   // State for active tab
   const [activeTab, setActiveTab] = useState("overview");
-  const TOTAL_COMPANY_FUND = 1000000;
+  const TOTAL_COMPANY_FUND = overview?.totalCompanyFund || 0;
   const usedCapital = overview?.moneyOut?.totalDisbursed || 0;
   const usedCapitalGraph = Number(overview?.moneyOut?.totalDisbursed || 0);
   const remainingCapital = TOTAL_COMPANY_FUND - usedCapital;
@@ -500,7 +500,7 @@ const FinancialManagement = () => {
                     <div className="stat">
                       <div className="stat-title">Total Company Fund</div>
                       <div className="stat-value text-primary">
-                        1,000,000.00
+                        {formatAmount(TOTAL_COMPANY_FUND)}
                       </div>
                       <div className="stat-desc">For loan operations</div>
                     </div>

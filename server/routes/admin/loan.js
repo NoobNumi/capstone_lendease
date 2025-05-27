@@ -736,7 +736,7 @@ router.get("/dashboard-stats", async (req, res) => {
       SELECT 
         (SELECT COUNT(*) FROM loan) AS total_loans,
         (SELECT COUNT(*) FROM borrower_account) AS total_borrowers,
-        (SELECT SUM(loan_amount) FROM loan WHERE loan_status = 'Disbursed') AS total_disbursed_amount,
+        (SELECT SUM(loan_amount) FROM loan WHERE loan_status = 'Approved') AS total_disbursed_amount,
         (SELECT SUM(payment_amount) FROM payment WHERE payment_status = 'Approved') AS total_collected_amount
     `);
 

@@ -1,37 +1,47 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useDispatch } from 'react-redux';
-import { setPageTitle } from '../../features/common/headerSlice';
-import Dashboard from '../../features/dashboard/index';
-import { LineChart, AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import ArrowPathIcon from '@heroicons/react/24/outline/ArrowPathIcon';
-import { FaCheckCircle } from 'react-icons/fa'; // Add any icons you want to use
-import axios from 'axios';
-import { format, startOfToday } from 'date-fns';
-import { formatAmount } from './../../features/dashboard/helpers/currencyFormat';
+import { useEffect, useState, useMemo } from "react";
+import { useDispatch } from "react-redux";
+import { setPageTitle } from "../../features/common/headerSlice";
+import Dashboard from "../../features/dashboard/index";
+import {
+  LineChart,
+  AreaChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+import ArrowPathIcon from "@heroicons/react/24/outline/ArrowPathIcon";
+import { FaCheckCircle } from "react-icons/fa"; // Add any icons you want to use
+import axios from "axios";
+import { format, startOfToday } from "date-fns";
+import { formatAmount } from "./../../features/dashboard/helpers/currencyFormat";
 
 import DatePicker from "react-tailwindcss-datepicker";
-import Dropdown from '../../components/Input/Dropdown';
-import { DateTime } from 'luxon';
+import Dropdown from "../../components/Input/Dropdown";
+import { DateTime } from "luxon";
 
 import Table, {
   AvatarCell,
   SelectColumnFilter,
   StatusPill,
-  DateCell
-} from '../../pages/protected/DataTables/Table'; // new
+  DateCell,
+} from "../../pages/protected/DataTables/Table"; // new
 
-
-
-
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 
-
-import SalesAndInventoryDashboard from './../AdminDashboard/Dashboard/sales-inventory-dashboard';
+import SalesAndInventoryDashboard from "./../AdminDashboard/Dashboard/sales-inventory-dashboard";
 
 function InternalPage() {
   const dispatch = useDispatch();
-  let loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+  let loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
   // Set today's date as default for the DatePicker
   const today = startOfToday(); // Get today's date
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -39,7 +49,7 @@ function InternalPage() {
 
   const [value, setValue] = useState({
     startDate: startOfMonth,
-    endDate: endOfMonth
+    endDate: endOfMonth,
   });
 
   const navigate = useNavigate();
@@ -59,8 +69,6 @@ function InternalPage() {
   //   // Optionally close the dropdown after selection
   //   // setDropdownVisible(false);
   // };
-
-  
 
   const fetchDashboardStats = async (
     startDate = value.startDate,
@@ -85,6 +93,8 @@ function InternalPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedPaymentMonth, setSelectedPaymentMonth] = useState("");
+
+  console.log("dashbopardStats", dashboardStats);
 
   const monthOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -123,7 +133,7 @@ function InternalPage() {
       };
     });
   }, []);
-  
+
   useEffect(() => {
     dispatch(setPageTitle({ title: "Dashboard" }));
   }, []);
@@ -131,21 +141,23 @@ function InternalPage() {
   useEffect(() => {
     fetchDashboardStats(value.startDate, value.endDate);
   }, [value]);
-  
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Loading...
+      </div>
+    );
   }
 
   const stats = dashboardStats?.stats || {};
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
   const pieData = [
     { name: "Pending", value: stats.filtered_pending_loans || 0 },
     { name: "Approved", value: stats.filtered_approved_loans || 0 },
     { name: "Disbursed", value: stats.filtered_disbursed_loans || 0 },
   ];
-  
 
   return (
     <div className="p-6 space-y-6 bg-gray-50">

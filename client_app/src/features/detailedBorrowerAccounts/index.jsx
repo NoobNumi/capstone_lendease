@@ -1049,12 +1049,12 @@ function DetailedBorrowerAccounts() {
               </div>
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">School Address</span>
+                  <span className="label-text">Work Address</span>
                 </label>
                 <textarea
                   name="school_address"
                   className="textarea input-bordered"
-                  placeholder="Enter School Address"
+                  placeholder="Enter Work Address"
                 />
               </div>
             </div>

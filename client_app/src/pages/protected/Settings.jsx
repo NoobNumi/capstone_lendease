@@ -601,6 +601,12 @@ const SMSTab = () => {
       "{paymentAmount}",
       "{paymentDate}",
     ],
+    loan_disbursement: [
+      "{firstName}",
+      "{lastName}",
+      "{loanAmount}",
+      "{loanId}",
+    ],
     loan_payment_rejection: [
       "{firstName}",
       "{lastName}",
@@ -665,6 +671,10 @@ const SMSTab = () => {
 
   const loanAcceptanceTemplates = smsTemplates.filter(
     (template) => template.type === "loan_acceptance"
+  );
+
+  const loanDisbursementTemplates = smsTemplates.filter(
+    (template) => template.type === "loan_disbursement"
   );
 
   const loanPaymentRejectionTemplates = smsTemplates.filter(
@@ -1227,6 +1237,64 @@ const SMSTab = () => {
         <div className="mb-6">
           <div className="flex items-center mb-4 justify-between">
             <label className="block font-bold text-gray-700">
+              Loan Disbursement Template
+            </label>
+            <button
+              className="btn bg-orange-300 text-white font-bold"
+              type="button"
+              onClick={() => {
+                setSelectedTemplateContent(
+                  loanDisbursementTemplates[0]?.message || ""
+                );
+                setSelectedTemplateType("loan_acceptance");
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                />
+              </svg>
+              Modify Template
+            </button>
+          </div>
+          {loanDisbursementTemplates.length > 0 ? (
+            loanDisbursementTemplates.map((template) => (
+              <div key={template.id} className="mb-2">
+                <textarea
+                  className={`w-full border rounded p-2 text-gray-700 font-medium bg-slate-100 ${
+                    formErrors[template.id] ? "border-red-500" : ""
+                  }`}
+                  value={formValues[template.id] || ""}
+                  rows={8}
+                  name="message"
+                  readOnly
+                  onChange={(e) => handleChange(template.id, e.target.value)}
+                />
+                {formErrors[template.id] && (
+                  <div className="text-red-500 text-sm">
+                    {formErrors[template.id]}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-400">
+              No loan creation templates found.
+            </div>
+          )}
+        </div>
+        <div className="mb-6">
+          <div className="flex items-center mb-4 justify-between">
+            <label className="block font-bold text-gray-700">
               Loan Payment Rejection Template
             </label>
             <button
@@ -1285,7 +1353,7 @@ const SMSTab = () => {
         <div className="mb-6">
           <div className="flex items-center mb-4 justify-between">
             <label className="block font-bold text-gray-700">
-              Loan Payment Rejection Template
+              Loan Payment Submission Template
             </label>
             <button
               className="btn bg-orange-300 text-white font-bold"
@@ -1349,6 +1417,119 @@ const SMSTab = () => {
         </button>
       </form>
       <ModifyTemplateModal selectedTemplateContent={selectedTemplateContent} />
+    </div>
+  );
+};
+
+const TotalCompanyFund = () => {
+  const [totalFund, setTotalFund] = useState("");
+  const [fundID, setFundID] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [submitMessage, setSubmitMessage] = useState(null);
+  const inputRef = useRef();
+
+  useEffect(() => {
+    const fetchTotalFund = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await axios.get("/settings/total-company-fund");
+        const amount = response.data?.data?.[0]?.amount || 0;
+        setTotalFund(formatWithCommas(amount.toString()));
+        setFundID(response.data?.data?.[0]?.id || null);
+      } catch (err) {
+        setError("Failed to fetch total company fund");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTotalFund();
+  }, []);
+
+  const formatWithCommas = (numberStr) => {
+    const cleaned = numberStr.replace(/,/g, "");
+    if (cleaned === "") return "";
+    const parts = cleaned.split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
+  };
+
+  const handleInputChange = (e) => {
+    const input = e.target;
+    const rawValue = input.value;
+    const cursorPos = input.selectionStart;
+
+    const cleaned = rawValue.replace(/,/g, "").replace(/\D/g, "");
+    const formatted = formatWithCommas(cleaned);
+
+    const prevCommas = (rawValue.slice(0, cursorPos).match(/,/g) || []).length;
+    const newCommas = (formatted.slice(0, cursorPos).match(/,/g) || []).length;
+    const newCursorPos = cursorPos + (newCommas - prevCommas);
+
+    setTotalFund(formatted);
+
+    requestAnimationFrame(() => {
+      input.setSelectionRange(newCursorPos, newCursorPos);
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitMessage(null);
+    try {
+      const numericValue = Number(totalFund.replace(/,/g, ""));
+      const response = await axios.put("/settings/total-company-fund/update", {
+        id: fundID,
+        amount: numericValue,
+      });
+
+      if (response.data.success) {
+        toast.success("Total company fund updated successfully!");
+      } else {
+        toast.error("Update failed. Please try again.");
+      }
+    } catch (err) {
+      setSubmitMessage("An error occurred while updating the fund.");
+      console.error(err);
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500 text-center">{error}</div>;
+  }
+
+  return (
+    <div className="w-full bg-white shadow-md rounded-lg p-4">
+      <h2 className="text-2xl font-bold text-orange-300 mb-3">
+        Total Company Fund
+      </h2>
+      <form onSubmit={handleSubmit} className="w-full flex items-center gap-2">
+        <input
+          ref={inputRef}
+          type="text"
+          className="w-full border rounded p-2 text-lg font-semibold"
+          value={totalFund}
+          inputMode="decimal"
+          onChange={handleInputChange}
+        />
+        <button
+          type="submit"
+          className="btn shadow-lg bg-buttonPrimary font-bold text-white"
+        >
+          Save Company Fund Amount
+        </button>
+      </form>
+      {submitMessage && (
+        <div className="mt-3 text-center text-sm text-gray-700">
+          {submitMessage}
+        </div>
+      )}
     </div>
   );
 };
@@ -1921,7 +2102,7 @@ function InternalPage() {
   const dispatch = useDispatch();
   const [selectedTab, setSelectedTab] = useState("Settings");
   const categories = {
-    General: ["Settings", "SMS Editor"],
+    General: ["Settings", "SMS Editor", "Total Company Fund"],
   };
 
   const content = {
@@ -1939,6 +2120,7 @@ function InternalPage() {
     // "Record Management": <RecordManagementTab />,
     // "Audit Trail": <AuditTrailTab />,
     "SMS Editor": <SMSTab />,
+    "Total Company Fund": <TotalCompanyFund />,
   };
 
   useEffect(() => {

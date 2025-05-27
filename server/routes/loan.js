@@ -315,22 +315,35 @@ router.post("/checkLoanApplicationApprovalRate", async (req, res) => {
     // Ensure employment_years is a valid number
     const employmentYears = parseFloat(loan.employment_years) || 0;
 
-    // Detailed calculations with explanations
+    if (!loan.credit_score || !param.min_credit_score) {
+      console.warn("Missing data for credit score calculation:");
+      console.warn("loan.credit_score =", loan.credit_score);
+      console.warn("param.min_credit_score =", param.min_credit_score);
+    }
+
     const creditScoreCalc = {
       actual: loan.credit_score,
       required: param.min_credit_score,
-      percentage: Number(
-        Math.min(
-          (loan.credit_score / param.min_credit_score) * 100,
-          100
-        ).toFixed(2)
-      ),
+      percentage:
+        loan.credit_score && param.min_credit_score
+          ? Number(
+              Math.min(
+                (loan.credit_score / param.min_credit_score) * 100,
+                100
+              ).toFixed(2)
+            )
+          : 0,
       formula: "Credit Score / Required Credit Score × 100",
-      explanation: `${loan.credit_score} / ${param.min_credit_score} × 100 = ${(
-        (loan.credit_score / param.min_credit_score) *
-        100
-      ).toFixed(2)}%`,
+      explanation:
+        loan.credit_score && param.min_credit_score
+          ? `${loan.credit_score} / ${param.min_credit_score} × 100 = ${(
+              (loan.credit_score / param.min_credit_score) *
+              100
+            ).toFixed(2)}%`
+          : `Missing credit score or required value — unable to calculate`,
     };
+
+    console.log("Credit Score:", loan.credit_score);
 
     const incomeCalc = {
       actual: Number(loan.monthly_income.toFixed(2)),

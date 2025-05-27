@@ -405,8 +405,7 @@ function LoanApplication() {
 
               {!isLoanOfficer && (
                 <a
-                  href={`loan_details/${loan.loan_id}`} // Replace with the actual URL for the loan details
-                  target="_blank"
+                  href={`loan_details/${loan.loan_id}`}
                   rel="noopener noreferrer"
                   className="btn btn-outline btn-sm"
                 >

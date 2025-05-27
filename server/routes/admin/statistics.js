@@ -1,10 +1,10 @@
-import express from 'express';
+import express from "express";
 const router = express.Router();
-import config from '../../config.js';
+import config from "../../config.js";
 
 const db = config.mySqlDriver;
 
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   const { startDate, endDate } = req.query;
 
   try {
@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
     if (!startDate || !endDate) {
       return res
         .status(400)
-        .json({ success: false, message: 'Invalid date range.' });
+        .json({ success: false, message: "Invalid date range." });
     }
 
     const stats = {};
@@ -50,22 +50,22 @@ router.get('/', async (req, res) => {
     res.status(200).json({ success: true, data: stats });
   } catch (err) {
     console.log({
-      err
+      err,
     });
     res
       .status(500)
-      .json({ success: false, message: 'An error occurred: ' + err.message });
+      .json({ success: false, message: "An error occurred: " + err.message });
   }
 });
 
-router.get('/loan_interest_income', async (req, res) => {
+router.get("/loan_interest_income", async (req, res) => {
   const { startDate, endDate } = req.query;
 
   // Validate required query parameters
   if (!startDate || !endDate) {
     return res
       .status(400)
-      .json({ error: 'startDate and endDate are required' });
+      .json({ error: "startDate and endDate are required" });
   }
 
   try {
@@ -90,7 +90,7 @@ ORDER BY DATE(approval_date) ASC;
     res.json({ success: true, data: rows });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error fetching data' });
+    res.status(500).json({ error: "Error fetching data" });
   }
 });
 
@@ -100,7 +100,7 @@ ORDER BY DATE(approval_date) ASC;
  * Financial Overview Dashboard
  * Returns summary statistics of financial activities
  */
-router.get('/financial-overview', async (req, res) => {
+router.get("/financial-overview", async (req, res) => {
   try {
     // Get date range (default to current month if not specified)
     const { startDate, endDate } = req.query;
@@ -116,8 +116,8 @@ router.get('/financial-overview', async (req, res) => {
       0
     );
 
-    const start = startDate || firstDayOfMonth.toISOString().split('T')[0];
-    const end = endDate || lastDayOfMonth.toISOString().split('T')[0];
+    const start = startDate || firstDayOfMonth.toISOString().split("T")[0];
+    const end = endDate || lastDayOfMonth.toISOString().split("T")[0];
 
     // Get total money loaned out (disbursements)
     const [moneyOut] = await db.query(
@@ -144,7 +144,7 @@ router.get('/financial-overview', async (req, res) => {
       [start, end]
     );
 
-    // Get total interest earned (based on payments made)
+    // Get total interest earned
     const [interestEarned] = await db.query(
       `
       SELECT 
@@ -157,7 +157,7 @@ router.get('/financial-overview', async (req, res) => {
       [start, end]
     );
 
-    // Get outstanding balance (total loans - total payments)
+    // Get outstanding balance
     const [outstanding] = await db.query(`
       SELECT 
         SUM(l.loan_amount) - COALESCE(SUM(p.payment_amount), 0) AS outstandingBalance
@@ -166,31 +166,37 @@ router.get('/financial-overview', async (req, res) => {
       WHERE l.loan_status = 'Disbursed'
     `);
 
+    // Get total company fund
+    const [fundRows] = await db.query(`
+      SELECT SUM(amount) AS totalCompanyFund FROM total_company_fund
+    `);
+
     res.json({
       success: true,
       data: {
         moneyOut: {
           totalDisbursed: moneyOut[0].totalDisbursed || 0,
-          disbursementCount: moneyOut[0].disbursementCount || 0
+          disbursementCount: moneyOut[0].disbursementCount || 0,
         },
         moneyIn: {
           totalRepaid: moneyIn[0].totalRepaid || 0,
-          paymentCount: moneyIn[0].paymentCount || 0
+          paymentCount: moneyIn[0].paymentCount || 0,
         },
         interestEarned: interestEarned[0].totalInterest || 0,
         outstandingBalance: outstanding[0].outstandingBalance || 0,
+        totalCompanyFund: fundRows[0].totalCompanyFund || 0,
         period: {
           start,
-          end
-        }
-      }
+          end,
+        },
+      },
     });
   } catch (error) {
-    console.error('Financial overview error:', error);
+    console.error("Financial overview error:", error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching financial overview',
-      error: error.message
+      message: "Error fetching financial overview",
+      error: error.message,
     });
   }
 });
@@ -199,7 +205,7 @@ router.get('/financial-overview', async (req, res) => {
  * Money Out (Disbursements) Tracking
  * Get detailed information about money going out
  */
-router.get('/money-out', async (req, res) => {
+router.get("/money-out", async (req, res) => {
   try {
     const { startDate, endDate, page = 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;
@@ -256,16 +262,16 @@ router.get('/money-out', async (req, res) => {
           total: countResult[0].total,
           page: parseInt(page),
           limit: parseInt(limit),
-          pages: Math.ceil(countResult[0].total / limit)
-        }
-      }
+          pages: Math.ceil(countResult[0].total / limit),
+        },
+      },
     });
   } catch (error) {
-    console.error('Money out tracking error:', error);
+    console.error("Money out tracking error:", error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching disbursement data',
-      error: error.message
+      message: "Error fetching disbursement data",
+      error: error.message,
     });
   }
 });
@@ -274,7 +280,7 @@ router.get('/money-out', async (req, res) => {
  * Money In (Repayments) Tracking
  * Get detailed information about money coming in
  */
-router.get('/money-in', async (req, res) => {
+router.get("/money-in", async (req, res) => {
   try {
     const { startDate, endDate, page = 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;
@@ -336,16 +342,16 @@ router.get('/money-in', async (req, res) => {
           total: countResult[0].total,
           page: parseInt(page),
           limit: parseInt(limit),
-          pages: Math.ceil(countResult[0].total / limit)
-        }
-      }
+          pages: Math.ceil(countResult[0].total / limit),
+        },
+      },
     });
   } catch (error) {
-    console.error('Money in tracking error:', error);
+    console.error("Money in tracking error:", error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching payment data',
-      error: error.message
+      message: "Error fetching payment data",
+      error: error.message,
     });
   }
 });
@@ -354,30 +360,30 @@ router.get('/money-in', async (req, res) => {
  * Interest Earned Analysis
  * Calculate and track interest earned from loan repayments
  */
-router.get('/interest-earned', async (req, res) => {
+router.get("/interest-earned", async (req, res) => {
   try {
-    const { startDate, endDate, groupBy = 'month' } = req.query;
+    const { startDate, endDate, groupBy = "month" } = req.query;
 
     let timeFormat, groupByClause;
 
     // Set the appropriate date format and grouping based on the groupBy parameter
     switch (groupBy) {
-      case 'day':
-        timeFormat = '%Y-%m-%d';
-        groupByClause = 'DATE(p.payment_date)';
+      case "day":
+        timeFormat = "%Y-%m-%d";
+        groupByClause = "DATE(p.payment_date)";
         break;
-      case 'week':
-        timeFormat = '%Y-%u'; // Year-Week format
-        groupByClause = 'YEARWEEK(p.payment_date)';
+      case "week":
+        timeFormat = "%Y-%u"; // Year-Week format
+        groupByClause = "YEARWEEK(p.payment_date)";
         break;
-      case 'month':
+      case "month":
       default:
-        timeFormat = '%Y-%m';
+        timeFormat = "%Y-%m";
         groupByClause = 'DATE_FORMAT(p.payment_date, "%Y-%m")';
         break;
-      case 'year':
-        timeFormat = '%Y';
-        groupByClause = 'YEAR(p.payment_date)';
+      case "year":
+        timeFormat = "%Y";
+        groupByClause = "YEAR(p.payment_date)";
         break;
     }
 
@@ -443,16 +449,16 @@ router.get('/interest-earned', async (req, res) => {
         period: {
           start: startDate,
           end: endDate,
-          groupBy
-        }
-      }
+          groupBy,
+        },
+      },
     });
   } catch (error) {
-    console.error('Interest earned analysis error:', error);
+    console.error("Interest earned analysis error:", error);
     res.status(500).json({
       success: false,
-      message: 'Error analyzing interest earned',
-      error: error.message
+      message: "Error analyzing interest earned",
+      error: error.message,
     });
   }
 });
@@ -461,13 +467,13 @@ router.get('/interest-earned', async (req, res) => {
  * Get outstanding loans report
  * Lists all loans with outstanding balances
  */
-router.get('/outstanding-loans', async (req, res) => {
+router.get("/outstanding-loans", async (req, res) => {
   try {
     const {
       page = 1,
       limit = 10,
-      sortBy = 'dueDate',
-      order = 'asc'
+      sortBy = "dueDate",
+      order = "asc",
     } = req.query;
     const offset = (page - 1) * limit;
 
@@ -527,8 +533,8 @@ router.get('/outstanding-loans', async (req, res) => {
         FROM payment 
         WHERE loan_id = l.loan_id AND payment_status = 'Approved'
       ), 0))
-      ORDER BY ${sortBy === 'dueDate' ? 'days_since_approval' : sortBy} ${
-        order === 'desc' ? 'DESC' : 'ASC'
+      ORDER BY ${sortBy === "dueDate" ? "days_since_approval" : sortBy} ${
+        order === "desc" ? "DESC" : "ASC"
       }
       LIMIT ? OFFSET ?
     `,
@@ -564,17 +570,17 @@ router.get('/outstanding-loans', async (req, res) => {
           page: parseInt(page),
           limit: parseInt(limit),
           total,
-          pages
+          pages,
         },
-        summary: summary[0]
-      }
+        summary: summary[0],
+      },
     });
   } catch (error) {
-    console.error('Error generating outstanding loans report:', error);
+    console.error("Error generating outstanding loans report:", error);
     res.status(500).json({
       success: false,
-      message: 'Error generating outstanding loans report',
-      error: error.message
+      message: "Error generating outstanding loans report",
+      error: error.message,
     });
   }
 });
@@ -583,15 +589,15 @@ router.get('/outstanding-loans', async (req, res) => {
  * Generate Financial Report
  * Create a comprehensive financial report for a specified time period
  */
-router.get('/financial-report', async (req, res) => {
+router.get("/financial-report", async (req, res) => {
   try {
-    const { startDate, endDate, format = 'json' } = req.query;
+    const { startDate, endDate, format = "json" } = req.query;
 
     // Validate required parameters
     if (!startDate || !endDate) {
       return res.status(400).json({
         success: false,
-        message: 'Start date and end date are required'
+        message: "Start date and end date are required",
       });
     }
 
@@ -665,49 +671,49 @@ router.get('/financial-report', async (req, res) => {
         startDate,
         endDate,
         startDate,
-        endDate
+        endDate,
       ]
     );
 
     // Format the response based on requested format
-    if (format === 'csv') {
+    if (format === "csv") {
       // CSV headers for disbursements and payments
       let csvContent =
-        'Financial Report: ' + startDate + ' to ' + endDate + '\n\n';
+        "Financial Report: " + startDate + " to " + endDate + "\n\n";
 
       // Summary section
-      csvContent += 'SUMMARY\n';
+      csvContent += "SUMMARY\n";
       csvContent +=
-        'Total Disbursed,' + (summary[0].totalDisbursed || 0) + '\n';
-      csvContent += 'Total Received,' + (summary[0].totalReceived || 0) + '\n';
+        "Total Disbursed," + (summary[0].totalDisbursed || 0) + "\n";
+      csvContent += "Total Received," + (summary[0].totalReceived || 0) + "\n";
       csvContent +=
-        'Interest Earned,' + (summary[0].totalInterestEarned || 0) + '\n';
+        "Interest Earned," + (summary[0].totalInterestEarned || 0) + "\n";
       csvContent +=
-        'Outstanding Balance,' + (summary[0].totalOutstanding || 0) + '\n';
-      csvContent += 'New Loans,' + (summary[0].newLoans || 0) + '\n';
+        "Outstanding Balance," + (summary[0].totalOutstanding || 0) + "\n";
+      csvContent += "New Loans," + (summary[0].newLoans || 0) + "\n";
       csvContent +=
-        'Successful Payments,' + (summary[0].successfulPayments || 0) + '\n\n';
+        "Successful Payments," + (summary[0].successfulPayments || 0) + "\n\n";
 
       // Disbursements section
-      csvContent += 'DISBURSEMENTS\n';
-      csvContent += 'Loan ID,Borrower,Amount,Date,Method,Channel\n';
+      csvContent += "DISBURSEMENTS\n";
+      csvContent += "Loan ID,Borrower,Amount,Date,Method,Channel\n";
 
-      disbursements.forEach(d => {
+      disbursements.forEach((d) => {
         csvContent += `${d.loan_application_id},${d.first_name} ${d.last_name},${d.amount},${d.disbursement_date},${d.payment_method},${d.payment_channel}\n`;
       });
 
-      csvContent += '\nPAYMENTS\n';
+      csvContent += "\nPAYMENTS\n";
       csvContent +=
-        'Payment ID,Loan ID,Borrower,Amount,Date,Method,Reference\n';
+        "Payment ID,Loan ID,Borrower,Amount,Date,Method,Reference\n";
 
-      payments.forEach(p => {
+      payments.forEach((p) => {
         csvContent += `${p.payment_id},${p.loan_id},${p.first_name} ${p.last_name},${p.payment_amount},${p.payment_date},${p.payment_method},${p.reference_number}\n`;
       });
 
       // Set headers for CSV download
-      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader("Content-Type", "text/csv");
       res.setHeader(
-        'Content-Disposition',
+        "Content-Disposition",
         `attachment; filename=financial_report_${startDate}_to_${endDate}.csv`
       );
 
@@ -722,17 +728,17 @@ router.get('/financial-report', async (req, res) => {
           payments,
           period: {
             start: startDate,
-            end: endDate
-          }
-        }
+            end: endDate,
+          },
+        },
       });
     }
   } catch (error) {
-    console.error('Financial report generation error:', error);
+    console.error("Financial report generation error:", error);
     res.status(500).json({
       success: false,
-      message: 'Error generating financial report',
-      error: error.message
+      message: "Error generating financial report",
+      error: error.message,
     });
   }
 });
