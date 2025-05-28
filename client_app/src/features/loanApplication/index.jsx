@@ -202,6 +202,21 @@ function LoanApplication() {
   const [addressBarangay, setBarangay] = useState([]);
 
   const [myLoanList, setLoanList] = useState([]);
+  const [companyFund, setCompanyFund] = useState(0);
+
+  useEffect(() => {
+    const fetchTotalCompanyFund = async () => {
+      try {
+        const res = await axios.get("/admin/loan/total-company-fund");
+        const total = res.data.data[0].amount;
+        setCompanyFund(total);
+      } catch (error) {
+        console.error("Error fetching total company fund:", error);
+      }
+    };
+
+    fetchTotalCompanyFund();
+  }, []);
 
   const loanList = async () => {
     let res = await axios({
@@ -637,7 +652,12 @@ function LoanApplication() {
       }
     } else if (currentStep === 3) {
       PersonalInfoTabValidation = {
-        calculatorLoanAmmount: Yup.number().required("Required"),
+        calculatorLoanAmmount: Yup.number()
+          .required("Required")
+          .max(
+            companyFund,
+            `Loan amount must not exceed ₱${companyFund.toLocaleString()}`
+          ),
         calculatorInterestRate: Yup.number().required("Required"),
         calculatorMonthsToPay: Yup.number().required("Required"),
       };

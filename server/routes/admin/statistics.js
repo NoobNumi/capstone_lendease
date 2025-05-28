@@ -1,6 +1,12 @@
 import express from "express";
 const router = express.Router();
 import config from "../../config.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+import ExcelJS from "exceljs";
 
 const db = config.mySqlDriver;
 
@@ -738,6 +744,335 @@ router.get("/financial-report", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error generating financial report",
+      error: error.message,
+    });
+  }
+});
+
+// Disbursement Report Endpoint
+router.get("/disbursement-report", async (req, res) => {
+  const { startDate, endDate, format = "excel" } = req.query;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({
+      success: false,
+      message: "startDate and endDate are required",
+    });
+  }
+
+  try {
+    const [disbursements] = await db.query(
+      `
+      SELECT 
+        d.loan_id,
+        l.loan_application_id,
+        b.first_name,
+        b.last_name,
+        d.amount,
+        d.disbursement_date,
+        d.payment_method
+      FROM disbursement_details d
+      JOIN loan l ON d.loan_id = l.loan_id
+      JOIN borrower_account b ON l.borrower_id = b.borrower_id
+      WHERE d.disbursement_date BETWEEN ? AND ?
+      ORDER BY d.disbursement_date
+      `,
+      [startDate, endDate]
+    );
+
+    if (format === "csv") {
+      // Landscape CSV: Each row is a disbursement, columns are wide
+      let csvContent = "Loan Application ID,Borrower,Amount,Date,Method\n";
+      disbursements.forEach((row) => {
+        csvContent +=
+          [
+            row.loan_application_id,
+            `"${row.first_name} ${row.last_name}"`,
+            row.amount,
+            row.disbursement_date,
+            row.payment_method,
+          ].join(",") + "\n";
+      });
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=disbursement_report_${startDate}_to_${endDate}.xlsx`
+      );
+      return res.send(csvContent);
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Disbursement Report", {
+      pageSetup: { orientation: "landscape" },
+    });
+
+    const logoPath = path.resolve(
+      __dirname,
+      "../../../client_app/public/LOGO.jpeg"
+    );
+    const logoBuffer = fs.readFileSync(logoPath);
+    const logoImage = workbook.addImage({
+      buffer: logoBuffer,
+      extension: "jpeg",
+    });
+
+    // Insert logo
+    worksheet.addImage(logoImage, {
+      tl: { col: 1, row: 0 },
+      ext: { width: 100, height: 100 },
+    });
+
+    // Header text beside logo
+    worksheet.mergeCells("C1", "F1");
+    worksheet.getCell("C1").value = "RAZV LENDING CORPORATION";
+    worksheet.getCell("C1").font = { size: 14, bold: true };
+    worksheet.getCell("C1").alignment = { horizontal: "left" };
+
+    worksheet.mergeCells("C2", "F2");
+    worksheet.getCell("C2").value =
+      "Jose Arcilla Street, Concepcion Virac, Catanduanes";
+    worksheet.getCell("C2").alignment = { horizontal: "left" };
+
+    worksheet.mergeCells("C3", "F3");
+    worksheet.getCell("C3").value = "SEC Registration No: 201706817";
+    worksheet.getCell("C3").alignment = { horizontal: "left" };
+
+    worksheet.mergeCells("C4", "F4");
+    worksheet.getCell("C4").value =
+      "Mobile No.: 09984059118 || Landline Phone No.:(052)811-4017";
+    worksheet.getCell("C4").alignment = { horizontal: "left" };
+
+    // Add padding rows
+    for (let i = 0; i < 5; i++) worksheet.addRow([]);
+
+    // Header row
+    const headerRowIndex = worksheet.lastRow.number + 1;
+    const headerRow = worksheet.getRow(headerRowIndex);
+    headerRow.values = ["Borrower", "Amount", "Date", "Method"];
+    headerRow.font = { bold: true };
+    headerRow.height = 20;
+
+    // Center-align header cells
+    headerRow.eachCell((cell) => {
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+    });
+
+    // Data rows
+    let rowIndex = headerRowIndex + 1;
+    disbursements.forEach((row) => {
+      const excelRow = worksheet.getRow(rowIndex);
+      excelRow.values = [
+        `${row.first_name} ${row.last_name}`,
+        row.amount,
+        new Date(row.disbursement_date),
+        row.payment_method,
+      ];
+      excelRow.height = 18;
+
+      // Center-align data cells
+      excelRow.eachCell((cell) => {
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+      });
+
+      rowIndex++;
+    });
+
+    // Set column widths for landscape
+    worksheet.columns = [
+      { width: 30 }, // Borrower
+      { width: 15 }, // Amount
+      { width: 20 }, // Date
+      { width: 20 }, // Method
+    ];
+
+    // Set landscape orientation for printing
+    worksheet.pageSetup.orientation = "landscape";
+
+    // Send Excel file
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=disbursement_report_${startDate}_to_${endDate}.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error generating disbursement report",
+      error: error.message,
+    });
+  }
+});
+
+router.get("/payment-report", async (req, res) => {
+  const { startDate, endDate, format = "excel" } = req.query;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({
+      success: false,
+      message: "startDate and endDate are required",
+    });
+  }
+
+  try {
+    // Get payments received during period
+    const [payments] = await db.query(
+      `
+      SELECT 
+        p.payment_id,
+        p.loan_id,
+        l.loan_application_id,
+        b.first_name,
+        b.last_name,
+        p.payment_amount,
+        p.payment_date,
+        p.payment_method,
+        p.reference_number
+      FROM payment p
+      JOIN loan l ON p.loan_id = l.loan_id
+      JOIN borrower_account b ON l.borrower_id = b.borrower_id
+      WHERE p.payment_status = 'Approved'
+      AND p.payment_date BETWEEN ? AND ?
+      ORDER BY p.payment_date
+      `,
+      [startDate, endDate]
+    );
+
+    if (format === "csv") {
+      let csvContent =
+        "Payment ID,Loan Application ID,Borrower,Amount,Date,Method,Reference\n";
+      payments.forEach((row) => {
+        csvContent +=
+          [
+            row.payment_id,
+            row.loan_application_id,
+            `"${row.first_name} ${row.last_name}"`,
+            row.payment_amount,
+            row.payment_date,
+            row.payment_method,
+            row.reference_number,
+          ].join(",") + "\n";
+      });
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=payment_report_${startDate}_to_${endDate}.xlsx`
+      );
+      return res.send(csvContent);
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Payment Report", {
+      pageSetup: { orientation: "landscape" },
+    });
+
+    const logoPath = path.resolve(
+      __dirname,
+      "../../../client_app/public/LOGO.jpeg"
+    );
+    const logoBuffer = fs.readFileSync(logoPath);
+    const logoImage = workbook.addImage({
+      buffer: logoBuffer,
+      extension: "jpeg",
+    });
+
+    // Insert logo
+    worksheet.addImage(logoImage, {
+      tl: { col: 1, row: 0 },
+      ext: { width: 100, height: 100 },
+    });
+
+    // Header text beside logo
+    worksheet.mergeCells("C1", "F1");
+    worksheet.getCell("C1").value = "RAZV LENDING CORPORATION";
+    worksheet.getCell("C1").font = { size: 14, bold: true };
+    worksheet.getCell("C1").alignment = { horizontal: "left" };
+
+    worksheet.mergeCells("C2", "F2");
+    worksheet.getCell("C2").value =
+      "Jose Arcilla Street, Concepcion Virac, Catanduanes";
+    worksheet.getCell("C2").alignment = { horizontal: "left" };
+
+    worksheet.mergeCells("C3", "F3");
+    worksheet.getCell("C3").value = "SEC Registration No: 201706817";
+    worksheet.getCell("C3").alignment = { horizontal: "left" };
+
+    worksheet.mergeCells("C4", "F4");
+    worksheet.getCell("C4").value =
+      "Mobile No.: 09984059118 || Landline Phone No.:(052)811-4017";
+    worksheet.getCell("C4").alignment = { horizontal: "left" };
+
+    // Add padding rows
+    for (let i = 0; i < 5; i++) worksheet.addRow([]);
+
+    // Header row
+    const headerRowIndex = worksheet.lastRow.number + 1;
+    const headerRow = worksheet.getRow(headerRowIndex);
+    headerRow.values = ["Borrower", "Amount", "Date", "Method", "Reference"];
+    headerRow.font = { bold: true };
+    headerRow.height = 20;
+
+    // Center-align header cells
+    headerRow.eachCell((cell) => {
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+    });
+
+    // Data rows
+    let rowIndex = headerRowIndex + 1;
+    payments.forEach((row) => {
+      const excelRow = worksheet.getRow(rowIndex);
+      excelRow.values = [
+        `${row.first_name} ${row.last_name}`,
+        row.payment_amount,
+        new Date(row.payment_date),
+        row.payment_method,
+        row.reference_number,
+      ];
+      excelRow.height = 18;
+
+      // Center-align data cells
+      excelRow.eachCell((cell) => {
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+      });
+
+      rowIndex++;
+    });
+
+    // Set column widths for landscape
+    worksheet.columns = [
+      { width: 30 }, // Borrower
+      { width: 15 }, // Amount
+      { width: 20 }, // Date
+      { width: 20 }, // Method
+      { width: 20 }, // Reference
+    ];
+
+    worksheet.pageSetup.orientation = "landscape";
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=payment_report_${startDate}_to_${endDate}.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error generating payment report",
       error: error.message,
     });
   }

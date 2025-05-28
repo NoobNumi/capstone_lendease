@@ -800,4 +800,23 @@ router.get("/dashboard-stats", async (req, res) => {
   }
 });
 
+// Get all company funds
+router.get("/total-company-fund", async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT id, amount FROM total_company_fund");
+    res.status(200).json({
+      success: true,
+      message: "Company funds retrieved successfully",
+      data: rows,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message:
+        "An error occurred while retrieving the company funds. Please try again later.",
+    });
+  }
+});
+
 export default router;

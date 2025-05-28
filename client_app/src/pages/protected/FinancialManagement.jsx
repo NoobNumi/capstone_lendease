@@ -281,6 +281,62 @@ const FinancialManagement = () => {
     }
   };
 
+  const generateReportDisbursements = async () => {
+    try {
+      const response = await axios.get("/admin_reports/disbursement-report", {
+        params: { startDate, endDate },
+        responseType: "blob",
+      });
+      // Create a blob URL and trigger download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `disbursement_report_${startDate}_to_${endDate}.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Error generating disbursement report:", error);
+      dispatch(
+        showNotification({
+          message: "Error generating disbursement report",
+          type: "error",
+        })
+      );
+    }
+  };
+
+  const generateReportPayments = async () => {
+    try {
+      const response = await axios.get("/admin_reports/payment-report", {
+        params: { startDate, endDate },
+        responseType: "blob",
+      });
+      // Create a blob URL and trigger download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `payment_report_${startDate}_to_${endDate}.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Error generating payment report:", error);
+      dispatch(
+        showNotification({
+          message: "Error generating payment report",
+          type: "error",
+        })
+      );
+    }
+  };
+
   // Load all data when date range changes
   useEffect(() => {
     if (activeTab === "overview") loadOverview();
@@ -431,12 +487,29 @@ const FinancialManagement = () => {
           >
             <ArrowPathIcon className="h-4 w-4 mr-1" /> Refresh
           </button>
-          <button
+          {/* <button
             className="btn btn-sm btn-success ml-4"
             onClick={() => generateReport("csv")}
           >
             <DocumentDownloadIcon className="h-4 w-4 mr-1" /> Export Report
-          </button>
+          </button> */}
+          <details className="dropdown z-10 btn-success">
+            <summary
+              className="btn btn-sm m-1 text-white"
+              style={{ height: "0px" }}
+            >
+              {" "}
+              <DocumentDownloadIcon className="h-4 w-4 mr-1" /> Export Report
+            </summary>
+            <ul className="menu dropdown-content bg-base-100 rounded-box z-1 w-52 shadow-sm">
+              <li onClick={() => generateReportDisbursements("csv")}>
+                <a>Disbursements</a>
+              </li>
+              <li onClick={() => generateReportPayments("csv")}>
+                <a>Payments</a>
+              </li>
+            </ul>
+          </details>
         </div>
 
         {/* Tabs Navigation */}

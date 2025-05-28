@@ -232,7 +232,7 @@ function SmsForm({ onSendSms, getSMS, borrowerList }) {
   );
 }
 
-function ForgotPassword() {
+function SMSLOGS() {
   const [activeTab, setActiveTab] = useState(1); // State to control active tab
   const INITIAL_USER_OBJ = { emailId: "" };
   const [loading, setLoading] = useState(false);
@@ -242,6 +242,7 @@ function ForgotPassword() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState({});
 
+  const [rawSMSList, setRawSMSList] = useState([]);
   const [smsList, setSMSList] = useState([]);
 
   const [borrowerList, setBorrowerList] = useState([]);
@@ -251,6 +252,19 @@ function ForgotPassword() {
 
   const [selectedUser, setSelectedUser] = useState({});
 
+  function normalizePhoneNumber(number) {
+    if (!number) return "";
+    number = number.trim();
+
+    if (number.startsWith("0") && number.length === 11) {
+      return "+63" + number.slice(1);
+    }
+
+    if (number.startsWith("+63")) return number;
+
+    return number;
+  }
+
   const getUser = async () => {
     let res = await axios.get(`user/${userId}`);
     let user = res.data.data;
@@ -258,13 +272,9 @@ function ForgotPassword() {
   };
 
   const getSMS = async () => {
-    let res = await axios({
-      method: "get",
-      url: `/sms`,
-    });
-    let result = res.data.data;
-
-    setSMSList(result);
+    let smsRes = await axios.get(`/sms`);
+    let smsData = smsRes.data.data;
+    setRawSMSList(smsData);
   };
 
   const getAllBorrowers = async () => {
@@ -284,6 +294,25 @@ function ForgotPassword() {
     setIsLoaded(true);
   }, []);
 
+  useEffect(() => {
+    if (rawSMSList.length && borrowerList.length) {
+      const enriched = rawSMSList.map((sms) => {
+        const match = borrowerList.find(
+          (b) => normalizePhoneNumber(b.contact_number) === sms.receiver
+        );
+        return {
+          ...sms,
+          first_name: match?.first_name || "Anonymous Recipient",
+          last_name: match?.last_name || "",
+        };
+      });
+      setSMSList(enriched);
+    }
+  }, [rawSMSList, borrowerList]);
+
+  console.log({ smsList });
+  console.log({ borrowerList });
+
   const columns = useMemo(
     () => [
       {
@@ -298,7 +327,21 @@ function ForgotPassword() {
         },
       },
       {
-        Header: "Reciever",
+        Header: "Recipient Name",
+        accessor: "first_name",
+        Cell: ({ row }) => {
+          const { first_name, last_name } = row.original;
+          return (
+            <div className="flex space-x-2">
+              <span className="">
+                {first_name} {last_name}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        Header: "Recipient Number",
         accessor: "receiver",
         Cell: ({ row, value }) => {
           return <div className="flex space-x-2">{value}</div>;
@@ -350,4 +393,4 @@ function ForgotPassword() {
   );
 }
 
-export default ForgotPassword;
+export default SMSLOGS;

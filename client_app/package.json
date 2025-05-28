@@ -30,6 +30,7 @@
     "dayjs": "^1.11.13",
     "dom-to-image": "^2.6.0",
     "easyinvoice": "^3.0.11",
+    "fast-csv": "^5.0.2",
     "firebase": "^11.7.1",
     "formik": "^2.4.6",
     "formik-stepper": "^2.2.1",
