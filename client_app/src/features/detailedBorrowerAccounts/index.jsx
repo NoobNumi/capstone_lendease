@@ -18,6 +18,7 @@ import * as yup from "yup";
 
 function DetailedBorrowerAccounts() {
   const [borrowers, setBorrowers] = useState([]);
+  const [collectors, setCollectors] = useState([]);
   const [addressRegions, setRegions] = useState([]);
   const [addressProvince, setProvince] = useState([]);
   const [addressCity, setCity] = useState([]);
@@ -123,14 +124,31 @@ function DetailedBorrowerAccounts() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("/admin/borrower/list");
+        const response = await axios.get("/admin/borrower/all-borrowers");
         setBorrowers(response.data.data);
+        console.log("Borrowers data fetched successfully:", response.data.data);
       } catch (error) {
         console.error("Error fetching borrower account data:", error);
       }
     };
 
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchCollectors = async () => {
+      try {
+        const response = await axios.get("/admin/borrower/collectors");
+        setCollectors(response.data.data);
+        console.log(
+          "Collectors data fetched successfully:",
+          response.data.data
+        );
+      } catch (error) {
+        console.error("Error fetching collectors data:", error);
+      }
+    };
+    fetchCollectors();
   }, []);
 
   const [regionMap, setRegionMap] = useState({});
@@ -508,6 +526,7 @@ function DetailedBorrowerAccounts() {
               "atm_card_number_employed",
               "account_number_employed",
               "school_address",
+              "collector_id",
             ]
           : [
               "employment_type",
@@ -535,6 +554,7 @@ function DetailedBorrowerAccounts() {
               "monthly_pension",
               "atm_card_number_nonemployed",
               "account_number_nonemployed",
+              "collector_id",
             ];
 
       for (const [name, value] of formData.entries()) {
@@ -649,6 +669,75 @@ function DetailedBorrowerAccounts() {
 
   document.addEventListener("DOMContentLoaded", updateStepUI);
 
+  // assign collector to borrower
+  const handleAssignCollector = async (e) => {
+    e.preventDefault();
+
+    const form = e.target;
+    const collector_id = form.collector_id.value;
+    const borrower_id = selectedBorrower?.borrower_id;
+
+    // Yup validation schema
+    const schema = yup.object().shape({
+      collector_id: yup.string().required("Please select a collector."),
+      borrower_id: yup.string().required("No borrower selected."),
+    });
+
+    try {
+      await schema.validate({ collector_id, borrower_id });
+
+      await axios.post("/borrower/assign-borrower-to-collector", {
+        borrower_id,
+        collector_id,
+      });
+
+      toast.success("Borrower assigned successfully", {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      document.getElementById("assignCollectorModal").close();
+
+      // Refresh table data after assignment
+      try {
+        const updatedData = await axios.get("/admin/borrower/all-borrowers");
+        setBorrowers(updatedData.data.data);
+      } catch (fetchError) {
+        console.error("Failed to refresh borrower list:", fetchError);
+      }
+    } catch (err) {
+      if (err.name === "ValidationError") {
+        toast.error(err.message, {
+          position: "top-right",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
+      } else {
+        console.error("Error assigning collector:", err);
+        toast.error("Failed to assign collector. Please try again.", {
+          position: "top-right",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
+      }
+    }
+  };
+
   // Table Columns
 
   const columns = useMemo(
@@ -747,10 +836,9 @@ function DetailedBorrowerAccounts() {
         Cell: ({ value }) => (
           <StatusPill
             value={value}
-            style={{
-              backgroundColor: value === "Employed" ? "green" : "red",
-              color: "white",
-            }}
+            className={
+              "text-white " + (value === "Employed" ? "bg-green" : "bg-red")
+            }
           >
             {value}
           </StatusPill>
@@ -761,6 +849,21 @@ function DetailedBorrowerAccounts() {
         accessor: "residence_type",
       },
       {
+        Header: "Assigned to a collector",
+        accessor: "is_assigned_to_a_collector",
+        Cell: ({ value }) => (
+          <span
+            className={
+              value === "yes"
+                ? "bg-green-200 px-3 py-1 rounded-xl text-green-700 font-medium"
+                : "bg-red-200 px-3 py-1 rounded-xl text-red-700 font-medium"
+            }
+          >
+            {value ? value.toUpperCase() : "Yes"}
+          </span>
+        ),
+      },
+      {
         Header: "Action",
         accessor: "",
         Cell: ({ row }) => {
@@ -768,6 +871,7 @@ function DetailedBorrowerAccounts() {
             <div className="flex">
               <button
                 className="btn btn-outline btn-sm"
+                title="View Borrower's Details"
                 onClick={() => {
                   setSelectedBorrower(row.original);
                   document.getElementById("viewDetailsModal").showModal();
@@ -775,6 +879,18 @@ function DetailedBorrowerAccounts() {
               >
                 <i className="fa-solid fa-eye"></i>
               </button>
+              {row.original.is_assigned_to_a_collector !== "yes" && (
+                <button
+                  className="btn btn-outline btn-sm ml-2"
+                  title="Assign Collector"
+                  onClick={() => {
+                    document.getElementById("assignCollectorModal").showModal();
+                    setSelectedBorrower(row.original);
+                  }}
+                >
+                  <i className="fa-solid fa-user-tag"></i>
+                </button>
+              )}
             </div>
           );
         },
@@ -1028,8 +1144,8 @@ function DetailedBorrowerAccounts() {
                     onInput={(e) => {
                       e.target.value = e.target.value
                         .replace(/\D/g, "") // Remove non-digits
-                        .replace(/(.{4})/g, "$1 ") // Add space every 4 digits
-                        .trim(); // Remove trailing space
+                        .replace(/(.{4})/g, "$1 "); // Add space every 4 digits
+                      // Remove trailing space
                     }}
                   />
                 </div>
@@ -1046,6 +1162,28 @@ function DetailedBorrowerAccounts() {
                     placeholder="Account Number"
                   />
                 </div>
+              </div>
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Assigned Collector</span>
+                </label>
+                <select
+                  name="collector_id"
+                  required
+                  className="select select-bordered w-full"
+                >
+                  <option selected disabled>
+                    Select Collector
+                  </option>
+                  {collectors.map((collector) => (
+                    <option
+                      key={collector.collector_id}
+                      value={collector.collector_id}
+                    >
+                      {collector.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="form-control">
                 <label className="label">
@@ -1218,6 +1356,25 @@ function DetailedBorrowerAccounts() {
                     placeholder="Account Number"
                   />
                 </div>
+              </div>
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Assigned Collector</span>
+                </label>
+                <select
+                  name="collector"
+                  required
+                  className="select select-bordered w-full"
+                >
+                  <option selected disabled>
+                    Select Collector
+                  </option>
+                  {collectors.map((collector) => (
+                    <option key={collector._id} value={collector._id}>
+                      {collector.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
@@ -1531,6 +1688,59 @@ function DetailedBorrowerAccounts() {
               </button>
             </div>
           </div>
+        </form>
+      </dialog>
+
+      {/* Assign Collector */}
+      <dialog id="assignCollectorModal" className="modal">
+        <form className="modal-box" onSubmit={handleAssignCollector}>
+          {selectedBorrower && (
+            <>
+              <h3 className="font-bold text-lg mb-2">Assign Collector</h3>
+              <div className="form-control p-0">
+                <label className="label text-sm p-0 mb-3">
+                  Select a Collector to assign to this borrower
+                </label>
+
+                <select
+                  name="collector_id"
+                  required
+                  className="select select-bordered w-full"
+                >
+                  <option selected disabled>
+                    Select Collector
+                  </option>
+                  {collectors.map((collector) => (
+                    <option
+                      key={collector.collector_id}
+                      value={collector.collector_id}
+                    >
+                      {collector.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="modal-action">
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={() =>
+                    document.getElementById("assignCollectorModal").close()
+                  }
+                >
+                  Cancel
+                </button>
+                <button className="btn btn-primary" type="submit">
+                  Assign selected collector
+                </button>
+              </div>
+              <input
+                type="hidden"
+                name="borrower_id"
+                value={selectedBorrower.borrower_id}
+              />
+            </>
+          )}
         </form>
       </dialog>
     </div>
