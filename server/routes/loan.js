@@ -744,43 +744,72 @@ router.post(
 );
 
 router.post("/list", authenticateUserMiddleware, async (req, res) => {
-  let { user_id, role } = req.user;
-
-  console.log({ role });
+  const { user_id, role } = req.user;
 
   try {
-    let borrower_id = await getBorrowerAccountByUserAccountId(user_id);
+    let rows = [];
 
-    console.log({ borrower_id });
-    const [rows] = await db.query(
-      `
+    if (role === "Borrower") {
+      const borrower_id = await getBorrowerAccountByUserAccountId(user_id);
 
+      const [result] = await db.query(
+        `
+        SELECT la.*, ba.*, dd.*, la.loan_id as loan_id
+        FROM loan la
+        INNER JOIN borrower_account ba ON la.borrower_id = ba.borrower_id
+        LEFT JOIN disbursement_details dd ON la.loan_id = dd.loan_id
+        WHERE la.borrower_id = ?
+        ORDER BY la.application_date DESC
+        `,
+        [borrower_id]
+      );
 
-      SELECT la.*, ba.*, dd.* , la.loan_id as loan_id  FROM loan la INNER 
-      JOIN borrower_account ba ON la.borrower_id = 
-      ba.borrower_id 
-      
-      LEFT  JOIN disbursement_details dd ON la.loan_id = dd.loan_id
-      
+      rows = result;
+    } else if (role === "Collector") {
+      // Get borrowers assigned to this collector
+      const [collectorBorrowers] = await db.query(
+        `SELECT borrower_id FROM collector_borrower WHERE collector_id = ?`,
+        [user_id]
+      );
 
-      ${role === "Borrower" ? " WHERE la.borrower_id  = ?" : ""}
+      const borrowerIds = collectorBorrowers.map((row) => row.borrower_id);
 
+      if (borrowerIds.length === 0) {
+        return res.status(200).json({ success: true, data: [] });
+      }
 
-      ORDER BY la.application_date DESC
+      // Properly pass array in IN clause
+      const [result] = await db.query(
+        `
+        SELECT la.*, ba.*, dd.*, la.loan_id as loan_id
+        FROM loan la
+        INNER JOIN borrower_account ba ON la.borrower_id = ba.borrower_id
+        LEFT JOIN disbursement_details dd ON la.loan_id = dd.loan_id
+        WHERE la.borrower_id IN (${borrowerIds.map(() => "?").join(",")})
+        ORDER BY la.application_date DESC
+        `,
+        borrowerIds
+      );
 
-         
-         
-         
-         `,
-      [borrower_id]
-    );
+      rows = result;
+    } else {
+      // For admin or other roles, return all
+      const [result] = await db.query(
+        `
+        SELECT la.*, ba.*, dd.*, la.loan_id as loan_id
+        FROM loan la
+        INNER JOIN borrower_account ba ON la.borrower_id = ba.borrower_id
+        LEFT JOIN disbursement_details dd ON la.loan_id = dd.loan_id
+        ORDER BY la.application_date DESC
+        `
+      );
+
+      rows = result;
+    }
+
     res.status(200).json({ success: true, data: rows });
-    // if (rows.length > 0) {
-    //   res.status(200).json({ success: true, data: rows });
-    // } else {
-    //   res.status(404).json({ message: 'No loans found for this user.' });
-    // }
   } catch (error) {
+    console.error("Error fetching loan list:", error);
     res
       .status(500)
       .json({ error: "Error fetching loan list with borrower details" });

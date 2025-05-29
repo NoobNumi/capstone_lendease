@@ -161,6 +161,7 @@ function Collections() {
     let list = res.data.data;
 
     setLoanList(list);
+    console.log({ list });
   };
 
   useEffect(() => {
@@ -214,14 +215,21 @@ function Collections() {
         Header: "#",
         accessor: "",
         Cell: ({ row }) => {
+          // Show row number
           return <span className="">{row.index + 1}</span>;
         },
       },
       {
         Header: "Borrower",
-        accessor: "loan_type_value",
-        Cell: ({ row, value }) => {
-          return <span className="">{value}</span>;
+        accessor: "first_name",
+        Cell: ({ row }) => {
+          // Show first and last name
+          const { first_name, last_name } = row.original;
+          return (
+            <span className="">
+              {first_name} {last_name}
+            </span>
+          );
         },
       },
       {

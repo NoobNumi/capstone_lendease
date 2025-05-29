@@ -38,8 +38,10 @@ function Login() {
 
         if (user.role === "Borrower") {
           window.location.href = "/app/loan_application";
-        } else {
+        } else if (user.role === "Admin" || user.role === "Loan Officer") {
           window.location.href = "/app/loan_management";
+        } else {
+          window.location.href = "/app/dashboard";
         }
       } catch (error) {
         const errorMessage =
