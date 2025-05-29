@@ -203,6 +203,7 @@ function LoanApplication() {
 
   const [myLoanList, setLoanList] = useState([]);
   const [companyFund, setCompanyFund] = useState(0);
+  const [loanLimit, setLoanLimit] = useState(0);
 
   useEffect(() => {
     const fetchTotalCompanyFund = async () => {
@@ -216,6 +217,19 @@ function LoanApplication() {
     };
 
     fetchTotalCompanyFund();
+  }, []);
+
+  useEffect(() => {
+    const fetchLoanLimit = async () => {
+      try {
+        const res = await axios.get("/admin/loan/loan-limit");
+        const limit = res.data.data[0].limit_amount;
+        setLoanLimit(limit);
+      } catch (error) {
+        console.error("Error fetching loan limit:", error);
+      }
+    };
+    fetchLoanLimit();
   }, []);
 
   const loanList = async () => {
@@ -656,7 +670,7 @@ function LoanApplication() {
           .required("Required")
           .max(
             companyFund,
-            `Loan amount must not exceed ₱${companyFund.toLocaleString()}`
+            `The amount exceeds the loan limit of ₱${loanLimit.toLocaleString()}`
           ),
         calculatorInterestRate: Yup.number().required("Required"),
         calculatorMonthsToPay: Yup.number().required("Required"),

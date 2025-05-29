@@ -386,6 +386,7 @@ const PricingTab = () => {
       const res = await axios.get(`settings/read/1`); // Using shorthand for axios.get
       const settings = res.data.data; // Changed variable name here
       setLoanSettings(settings); // Changed function call here
+      console.log("Loan Settings:", settings); // Log the fetched settings
     } catch (err) {
       console.error("Error fetching pricing settings:", err); // Log the error
       setError("Failed to fetch pricing settings"); // Changed error message here
@@ -405,6 +406,8 @@ const PricingTab = () => {
         maxLoanToIncomeRatio: loanSettings.loan_to_income_ratio, // Maximum Loan-to-Income Ratio
         minEmploymentYears: loanSettings.employment_years, // Minimum Employment Years
         interestRate: loanSettings.interest_rate,
+        loanLimit: loanSettings.loan_limit[0].limit_amount, // Borrower's Loan Limit
+        totalCompanyFund: loanSettings.total_company_fund[0].amount, // Total Company Fund
       },
       validationSchema: Yup.object({
         // Credit Score Validation
@@ -425,13 +428,45 @@ const PricingTab = () => {
           .required("Minimum Employment Years is required")
           .min(0, "Employment Years cannot be negative")
           .integer("Employment Years must be a whole number"),
+
+        loanLimit: Yup.number()
+          .required("Borrower's Loan Limit is required")
+          .min(0, "Loan Limit cannot be negative")
+          .positive("Loan Limit must be a number")
+          .test(
+            "max-company-fund",
+            "Loan Limit cannot exceed total company fund",
+            function (value) {
+              const { totalCompanyFund } = this.parent;
+              if (
+                typeof value === "number" &&
+                typeof totalCompanyFund === "number"
+              ) {
+                return value <= totalCompanyFund;
+              }
+              return true;
+            }
+          ),
       }),
       onSubmit: async (values, { setSubmitting }) => {
         setSubmitting(true);
         try {
-          console.log({ values });
+          const payload = {
+            minCreditScore: values.minCreditScore,
+            minMonthlyIncome: values.minMonthlyIncome,
+            maxLoanToIncomeRatio: values.maxLoanToIncomeRatio,
+            minEmploymentYears: values.minEmploymentYears,
+            interestRate: values.interestRate,
+            loanlimit: [
+              {
+                id: loanSettings.loan_limit[0].id,
+                limit_amount: values.loanLimit,
+              },
+            ],
+          };
+
           // API request
-          const response = await axios.put(`settings/update/1`, values);
+          const response = await axios.put(`settings/update/1`, payload);
 
           // Success notification
           toast.success("Form updated successfully", {
@@ -559,6 +594,20 @@ const PricingTab = () => {
                       type="number"
                       placeholder=""
                       value={values.interestRate}
+                      onBlur={handleBlur} // This apparently updates `touched`?
+                    />
+                  </div>
+                  <h1 className="text-2xl font-bold text-orange-300 mt-1">
+                    Borrower's Loan Limit
+                  </h1>{" "}
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3 ">
+                    <InputText
+                      label="Loan limit allowed"
+                      name="loanLimit"
+                      className="font-medium p-3"
+                      type="number"
+                      placeholder=""
+                      value={values.loanLimit}
                       onBlur={handleBlur} // This apparently updates `touched`?
                     />
                   </div>

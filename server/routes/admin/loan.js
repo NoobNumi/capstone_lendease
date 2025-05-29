@@ -819,4 +819,23 @@ router.get("/total-company-fund", async (req, res) => {
   }
 });
 
+// Get loan limit
+router.get("/loan-limit", async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT id, limit_amount FROM loan_limit");
+    res.status(200).json({
+      success: true,
+      message: "Loan limits retrieved successfully",
+      data: rows,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message:
+        "An error occurred while retrieving the loan limit amount. Please try again later.",
+    });
+  }
+});
+
 export default router;
