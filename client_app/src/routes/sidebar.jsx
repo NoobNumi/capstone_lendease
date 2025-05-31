@@ -60,7 +60,12 @@ const AppRoutes = () => {
           {
             path: "/app/collections",
             name: "Collections",
-            icon: <UsersIcon className="h-6 w-6" />,
+            icon: <i class="fa-solid fa-users"></i>,
+          },
+          {
+            path: "/app/collection_records",
+            name: "Collection Records",
+            icon: <i class="fa-solid fa-file-invoice"></i>,
           },
         ];
       }

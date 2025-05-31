@@ -69,6 +69,10 @@ const FinancialManagement = lazy(() =>
 
 const Collections = lazy(() => import("../pages/protected/Collections"));
 
+const Collection_records = lazy(() =>
+  import("../pages/protected/Collection_records")
+);
+
 const token = checkAuth();
 
 const decoded = jwtDecode(token);
@@ -212,6 +216,10 @@ routes = [
   {
     path: "/collections",
     component: Collections,
+  },
+  {
+    path: "/collection_records",
+    component: Collection_records,
   },
 ];
 
