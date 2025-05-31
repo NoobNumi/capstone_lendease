@@ -36,6 +36,14 @@ const vonage = new Vonage({
   apiSecret: config.VONAGE_apiSecret,
 });
 
+const getCollectorIdByUserId = async (userId) => {
+  const [rows] = await db.query(
+    `SELECT collector_id FROM user_account WHERE user_id = ?`,
+    [userId]
+  );
+  return rows.length > 0 ? rows[0].collector_id : null;
+};
+
 // const loanCreationMessage = ({
 //   firstName,
 //   lastName,
@@ -766,10 +774,21 @@ router.post("/list", authenticateUserMiddleware, async (req, res) => {
 
       rows = result;
     } else if (role === "Collector") {
-      // Get borrowers assigned to this collector
+      const collector_id = await getCollectorIdByUserId(user_id);
+
+      if (!collector_id) {
+        return res.status(200).json({ success: true, data: [] });
+      }
+
+      // Get collector name
+      const [[collector]] = await db.query(
+        `SELECT name FROM collector_account WHERE collector_id = ?`,
+        [collector_id]
+      );
+
       const [collectorBorrowers] = await db.query(
         `SELECT borrower_id FROM collector_borrower WHERE collector_id = ?`,
-        [user_id]
+        [collector_id]
       );
 
       const borrowerIds = collectorBorrowers.map((row) => row.borrower_id);
@@ -778,7 +797,6 @@ router.post("/list", authenticateUserMiddleware, async (req, res) => {
         return res.status(200).json({ success: true, data: [] });
       }
 
-      // Properly pass array in IN clause
       const [result] = await db.query(
         `
         SELECT la.*, ba.*, dd.*, la.loan_id as loan_id
@@ -786,12 +804,17 @@ router.post("/list", authenticateUserMiddleware, async (req, res) => {
         INNER JOIN borrower_account ba ON la.borrower_id = ba.borrower_id
         LEFT JOIN disbursement_details dd ON la.loan_id = dd.loan_id
         WHERE la.borrower_id IN (${borrowerIds.map(() => "?").join(",")})
+          AND la.loan_status = 'Approved'
         ORDER BY la.application_date DESC
         `,
         borrowerIds
       );
 
-      rows = result;
+      // Add collector_name to each row
+      rows = result.map((row) => ({
+        ...row,
+        collector_name: collector?.name || null,
+      }));
     } else {
       // For admin or other roles, return all
       const [result] = await db.query(
@@ -810,9 +833,9 @@ router.post("/list", authenticateUserMiddleware, async (req, res) => {
     res.status(200).json({ success: true, data: rows });
   } catch (error) {
     console.error("Error fetching loan list:", error);
-    res
-      .status(500)
-      .json({ error: "Error fetching loan list with borrower details" });
+    res.status(500).json({
+      error: "Error fetching loan list with borrower details",
+    });
   }
 });
 

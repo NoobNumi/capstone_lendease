@@ -32,7 +32,6 @@ const formatCurrency = (amount) => {
 
 const LoanReleaseStatement = ({
   selectedLoan,
-  calculatorInterestRate,
   calculatorLoanAmmount,
   calculatorMonthsToPay,
   printableRef,
@@ -84,60 +83,59 @@ const LoanReleaseStatement = ({
   // Calculate payments using the same logic as in PaymentsLogicView
   const calculatePayments = () => {
     try {
-      if (
-        !calculatorLoanAmmount ||
-        !calculatorInterestRate ||
-        !calculatorMonthsToPay
-      )
-        return [];
+      if (!calculatorLoanAmmount || !calculatorMonthsToPay) return [];
 
-      // Calculate total payment based on loan amount and interest rate
-      const computedTotalPayment =
-        calculatorLoanAmmount * (1 + calculatorInterestRate / 100);
-      setTotalPayment(computedTotalPayment);
+      const principal = parseFloat(calculatorLoanAmmount);
+      const interestRate = parseFloat(selectedLoan?.interest_rate);
+      const months = parseInt(calculatorMonthsToPay, 10);
 
-      // Calculate the interest (Total Payment - Loan Amount)
-      const interest = computedTotalPayment - calculatorLoanAmmount;
+      const totalInterest = principal * (interestRate / 100);
+      const totalPayment = principal + totalInterest;
+      const monthlyPayment = totalPayment / months;
+      const monthlyInterest = totalInterest / months;
+      const monthlyPrincipal = principal / months;
 
-      // Calculate the monthly interest and principal payment
-      const monthlyInterestAmount = interest / calculatorMonthsToPay;
-      const principal = calculatorLoanAmmount / calculatorMonthsToPay;
-      let remainingBalance = computedTotalPayment;
-      let paymentDetails = [];
-      let remainingPrincipal = calculatorLoanAmmount;
+      setTotalPayment(totalPayment);
 
-      // Use approval date from selectedLoan or fallback to current date
+      let remainingBalance = totalPayment;
+      let remainingPrincipal = principal;
+      const paymentDetails = [];
+
       const startDate = selectedLoan?.approval_date
         ? new Date(selectedLoan.approval_date)
         : new Date();
 
-      for (let i = 1; i <= calculatorMonthsToPay; i++) {
-        const amountPrincipal = principal;
-        const amount = principal + monthlyInterestAmount;
-        remainingBalance -= amount;
-
-        // First month shows full loan amount, others show the remaining
-        remainingPrincipal =
-          i === 1 ? remainingPrincipal : remainingPrincipal - amountPrincipal;
-
-        // Calculate payment date based on start date
+      for (let i = 1; i <= months; i++) {
         const paymentDate = new Date(startDate);
         paymentDate.setMonth(startDate.getMonth() + i);
 
+        // Handle rounding drift on final month
+        const isFinalMonth = i === months;
+        const actualPrincipal = isFinalMonth
+          ? remainingPrincipal
+          : monthlyPrincipal;
+        const actualInterest = isFinalMonth
+          ? totalInterest - monthlyInterest * (months - 1)
+          : monthlyInterest;
+        const amount = actualPrincipal + actualInterest;
+
+        remainingPrincipal -= actualPrincipal;
+        remainingBalance -= amount;
+
         paymentDetails.push({
           transactionDate: paymentDate.toISOString(),
-          principal: remainingPrincipal,
           amount,
-          interestAmount: monthlyInterestAmount,
+          principal: principal,
+          amountPrincipal: actualPrincipal,
+          interestAmount: actualInterest,
           dueAmount: amount,
-          remainingBalance,
-          amountPrincipal,
+          remainingBalance: Math.max(remainingBalance, 0),
           index: i,
         });
       }
 
       setPayments(paymentDetails);
-      setBalance(remainingBalance);
+      setBalance(Math.max(remainingBalance, 0));
       return paymentDetails;
     } catch (error) {
       console.error("Error calculating payments:", error);
@@ -203,7 +201,6 @@ const LoanReleaseStatement = ({
     calculatePayments();
   }, [
     calculatorLoanAmmount,
-    calculatorInterestRate,
     calculatorMonthsToPay,
     selectedLoan?.approval_date,
   ]);
@@ -461,7 +458,7 @@ const LoanReleaseStatement = ({
           </div>
           <div className="flex items-center gap-1 text-gray-600">
             <span className="font-semibold">Interest rate:</span>
-            <span>{calculatorInterestRate}%</span>
+            <span>{parseFloat(selectedLoan?.interest_rate)}%</span>
           </div>
         </div>
 
